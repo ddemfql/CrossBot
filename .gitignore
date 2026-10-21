@@ -1,0 +1,13 @@
+# 环境变量文件（绝对不能传）
+.env
+
+# Python 编译缓存
+__pycache__/
+*.pyc
+
+# 虚拟环境
+.venv/
+
+# 系统文件
+.DS_Store
+Thumbs.db
