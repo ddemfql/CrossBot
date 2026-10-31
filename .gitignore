@@ -20,3 +20,6 @@ Thumbs.db
 /tests/fixtures/real_transaction_*.json
 /scripts/build_real_w3_demo.py
 *.zip
+
+# Local editor workspace settings
+.idea/

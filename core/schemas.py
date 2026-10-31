@@ -2,7 +2,7 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
-from .models import RiskItem, new_id
+from .models import RiskItem, new_id, to_dict
 
 @dataclass(slots=True)
 class SalesRequest:
@@ -13,6 +13,9 @@ class SalesRequest:
     requested_quantity: int | None = None
     correlation_id: str = field(default_factory=lambda: new_id("sales"))
 
+    def to_dict(self) -> dict[str, Any]:
+        return to_dict(self)
+
 @dataclass(slots=True)
 class ListingRequest:
     product_description: str
@@ -20,6 +23,9 @@ class ListingRequest:
     target_country: str | None = None
     target_language: str = "English"
     correlation_id: str = field(default_factory=lambda: new_id("listing"))
+
+    def to_dict(self) -> dict[str, Any]:
+        return to_dict(self)
 
 @dataclass(slots=True)
 class GenerationResponse:
@@ -30,9 +36,15 @@ class GenerationResponse:
     provider: str | None = None
     model: str | None = None
 
+    def to_dict(self) -> dict[str, Any]:
+        return to_dict(self)
+
 @dataclass(slots=True)
 class WorkflowErrorResponse:
     code: str
     message: str
     retryable: bool = False
     details: dict[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return to_dict(self)

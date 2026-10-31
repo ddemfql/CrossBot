@@ -1,4 +1,4 @@
-"""Plain, versioned seller XLSX exports after one explicit human confirmation."""
+"""Plain seller XLSX previews and versioned exports with current checks and human confirmation."""
 from __future__ import annotations
 
 from hashlib import sha256
@@ -10,10 +10,9 @@ from core.models import (CrossCheckResult, CrossCheckStatus, DocumentType,
                          GeneratedArtifact, to_dict)
 from core.ports import RenderedOutput
 from review.policy import audit, invalidate, require, source_versions
-from validation.rules import number, validate_trade
+from validation.rules import number
 from .catalog import DOC_LABELS, FORM_FIELDS, ROW_FIELDS, SELLER_TYPES
-from .forms import (effective_rows, effective_values, form_conflicts, get_form,
-                    missing_form_fields)
+from .forms import effective_rows, effective_values, get_form
 from .workbook_renderer import _stable_xlsx
 
 LAYOUT_VERSION = "simple-xlsx-4"
@@ -118,7 +117,7 @@ def _provenance(workbook, workspace, form, values, rows):
             "原表候选明细；逐单元格实际来源见上方，候选不等于人工采用。"])
 
 
-def _render(workspace, kind, form, actor, checks, *, human_confirmed=True):
+def _render(workspace, kind, form, actor, checks, *, human_confirmed=True, review=None):
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Font, PatternFill
     from openpyxl.utils import get_column_letter
@@ -173,6 +172,8 @@ def _render(workspace, kind, form, actor, checks, *, human_confirmed=True):
                          ("导出状态", "人工确认生成" if human_confirmed else "未人工确认预览"),
                          ("人工确认人", actor.user_id if human_confirmed else ""),
                          ("预览申请账号", "" if human_confirmed else actor.user_id),
+                         ("核验规则版本", review.rule_version if review else ""),
+                         ("核验输入摘要", review.input_digest if review else ""),
                          ("交易修订", workspace.trade.revision),
                          ("来源版本", json.dumps(source_versions(workspace), ensure_ascii=False,
                                                 sort_keys=True)),
@@ -221,25 +222,45 @@ def _seller_kind(document_type):
     return kind
 
 
-def _checks(workspace, kind, form, *, human_confirmed):
-    # Shared warnings for preview and generation; no second validation engine.
-    checks = [check for check in validate_trade(workspace)
-              if not human_confirmed or check.rule_code != "TRADE_HUMAN_CONFIRMED"]
-    for code, details, status in (
-        ("FORM_COMPLETE", missing_form_fields(workspace.trade, form), CrossCheckStatus.PENDING_REVIEW),
-        ("FORM_CONSISTENCY", form_conflicts(workspace.trade, form), CrossCheckStatus.FAIL),
-    ):
-        checks.append(CrossCheckResult(case_id=workspace.case.case_id, rule_code=code,
-            status=status if details else CrossCheckStatus.PASS,
-            message="；".join(details) if details else "未发现缺失或冲突",
-            left_value=details, left_source=f"form:{kind.value}:r{form.revision}",
-            rule_version=LAYOUT_VERSION))
-    return checks
-
-
 class SimpleExportService:
     def __init__(self, repository, blobs):
         self.repository, self.blobs = repository, blobs
+
+    def _review(self, workspace, kind, *, human_confirmed):
+        from validation.export_review import review_export
+        report = review_export(workspace, kind, human_confirmed=human_confirmed)
+        form = get_form(workspace, kind)
+        source_ids = set(form.source_document_ids)
+        for check in report.checks:
+            if check.required:
+                source_ids.update(value for value in (check.left_document_id, check.right_document_id) if value)
+        documents = {doc.document_id: doc for doc in workspace.documents}
+        for document_id in sorted(source_ids & documents.keys()):
+            document = documents[document_id]
+            version = next((v for v in document.versions if v.version_id == document.current_version_id), None)
+            valid = False
+            if version is not None and document.deleted_at is None:
+                try:
+                    valid = sha256(self.blobs.get(version.storage_path)).hexdigest() == version.sha256
+                except Exception:
+                    # No raw source content, storage paths, or exception text escapes.
+                    pass
+            report.checks.append(CrossCheckResult(case_id=workspace.case.case_id,
+                rule_code="SOURCE_INTEGRITY", status=CrossCheckStatus.PASS if valid else CrossCheckStatus.FAIL,
+                message="当前来源原件完整性校验通过。" if valid else "当前来源原件缺失、已移除或完整性校验失败。",
+                required=True, left_document_id=document_id,
+                left_version_id=version.version_id if version else document.current_version_id,
+                left_field="sha256", left_value=version.sha256 if version else None,
+                left_source=f"document:{document_id}:version:{document.current_version_id}",
+                rule_version=report.rule_version))
+        return report
+
+    def assess(self, case_id, actor, document_type, *, human_confirmed=False):
+        """Assess current saved inputs without storing or confirming anything."""
+        require(None, actor, "download")
+        kind = _seller_kind(document_type)
+        return self._review(self.repository.get(case_id), kind,
+                            human_confirmed=human_confirmed is True)
 
     def preview(self, case_id, actor, document_type) -> RenderedOutput:
         """Render an explicitly unconfirmed snapshot without storing or auditing it."""
@@ -247,13 +268,15 @@ class SimpleExportService:
         kind = _seller_kind(document_type)
         workspace = self.repository.get(case_id)
         form = get_form(workspace, kind)
-        checks = _checks(workspace, kind, form, human_confirmed=False)
-        content = _render(workspace, kind, form, actor, checks, human_confirmed=False)
+        report = self._review(workspace, kind, human_confirmed=False)
+        content = _render(workspace, kind, form, actor, report.checks,
+                          human_confirmed=False, review=report)
         return RenderedOutput(content=content, media_type=MEDIA_TYPE, extension="xlsx",
             template_id="simple-xlsx", template_version=LAYOUT_VERSION,
             template_sha256=sha256(LAYOUT_VERSION.encode()).hexdigest())
 
-    def generate(self, case_id, actor, document_type, *, human_confirmed: bool):
+    def generate(self, case_id, actor, document_type, *, human_confirmed: bool,
+                 expected_review_digest=None):
         workspace = self.repository.get(case_id)
         try:
             require(workspace, actor, "generate")
@@ -264,9 +287,20 @@ class SimpleExportService:
             raise CrossBotError(ErrorCode.REVIEW_REQUIRED, "请先勾选已由真人核对本次导出内容。")
         kind = _seller_kind(document_type)
         form = get_form(workspace, kind)
-        # Rules are evidence and warnings, never an additional approval workflow.
-        checks = _checks(workspace, kind, form, human_confirmed=True)
-        content = _render(workspace, kind, form, actor, checks)
+        report = self._review(workspace, kind, human_confirmed=True)
+        details = {"checks": [to_dict(check) for check in report.checks],
+                   "input_digest": report.input_digest, "rule_version": report.rule_version}
+        if expected_review_digest is not None and expected_review_digest != report.input_digest:
+            raise CrossBotError(ErrorCode.CONFLICT, "资料或来源版本已变化，请重新核对当前核验结果。",
+                                details=details)
+        if not report.ready:
+            failed = any(check.required and check.status is CrossCheckStatus.FAIL
+                         for check in report.checks)
+            raise CrossBotError(ErrorCode.CROSS_CHECK_FAILED if failed else ErrorCode.REVIEW_REQUIRED,
+                "存在核验冲突，暂不能生成正式文件。" if failed else "资料或来源尚未完整核验，请补充后再生成正式文件。",
+                details=details)
+        checks = report.checks
+        content = _render(workspace, kind, form, actor, checks, review=report)
         key = self.blobs.put(content)
         versions = [item.version_number for item in workspace.artifacts
                     if item.document_type is kind]
@@ -294,7 +328,7 @@ class SimpleExportService:
             form_revision=form.revision,
             template_id="simple-xlsx", template_version=LAYOUT_VERSION,
             template_sha256=sha256(LAYOUT_VERSION.encode()).hexdigest(),
-            rule_version=LAYOUT_VERSION, storage_path=key,
+            rule_version=report.rule_version, storage_path=key,
             sha256=sha256(content).hexdigest(), media_type=MEDIA_TYPE,
             filename=f"{kind.value}-r{workspace.trade.revision}-v{max(versions, default=0) + 1}.xlsx",
             created_by=actor.user_id, status="draft", checks=checks)
@@ -303,6 +337,8 @@ class SimpleExportService:
               after={"human_confirmed": True, "input_revision": artifact.input_revision,
                      "sha256": artifact.sha256, "source_versions": artifact.source_versions,
                      "form_revision": artifact.form_revision,
+                     "strict_review": True, "review_input_digest": report.input_digest,
+                     "rule_version": report.rule_version,
                      "warning_count": sum(c.status is not CrossCheckStatus.PASS for c in checks)},
               reason="真人核对本次导出；缺失和规则提示随文件保留。")
         self.repository.save(workspace, expected_revision=workspace.revision)

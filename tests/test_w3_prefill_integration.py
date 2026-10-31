@@ -95,7 +95,7 @@ class PrefillIntegrationTests(unittest.TestCase):
         self.assertTrue(saved.rows_manually_edited)
         self.assertEqual(len(saved.row_candidates), 2)
 
-    def test_source_candidates_manual_edits_and_output_snapshot_remain_separate(self):
+    def test_source_candidates_manual_edits_and_unconfirmed_preview_remain_separate(self):
         workspace, doc_id, _ = self.source(D.PURCHASE_ORDER)
         workspace = PrefillService(self.repo).fill(self.case_id, self.actor, D.PROFORMA_INVOICE, [doc_id])
         form = get_form(workspace, D.PROFORMA_INVOICE)
@@ -103,14 +103,14 @@ class PrefillIntegrationTests(unittest.TestCase):
         rows[0]["quantity"] = "9"
         workspace = FormService(self.repo).save(self.case_id, self.actor, D.PROFORMA_INVOICE,
             dict(form.values, buyer="Synthetic edited buyer"), rows, "Synthetic correction")
-        workspace = SimpleExportService(self.repo, self.blobs).generate(
-            self.case_id, self.actor, D.PROFORMA_INVOICE, human_confirmed=True)
-        artifact = workspace.artifacts[-1]
-        self.assertEqual(artifact.form_snapshot["values"]["buyer"], "Synthetic edited buyer")
-        self.assertEqual(artifact.form_snapshot["rows"][0]["quantity"], "9")
-        self.assertEqual(artifact.form_snapshot["row_candidates"][0]["values"]["quantity"], "4")
-        content = self.documents.download(self.case_id, self.actor, artifact_id=artifact.artifact_id)
-        self.assertEqual(sha256(content).hexdigest(), artifact.sha256)
+        saved = get_form(workspace, D.PROFORMA_INVOICE)
+        self.assertEqual(saved.values["buyer"], "Synthetic edited buyer")
+        self.assertEqual(saved.rows[0]["quantity"], "9")
+        self.assertEqual(saved.row_candidates[0].values["quantity"], "4")
+        preview = SimpleExportService(self.repo, self.blobs).preview(
+            self.case_id, self.actor, D.PROFORMA_INVOICE)
+        content = preview.content
+        self.assertFalse(self.repo.get(self.case_id).artifacts)
         workbook = load_workbook(BytesIO(content), read_only=True, data_only=False)
         try:
             all_rows = list(workbook["文件"].values)
@@ -120,14 +120,14 @@ class PrefillIntegrationTests(unittest.TestCase):
             workbook.close()
         self.assertFalse(workspace.approvals)
 
-    def test_manual_trade_without_original_can_generate_pi(self):
+    def test_incomplete_manual_trade_without_original_can_preview_pi(self):
         trade = TradeData(buyer="Synthetic manual buyer", seller="Synthetic seller",
             line_items=[TradeLine("SYN-M", "Synthetic manual product", "2", "7", "pcs")])
         self.cases.update_trade(self.case_id, self.actor, trade, "Synthetic manual input")
-        workspace = SimpleExportService(self.repo, self.blobs).generate(
-            self.case_id, self.actor, D.PROFORMA_INVOICE, human_confirmed=True)
-        self.assertFalse(workspace.documents)
-        content = self.blobs.get(workspace.artifacts[-1].storage_path)
+        preview = SimpleExportService(self.repo, self.blobs).preview(
+            self.case_id, self.actor, D.PROFORMA_INVOICE)
+        self.assertFalse(self.repo.get(self.case_id).documents)
+        content = preview.content
         workbook = load_workbook(BytesIO(content), read_only=True)
         try:
             rows = list(workbook["文件"].values)
@@ -136,13 +136,13 @@ class PrefillIntegrationTests(unittest.TestCase):
         finally:
             workbook.close()
 
-    def test_extreme_numeric_text_exports_without_decimal_context_overflow(self):
+    def test_extreme_numeric_text_previews_without_decimal_context_overflow(self):
         FormService(self.repo).save(self.case_id, self.actor, D.PROFORMA_INVOICE, {},
             [{"description": "Synthetic extreme value", "quantity": "1e1000000", "unit": "pcs"}],
             "Synthetic value retained for human review")
-        workspace = SimpleExportService(self.repo, self.blobs).generate(
-            self.case_id, self.actor, D.PROFORMA_INVOICE, human_confirmed=True)
-        workbook = load_workbook(BytesIO(self.blobs.get(workspace.artifacts[-1].storage_path)),
+        preview = SimpleExportService(self.repo, self.blobs).preview(
+            self.case_id, self.actor, D.PROFORMA_INVOICE)
+        workbook = load_workbook(BytesIO(preview.content),
                                  read_only=True)
         try:
             self.assertTrue(any("1e1000000" in row for row in workbook["文件"].values))

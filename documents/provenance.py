@@ -65,11 +65,23 @@ def _file_origin(workspace, name, value, candidate, row_number=None):
     version, current = _source(workspace, candidate)
     if not current:
         return None
-    return FormValueOrigin(name, value, "file", row_number=row_number,
+    origin = FormValueOrigin(name, value, "file", row_number=row_number,
         document_id=candidate.document_id, version_id=candidate.version_id,
         filename=version.original_filename or "来源文件（名称未记录）", version_number=version.version_number,
         location=source_location(candidate, name if row_number is not None else None),
         note="当前原件的明确标签/表格候选；人工确认另行记录。")
+    if row_number is None:
+        fields = [field for field in version.fields if field.name == candidate.field_name]
+        if len(fields) == 1:
+            field = fields[0]
+            if (field.confirmed_by and field.confirmed_at
+                    and _text(field.confirmed_value).strip() == value
+                    and _text(field.value).strip() != value):
+                origin.origin_kind = "manual"
+                origin.actor_id, origin.occurred_at = field.confirmed_by, field.confirmed_at
+                origin.note = (f"来源字段原采集值：{_text(field.value)}；真人核对后修正为：{value}。"
+                    "当前内容继承该人工修正；文件及位置用于追溯，不表示原单元格含有修正值。")
+    return origin
 
 
 def _form_event(workspace, kind, name, value, row_number=None):

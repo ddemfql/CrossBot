@@ -24,6 +24,18 @@
 
 `SimpleExportService.preview(case_id, actor, document_type) -> RenderedOutput` 仅检查读取权限并生成待人工核对预览字节，不写数据库、blob、审计、正式版本或批准。预览明确标注未确认且确认人留空；与正式 generate 共用取值、来源记录、排版及只读规则提示。自动测试可使用该接口检查导出，不模拟真人确认。
 
+## cross-check-quality 合并与严格生成门槛
+
+已合并来源分支提交 `de40318`。`validation.rules` 保留来源分支的纯比较函数，并重导出 `validation.workspace_rules` 中既有 W3 适配器；`normalizers` 和 `cross_checker` 原有样例/测试保留。公共 `from_dict` 统一在 `core.models`，`core.serialization` 仅兼容导入，Case 金额按 Decimal 无损恢复。共享 Case 的所需文件与 Workspace 清单在交易服务保存时同步，导入空清单不隐式变成固定 CI/PL 要求。
+
+`ExportReviewReport` 是当前文件的只读报告，包含规则版本、精确输入摘要、human_confirmed 及 checks；只有非空必需规则全部 PASS 且明确真人确认才 ready。`CrossCheckResult` 兼容新增规范化两侧值、单位、比较策略、scope、item_key、required 字段。整单资料缺失使用 required=False 提示，不代表 Case 已完整；不允许仅传入一条 PASS 代替所选文件全部生成规则。
+
+`validation.export_review.review_export` 绑定当前订单、所有保存表单、来源当前版本/字段/表格哈希、需求策略和可核实的人工填写证据。人工确认覆盖当前保存的有效表单，绝不批量把原始机器字段改成已确认。外部原件比对只读取精确、唯一、实际确认的字段及明确商品范围；不能确定明细配对时 PENDING_REVIEW。使用版本化零容差策略、严格十进制格式、显式币种/单位、文字 trim-only 和唯一产品编码，不用模糊匹配消除差异。
+
+`SimpleExportService.assess` 增加对实际关联原件 blob/哈希的只读完整性核验；`generate(..., expected_review_digest=None)` 每次重新评估，摘要过期、必需 FAIL/PENDING、未确认或非真人身份均在输出前拒绝。正式产物的 checks、规则版本、审计中的输入摘要/来源版本/输出哈希共同绑定该次确认。旧产物保留且标示旧规则；严格审核回执可以证明同一表单快照被核对，不伪造 form.confirmed_by 或 Case 通过状态。只读预览保留全部未通过原因，不代表正式文件。
+
+`SourceFieldSelection` 精确指定当前原件版本中的字段与人选定的值。`review.quality_inputs.confirm_source_fields` 要求显式真人动作及匹配输入摘要，原子保存所列字段的 confirmed_value/确认人/时间、审计和复核记录；机器 value 不覆盖。核对后失效旧结果并重新比对，改错的确认值也可以在同一简洁表格更正。来源字段被人工改值后继承到其他表单，来源说明记录修正人/时间及原文件位置，不声称新值原本位于原单元格。
+
 本次 W3 实施先补齐契约再实现适配器。现有公共状态、事件、错误保持兼容；新增交易、产物、身份、审批和收款数据统一位于 `core.models`，不在 W3 内复制领域模型。跨分支集成时，公共契约应先同步至 `feature/foundation-contracts`，再由其他功能分支同步。本地实现不移动分支或覆盖其他成员的改动。
 
 ## 公共模型

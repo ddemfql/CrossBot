@@ -96,7 +96,7 @@ class ArchiveImporter:
             if not files:
                 raise ValidationError("ZIP 没有可导入的文件。")
             workspace = Workspace(Case(case_id="case_import_" + archive_hash,
-                owner_id=actor.user_id), trade=TradeData(currency=""))
+                owner_id=actor.user_id, required_document_types=[]), trade=TradeData(currency=""))
             workspace.case.case_number = "ZIP-" + archive_hash[:12].upper()
             combined_path = filename + "/" + "/".join(path for _, path in files)
             workspace.import_context = ImportContext(archive_name=filename,

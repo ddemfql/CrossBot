@@ -50,7 +50,7 @@ class SimpleUITests(unittest.TestCase):
         self.assertFalse(app.exception, [item.message for item in app.exception])
         return app
 
-    def test_sales_creates_incomplete_trade_and_exports_with_one_confirmation(self):
+    def test_sales_can_preview_incomplete_trade_but_cannot_formally_export(self):
         app = self.app()
         widget(app.button, "新建交易").click().run()
         self.assertFalse(app.exception, [item.message for item in app.exception])
@@ -60,15 +60,12 @@ class SimpleUITests(unittest.TestCase):
         self.assertFalse(any(item.label == "人工批准当前版本" for item in app.button))
         confirm = "我已人工核对当前资料，确认按现有内容生成"
         widget(app.checkbox, confirm).check().run()
-        self.assertFalse(widget(app.button, "生成 Excel").disabled)
-        widget(app.button, "生成 Excel").click().run()
+        self.assertTrue(widget(app.button, "生成 Excel").disabled)
+        widget(app.button, "准备待人工核对的 Excel 预览").click().run()
         self.assertFalse(app.exception, [item.message for item in app.exception])
         workspace = self.repo.list()[0]
-        self.assertEqual(len(workspace.artifacts), 1)
-        self.assertEqual(workspace.artifacts[0].created_by, self.actor.user_id)
-        self.assertTrue(workspace.artifacts[0].filename.endswith(".xlsx"))
+        self.assertFalse(workspace.artifacts)
         self.assertFalse(workspace.approvals)
-        self.assertFalse(widget(app.checkbox, confirm).value)
         self.assertTrue(widget(app.button, "生成 Excel").disabled)
 
     def test_admin_only_offers_two_account_roles(self):

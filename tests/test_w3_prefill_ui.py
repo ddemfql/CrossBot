@@ -50,12 +50,17 @@ class PrefillUITests(unittest.TestCase):
         self.assertEqual(stored.rows[0]["quantity"], "9")
         self.assertEqual(widget(app.text_input, "买方").value, "Synthetic UI edited buyer")
         widget(app.checkbox, "我已人工核对当前资料，确认按现有内容生成").check().run()
-        widget(app.button, "生成 Excel").click().run()
+        self.assertTrue(widget(app.button, "生成 Excel").disabled)
+        widget(app.button, "准备待人工核对的 Excel 预览").click().run()
         self.assertFalse(app.exception, [item.message for item in app.exception])
         result = self.repo.get(workspace.case.case_id)
         self.assertFalse(result.approvals)
-        self.assertEqual(result.artifacts[-1].form_snapshot["rows"][0]["quantity"], "9")
-        workbook = load_workbook(BytesIO(self.blobs.get(result.artifacts[-1].storage_path)), read_only=True)
+        self.assertFalse(result.artifacts)
+        self.assertEqual(get_form(result, D.PROFORMA_INVOICE).rows[0]["quantity"], "9")
+        from documents.simple_export import SimpleExportService
+        preview = SimpleExportService(self.repo, self.blobs).preview(
+            workspace.case.case_id, self.actor, D.PROFORMA_INVOICE)
+        workbook = load_workbook(BytesIO(preview.content), read_only=True)
         try:
             rows = list(workbook["文件"].values)
             self.assertTrue(any("Synthetic UI edited buyer" in row for row in rows))
@@ -75,11 +80,12 @@ class PrefillUITests(unittest.TestCase):
         self.assertEqual(widget(app.text_input, "买方").value, "Synthetic manual buyer")
         self.assertTrue(any("Synthetic manual item" in str(item.value) for item in app.dataframe))
         widget(app.checkbox, "我已人工核对当前资料，确认按现有内容生成").check().run()
-        widget(app.button, "生成 Excel").click().run()
+        self.assertTrue(widget(app.button, "生成 Excel").disabled)
+        widget(app.button, "准备待人工核对的 Excel 预览").click().run()
         self.assertFalse(app.exception, [item.message for item in app.exception])
         result = self.repo.get(workspace.case.case_id)
         self.assertFalse(result.documents)
-        self.assertEqual(len(result.artifacts), 1)
+        self.assertFalse(result.artifacts)
 
     def test_deleting_trade_fallback_rows_does_not_restore_them_after_save(self):
         from case_workflow.service import CaseService

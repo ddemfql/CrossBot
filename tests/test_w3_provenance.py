@@ -6,7 +6,8 @@ from tempfile import TemporaryDirectory
 import unittest
 
 from openpyxl import load_workbook
-from core.models import (Case, DocumentForm, DocumentType as T, TradeData, Workspace)
+from core.models import (Case, DocumentForm, DocumentType as T, FieldValueStatus,
+                         TradeData, Workspace, utc_now)
 from case_workflow.service import CaseService
 from documents.forms import FormService, get_form
 from documents.prefill import PrefillService
@@ -43,6 +44,45 @@ class ValueOriginTests(unittest.TestCase):
         quantity = self.origin("quantity", 1)
         self.assertEqual(quantity.origin_kind, "file")
         self.assertIn("C3", quantity.location)
+
+    def test_human_corrected_source_scalar_is_manual_with_original_file_context(self):
+        workspace = self.repo.get(self.ws.case.case_id)
+        field = workspace.documents[0].versions[0].fields[0]
+        field.confirmed_value = "Synthetic human-corrected source buyer"
+        field.confirmed_by, field.confirmed_at = self.actor.user_id, utc_now()
+        field.status = FieldValueStatus.CONFIRMED
+        self.repo.save(workspace, workspace.revision)
+        self.ws = self.fill.fill(workspace.case.case_id, self.actor, T.COMMERCIAL_INVOICE,
+                                 [workspace.documents[0].document_id])
+        buyer = self.origin("buyer")
+        self.assertEqual(buyer.value, field.confirmed_value)
+        self.assertEqual(buyer.origin_kind, "manual")
+        self.assertEqual(buyer.actor_id, self.actor.user_id)
+        self.assertEqual(buyer.occurred_at, field.confirmed_at)
+        self.assertEqual(buyer.filename, "synthetic.xlsx")
+        self.assertEqual(buyer.version_number, 1)
+        self.assertIn("B1", buyer.location)
+        self.assertIn("Synthetic Buyer", buyer.note)
+        self.assertIn(field.confirmed_value, buyer.note)
+        self.assertIn("不表示原单元格", buyer.note)
+        preserved = self.ws.documents[0].versions[0].fields[0]
+        self.assertEqual(preserved.value, "Synthetic Buyer")
+        self.assertEqual(get_form(self.ws, T.COMMERCIAL_INVOICE).field_candidates["buyer"][0].value,
+                         field.confirmed_value)
+
+    def test_confirming_unchanged_source_scalar_keeps_literal_file_origin(self):
+        workspace = self.repo.get(self.ws.case.case_id)
+        field = workspace.documents[0].versions[0].fields[0]
+        field.confirmed_value = field.value
+        field.confirmed_by, field.confirmed_at = self.actor.user_id, utc_now()
+        field.status = FieldValueStatus.CONFIRMED
+        self.repo.save(workspace, workspace.revision)
+        self.ws = self.fill.fill(workspace.case.case_id, self.actor, T.COMMERCIAL_INVOICE,
+                                 [workspace.documents[0].document_id])
+        buyer = self.origin("buyer")
+        self.assertEqual(buyer.origin_kind, "file")
+        self.assertEqual(buyer.actor_id, "")
+        self.assertIn("B1", buyer.location)
 
     def test_manual_override_has_actor_and_time_and_unchanged_cells_keep_file_origin(self):
         form = get_form(self.ws, T.COMMERCIAL_INVOICE)
@@ -153,9 +193,9 @@ class ValueOriginTests(unittest.TestCase):
             dict(form.values, buyer="Human corrected buyer"), form.rows, "Synthetic correction")
         with TemporaryDirectory() as root:
             blobs = LocalBlobStore(Path(root))
-            ws = SimpleExportService(self.repo, blobs).generate(ws.case.case_id, self.actor,
-                T.COMMERCIAL_INVOICE, human_confirmed=True)
-            book = load_workbook(BytesIO(blobs.get(ws.artifacts[-1].storage_path)))
+            preview = SimpleExportService(self.repo, blobs).preview(ws.case.case_id, self.actor,
+                T.COMMERCIAL_INVOICE)
+            book = load_workbook(BytesIO(preview.content))
             try:
                 rows = list(book["字段来源"].values)
             finally:

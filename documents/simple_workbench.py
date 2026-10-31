@@ -4,14 +4,26 @@ from io import BytesIO
 from pathlib import PurePath
 from zipfile import ZipFile, ZIP_DEFLATED
 from hashlib import sha256
-import json
+import re
 
 from core.errors import CrossBotError
-from core.models import CaseStatus, CrossCheckStatus, DocumentType as D, TradeLine, to_dict
+from core.models import CaseStatus, CrossCheckStatus, DocumentType as D, TradeLine
 from documents.catalog import DOC_LABELS, SELLER_TYPES, FORM_FIELDS, ROW_FIELDS
 from documents.forms import FormService, effective_values, get_form
 from documents.intake import classify_source
 from documents.workbench import reclassify, collect_document
+
+
+def _review_message(check, kind):
+    labels = {**FORM_FIELDS[kind], **ROW_FIELDS[kind],
+        **{item.value: label for item, label in DOC_LABELS.items()},
+        "rows": "明细", "document_form": "表单", "source_document_ids": "来源文件",
+        "customer_name": "客户", "product_code": "产品编码"}
+    message = check.message
+    for name in sorted(labels, key=len, reverse=True):
+        message = re.sub(r"(?<![A-Za-z0-9_])" + re.escape(name) + r"(?![A-Za-z0-9_])",
+                         lambda _: labels[name], message)
+    return message
 
 
 def _download(st, documents, ws, actor, *, document_id=None, version_id=None, artifact_id=None):
@@ -327,19 +339,92 @@ def _exports(st, ws, actor, documents, repository, blobs):
                 st.caption("预览未经过人工确认，不记为正式生成版本，也不会改变交易状态。")
             except CrossBotError as exc:
                 st.error(exc.message)
-    fingerprint = sha256(json.dumps({"trade": to_dict(ws.trade), "forms": to_dict(ws.document_forms),
-        "sources": [(d.document_id, d.current_version_id, d.document_type.value, d.deleted_at)
-                    for d in ws.documents], "artifacts": [a.artifact_id for a in ws.artifacts]},
-        ensure_ascii=False, default=str, sort_keys=True).encode()).hexdigest()
+    review_service = SimpleExportService(repository, blobs)
+    pending_review = review_service.assess(ws.case.case_id, actor, kind)
+    fingerprint = sha256((pending_review.input_digest + "|" +
+        "|".join(a.artifact_id for a in ws.artifacts)).encode()).hexdigest()
     confirmed = st.checkbox("我已人工核对当前资料，确认按现有内容生成",
         key=f"simple-confirm-{ws.case.case_id}-{fingerprint}-{kind.value}")
-    if st.button("生成 Excel", disabled=not confirmed, type="primary"):
+    st.caption("一次确认覆盖当前保存的填写内容、来源和参与比对的资料；规则检查仍须通过，修改资料后重新确认。")
+    report = review_service.assess(ws.case.case_id, actor, kind, human_confirmed=confirmed)
+    required_checks = [check for check in report.checks if check.required]
+    issues = [check for check in required_checks if check.status is not CrossCheckStatus.PASS]
+    st.markdown("**审核结果**")
+    if report.ready:
+        st.success("当前文件规则检查通过，可以生成；这不代表整笔交易已审批或外部文件已签发。")
+    elif any(check.status is CrossCheckStatus.FAIL for check in issues):
+        st.error("当前文件审核未通过，请先处理下面的问题。待核对预览仍可下载。")
+    else:
+        st.info("当前文件还有待补充或待确认的内容；完成下方项目后才能正式生成。")
+    if issues:
+        st.dataframe([{"检查结果": "不通过" if check.status is CrossCheckStatus.FAIL else "待处理",
+            "问题": _review_message(check, kind), "当前值": str(check.left_value) if check.left_value is not None else "",
+            "对照值": str(check.right_value) if check.right_value is not None else ""}
+            for check in issues], hide_index=True, use_container_width=True)
+    from review.quality_inputs import pending_source_fields, confirm_source_fields
+    from core.models import SourceFieldSelection
+    source_fields = pending_source_fields(ws, kind)
+    if source_fields:
+        with st.expander("核对参与比对的外部字段"):
+            st.caption("外部原件的采集值需要真人核对。可在此修正并一次确认所列字段；确认后仍会运行规则。")
+            field_rows = []
+            source_labels = {"customer_name": "买方/客户", "product_name": "品名",
+                "product_code": "产品编码", "quantity": "数量", "unit": "数量单位",
+                "unit_price": "单价", "packages": "箱数", "gross_weight_kg": "毛重 kg",
+                "net_weight_kg": "净重 kg", "currency": "币种", "total_amount": "金额",
+                "order_no": "订单号", "shipper": "发货人", "consignee": "收货人", "incoterm": "贸易术语"}
+            for field in source_fields:
+                document = next(doc for doc in ws.documents if doc.document_id == field.document_id)
+                version = next(v for v in document.versions if v.version_id == field.version_id)
+                candidate = next(item for item in version.fields if item.name == field.field_name)
+                location = " · ".join(str(value) for value in (candidate.page_number,
+                    candidate.sheet_name, candidate.cell_reference) if value is not None)
+                field_rows.append({"核对": True, "原件": version.original_filename,
+                    "版本": f"v{version.version_number}",
+                    "字段": source_labels.get(field.field_name, field.field_name), "字段名": field.field_name,
+                    "位置": location, "采集值": str(candidate.value) if candidate.value is not None else "",
+                    "确认值": field.value,
+                    "document_id": field.document_id, "version_id": field.version_id})
+            reviewed_fields = st.data_editor(pd.DataFrame(field_rows), hide_index=True,
+                column_config={"document_id": None, "version_id": None, "字段名": None},
+                disabled=["原件", "版本", "字段", "字段名", "位置", "采集值", "document_id", "version_id"],
+                key=f"quality-source-fields-{ws.case.case_id}-{kind.value}-{report.input_digest}",
+                use_container_width=True)
+            source_ack = st.checkbox("我已逐项核对上表所选字段的原件和确认值",
+                key=f"quality-source-ack-{ws.case.case_id}-{kind.value}-{report.input_digest}")
+            if st.button("确认外部字段并重新审核", disabled=not source_ack):
+                selections = [SourceFieldSelection(str(row["document_id"]), str(row["version_id"]),
+                    str(row["字段名"]), "" if pd.isna(row["确认值"]) else str(row["确认值"]))
+                    for _, row in reviewed_fields.iterrows() if row["核对"]]
+                _run(st, lambda: confirm_source_fields(repository, ws.case.case_id, actor,
+                    kind, selections, expected_review_digest=report.input_digest,
+                    human_confirmed=source_ack), "所选外部字段已核对，规则已按当前版本重新计算。")
+    case_issues = [check for check in report.checks if not check.required
+                   and check.status is not CrossCheckStatus.PASS]
+    if case_issues:
+        with st.expander("整单资料提示"):
+            st.caption("这些提示用于跟进整单资料，与当前单份文件的生成条件分开。")
+            for check in case_issues:
+                st.write(_review_message(check, kind))
+    with st.expander("查看审核依据"):
+        st.dataframe([{"检查": _review_message(check, kind), "结果": check.status.value,
+            "当前来源": check.left_source or "", "对照来源": check.right_source or "",
+            "当前规范值": str(check.normalized_left) if check.normalized_left is not None else "",
+            "对照规范值": str(check.normalized_right) if check.normalized_right is not None else "",
+            "当前单位": check.left_unit or "", "对照单位": check.right_unit or ""}
+            for check in required_checks], hide_index=True, use_container_width=True)
+    if st.button("生成 Excel", disabled=not report.ready, type="primary"):
         _run(st, lambda: SimpleExportService(repository, blobs).generate(
-            ws.case.case_id, actor, kind, human_confirmed=confirmed), "Excel 已生成，人工确认记录已保存。")
+            ws.case.case_id, actor, kind, human_confirmed=confirmed,
+            expected_review_digest=report.input_digest), "规则检查通过，Excel 和本次人工确认记录已保存。")
     items = list(reversed(ws.artifacts))
     if items:
         st.dataframe([{"文件": a.filename, "版本": a.version_number,
             "情况": "历史版本" if a.status == "stale" else "可下载",
+            "规则审核": ("历史审核结果" if a.status == "stale" else "当前规则通过")
+                if a.rule_version == report.rule_version and a.checks and all(
+                    check.status is CrossCheckStatus.PASS for check in a.checks if check.required)
+                else "旧规则文件，需重新审核",
             "人工确认": "已确认" if any(event.action == "simple_export_confirmed" and
                 event.entity_id == a.artifact_id for event in ws.audit) else "旧流程文件",
             "生成人": a.created_by} for a in items], hide_index=True, use_container_width=True)

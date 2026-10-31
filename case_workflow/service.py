@@ -154,6 +154,9 @@ class CaseService:
         return workspace
 
     def _save(self, workspace: Workspace) -> Workspace:
+        # The merged shared Case contract also exposes requirements. Workspace
+        # remains the configurable source of truth for this transaction.
+        workspace.case.required_document_types = list(workspace.required_document_types)
         self.repository.save(workspace, expected_revision=workspace.revision)
         return workspace
 

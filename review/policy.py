@@ -74,8 +74,8 @@ def current_artifacts(workspace: Workspace):
             and a.input_snapshot == to_dict(workspace.trade)
             and a.source_versions == versions
             and artifact_form_is_current(workspace, a)
-            and bool(a.checks)
-            and all(c.status is CrossCheckStatus.PASS for c in a.checks)]
+            and any(c.required for c in a.checks)
+            and all(c.status is CrossCheckStatus.PASS for c in a.checks if c.required)]
 
 
 def artifact_form_is_current(workspace: Workspace, artifact) -> bool:
@@ -84,9 +84,21 @@ def artifact_form_is_current(workspace: Workspace, artifact) -> bool:
         return not artifact.form_snapshot
     form = next((form for form in workspace.document_forms
                  if form.document_type is artifact.document_type), None)
-    return bool(form and form.confirmed_by and form.confirmed_at
-                and form.revision == artifact.form_revision
-                and to_dict(form) == artifact.form_snapshot)
+    if not (form and form.revision == artifact.form_revision
+            and to_dict(form) == artifact.form_snapshot):
+        return False
+    if form.confirmed_by and form.confirmed_at:
+        return True
+    # Strict export confirmation reviews this exact saved snapshot without
+    # rewriting raw source fields or impersonating a separate form approval.
+    return any(event.action == "simple_export_confirmed"
+        and event.entity_id == artifact.artifact_id and isinstance(event.after, dict)
+        and event.after.get("strict_review") is True
+        and event.after.get("human_confirmed") is True
+        and event.after.get("sha256") == artifact.sha256
+        and event.after.get("form_revision") == artifact.form_revision
+        and event.after.get("rule_version") == artifact.rule_version
+        and bool(event.after.get("review_input_digest")) for event in workspace.audit)
 
 
 def checks_digest(checks) -> str:

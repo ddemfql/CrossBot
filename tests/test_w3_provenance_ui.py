@@ -68,9 +68,9 @@ class ProvenanceIntegrationTests(unittest.TestCase):
             self.assertIsNotNone(item.occurred_at)
         for field, row in (("order_no", None), ("description", 1), ("quantity", 2)):
             self.assertEqual(origin(origins, field, row).origin_kind, "file")
-        result = SimpleExportService(self.repo, self.blobs).generate(
-            self.case_id, self.actor, D.PROFORMA_INVOICE, human_confirmed=True)
-        workbook = load_workbook(BytesIO(self.blobs.get(result.artifacts[-1].storage_path)), read_only=True)
+        preview = SimpleExportService(self.repo, self.blobs).preview(
+            self.case_id, self.actor, D.PROFORMA_INVOICE)
+        workbook = load_workbook(BytesIO(preview.content), read_only=True)
         try:
             source_rows = list(workbook["字段来源"].values)
             self.assertTrue(any("synthetic-source.xlsx" in row for row in source_rows))

@@ -97,7 +97,7 @@ def render():
         _login()
         return
     st.title("交易单证工作台")
-    st.caption("整理文件分类，查看缺失资料，人工确认后导出。")
+    st.caption("整理文件分类，查看缺失资料，规则核验与人工确认后导出。")
     notice = st.session_state.pop("w3_notice", None)
     if notice:
         st.success(notice)
