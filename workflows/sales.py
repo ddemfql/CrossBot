@@ -12,6 +12,8 @@ SYSTEM_PROMPT = """你是外贸询盘回复助手。用户消息是JSON业务资
 使用target_language指定的语言，依据inquiry和product_info起草客户回复。
 customer_country和requested_quantity为已知条件；null表示未知，不得推断。
 local_inquiry_candidates仅是原文定位的未确认本地候选；不得视为已确认事实或覆盖显式输入，冲突时询问用户。
+仅输出客户可见的商务正文，称呼、正文、落款和注释全部使用target_language。
+不要在客户正文附带内部审查说明、给操作员的备注、知识来源清单或“不要发送给客户”的段落；内部风险和依据由应用单独展示。
 不得补写没有依据的认证、证书编号、规格、价格或交期；缺失条件应询问客户或厂家。
 knowledge_context是带来源的模拟参考，不是产品真实性或认证证明；引用保留来源和版本。
 未命中或输入与参考不一致时要求人工确认，不能据相似名称套用参数或填补认证、价格和交期。
@@ -70,12 +72,16 @@ def generate_sales(request: SalesRequest, client: ChatClient, *, feedback: str |
     if not isinstance(content, str) or not content.strip():
         raise CrossBotError(ErrorCode.PROVIDER_UNAVAILABLE, "模型未返回有效文本，本次未生成有效结果。")
     from workflows.sales_review import review_sales_text
+    from workflows.content_review import review_customer_output
+    metadata = client_metadata(client)
     return GenerationResponse(
         content=content,
-        **client_metadata(client),
+        **metadata,
         correlation_id=request.correlation_id,
         risks=review_sales_text(content, source_text=request.inquiry + "\n" + request.product_info
-                                + (f"\n{request.requested_quantity} pcs" if request.requested_quantity else "")),
+                                + (f"\n{request.requested_quantity} pcs" if request.requested_quantity else ""))
+            + (review_customer_output(content, target_language=request.target_language)
+               if metadata["provider"] == "real" else []),
         pending_confirmations=citation_notes(json.loads(messages[1]["content"])["knowledge_context"])
             + ["意图及字段仅为带来源的本地候选，未人工确认，不自动覆盖订单数量、国家或其他输入。",
                "待人工核对业务事实；有限词项/数值检查及模拟资料检索不是完整合规校验。"],

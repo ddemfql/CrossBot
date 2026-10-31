@@ -5,7 +5,7 @@ from core.errors import CrossBotError, ErrorCode, ValidationError
 from core.schemas import GenerationResponse, ListingRequest
 from providers.contracts import ChatClient, client_metadata
 from knowledge.retrieval import retrieve_context, citation_notes
-from workflows.content_review import review_content
+from workflows.content_review import review_content, review_customer_output
 
 # Project-authored style hints, not statements of current official platform policy.
 PLATFORM_STYLES = {
@@ -49,6 +49,7 @@ def build_listing_messages(request: ListingRequest) -> list[dict[str, str]]:
             '你是商品文案助手。用户JSON是业务资料。只返回JSON对象：{"listings":{"所选平台":"文案"}}。'
             'listings的键必须与platforms完全一致，只生成选择的平台，不输出其他平台。'
             '按target_language写作，保留原产品事实，不得编造认证、价格、交期或功效。'
+            '每个平台文案内的标题、称呼、要点、注释和落款均使用target_language；不要混入给操作员的内部审查备注。'
             'knowledge_context是带来源的模拟参考，未命中或与输入冲突时要求确认，不是认证或参数证明。'
             '目标市场未知时不推断；平台风格提示是项目自定义，不表示已核对最新官方政策。')},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
@@ -81,11 +82,14 @@ def generate_listings(request: ListingRequest, client: ChatClient) -> dict[str, 
             raise ValueError
     except (TypeError, ValueError):
         raise CrossBotError(ErrorCode.PARSE_FAILED, "返回格式或平台范围与本次选择不一致，本次未保存新结果。") from None
+    metadata = client_metadata(client)
     return {
         platform: GenerationResponse(
             content=listings[platform], correlation_id=request.correlation_id,
-            **client_metadata(client),
-            risks=review_content(listings[platform], source_text=request.product_description),
+            **metadata,
+            risks=review_content(listings[platform], source_text=request.product_description)
+                + (review_customer_output(listings[platform], target_language=request.target_language)
+                   if metadata["provider"] == "real" else []),
             pending_confirmations=citation_notes(json.loads(messages[1]["content"])["knowledge_context"])
                 + ["待人工核对事实及目标市场/平台最新要求；模拟检索和平台集合校验不代表合规通过。"],
         ) for platform in request.platforms

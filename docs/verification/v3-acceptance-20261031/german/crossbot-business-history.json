@@ -1,0 +1,71 @@
+{
+  "format": "crossbot-business-export",
+  "schema_version": 1,
+  "exported_at_utc": "2026-10-31T06:49:58.425069+00:00",
+  "notice": "仅保存已有业务输入、草稿和引用，不是原始HTTP日志/请求ID/用量；没有记录各版生成时间。知识资料仍为模拟，内容须人工核对。",
+  "business_sha256": "6c09e370b9cd3af853d3eb704f71cdd6d5d8c9d45800b769e440abffd08fe6bc",
+  "w1": {
+    "request": {
+      "inquiry": "We need 500 USB desk lamps for Germany. Please confirm the specifications, certification documents and delivery time.",
+      "product_info": "DEMO-DE-LAMP-001\nUSB desk lamp，ABS材质，3档色温。\n以上为项目固定模拟参数；功率、尺寸、颜色、证书编号、认证结论和交期待确认。\n模拟Case：CASE-DE-LAMP-001；订单数量500 pcs；单价18.50 EUR；货品金额9250.00 EUR；DAP Frankfurt。\n25箱，每箱20件；毛重185 kg，净重150 kg。\n这些是演示订单设定，不是实际报价或已确认合同；付款和运输费用范围仍待人工确认。",
+      "target_language": "德文",
+      "customer_country": "Germany",
+      "requested_quantity": 500,
+      "correlation_id": "sales_51ec74ac44a448079ea86dbd8e581d1d"
+    },
+    "versions": [
+      {
+        "version": 1,
+        "kind": "initial",
+        "feedback": null,
+        "response": {
+          "content": "您好，\n\nvielen Dank für Ihre Anfrage über 500 USB-Schreibtischlampen für den deutschen Markt.\n\nGern bestätigen wir Ihnen die uns bekannten Produktdaten zum Modell DEMO-DE-LAMP-001:\n\n- USB-Stromversorgung\n- Material: ABS\n- Drei Farbtemperaturstufen\n\nFolgende Angaben liegen uns derzeit nicht bestätigt vor und müssen vor einer verbindlichen Bestätigung noch geklärt werden:\n\n- Leistung, Abmessungen und Farbe der Lampe\n- Konkrete Zertifizierungsnachweise und Zertifikatsnummern für Deutschland bzw. die EU\n- Verbindliche Lieferzeit\n\nDer Projektbezug ist CASE-DE-LAMP-001 mit einer Menge von 500 Stück. Bitte beachten Sie, dass es sich bei den intern hinterlegten Eckdaten um eine unverbindliche Demo-Kalkulation handelt; sie stellen kein verbindliches Angebot und keinen bestätigten Vertrag dar. Auch Zahlungsbedingungen und Versandkosten sind noch nicht abschließend geklärt.\n\nDamit wir Ihnen ein belastbares Angebot unterbreiten können, bitten wir Sie um folgende Informationen:\n\n1. Welche Zertifizierungsnachweise benötigen Sie konkret für Deutschland (z. B. CE-Dokumentation, RoHS, weitere Nachweise)?\n2. Welche Anforderungen haben Sie an Leistung, Abmessungen und Farbe?\n3. Benötigen Sie eine DAP-Lieferung nach Frankfurt oder eine andere Lieferklausel?\n\nSobald uns die fehlenden Angaben von Herstellerseite bestätigt vorliegen, erhalten Sie von uns eine verbindliche Rückmeldung zu Zertifikaten, Lieferzeit und Konditionen.\n\nMit freundlichen Grüßen\n[Name]\n[Position]\n[Unternehmen]\n\n---\n\n**Hinweis für die interne Prüfung (nicht an den Kunden senden):** Dieser Text ist ein unverbindlicher Entwurf und keine bestätigte kaufmännische Zusage. Die Angaben zu Zertifizierung, Lieferzeit, Preis und Versandkosten sind nicht belegt und müssen durch den Hersteller bzw. einen Sachbearbeiter bestätigt werden. Die Produkt- und Fallreferenzen stammen aus simulierten Projektdaten (Quelle: CrossBot-Projekt-Simulationsmaterial, Version demo-1; Nutzer-Demo-Case V3, Version v3-demo-1) und sind kein Nachweis für echte Zertifizierungen oder Regelkonformität.",
+          "risks": [],
+          "pending_confirmations": [
+            "全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。",
+            "知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。",
+            "目标国资料未知、待确认：未找到适用条目。",
+            "模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [], \"applicable_platforms\": [], \"applicable_countries\": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。",
+            "模拟引用 DEMO-DE-LAMP-001 | 用户提供V3固定演示案例 | docs/plans/project-direction-v3.md | 版本v3-demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [\"DEMO-DE-LAMP-001\"], \"applicable_platforms\": [], \"applicable_countries\": []} | 德国固定演示Case台灯：USB供电、ABS材质、三档色温。功率、尺寸、颜色、交期、认证结论和证书编号未知。演示订单价格不得当作产品通用报价。",
+            "知识文件SHA256：{\"products.json\": \"40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f\", \"platform_rules.json\": \"e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f\", \"compliance_rules.json\": \"5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a\", \"demo_case_products.json\": \"ec5cfe606e8283456cdb32980b8e33e578d5aa4d04af04d9d98b4399a193de65\"}",
+            "意图及字段仅为带来源的本地候选，未人工确认，不自动覆盖订单数量、国家或其他输入。",
+            "待人工核对业务事实；有限词项/数值检查及模拟资料检索不是完整合规校验。"
+          ],
+          "correlation_id": "sales_51ec74ac44a448079ea86dbd8e581d1d",
+          "provider": "real",
+          "model": "deepseek-flash"
+        }
+      }
+    ]
+  },
+  "w2": {
+    "request": {
+      "product_description": "DEMO-DE-LAMP-001\nUSB desk lamp，ABS材质，3档色温。\n以上为项目固定模拟参数；功率、尺寸、颜色、证书编号、认证结论和交期待确认。",
+      "platforms": [
+        "Amazon"
+      ],
+      "target_country": "Germany",
+      "target_language": "德文",
+      "correlation_id": "listing_83fd2abf9e414a0ba054f36a4d2aa69b"
+    },
+    "results": {
+      "Amazon": {
+        "content": "Titel: USB-Schreibtischlampe mit 3 Farbtemperaturmodi – ABS-Gehäuse, DEMO-DE-LAMP-001\n\nProduktpunkte:\n- USB-Stromversorgung.\n- ABS-Material.\n- Drei Farbtemperaturmodi.\n- Artikelkennung: DEMO-DE-LAMP-001.\n\nHinweise: Leistung, Abmessungen, Farbe, Zertifizierungsnummer sowie Art und Ergebnis von Zertifizierungen und die Lieferzeit sind noch zu bestätigen. Angaben zu Zertifizierungen, Preis und Lieferzeit liegen nicht vor und werden nicht ergänzt.",
+        "risks": [],
+        "pending_confirmations": [
+          "全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。",
+          "知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。",
+          "目标国资料未知、待确认：未找到适用条目。",
+          "模拟引用 STYLE-AMAZON | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [], \"applicable_platforms\": [\"Amazon\"], \"applicable_countries\": []} | 项目风格建议：按标题和产品要点组织，参数只引用已知资料；不代表官方规则。",
+          "模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [], \"applicable_platforms\": [], \"applicable_countries\": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。",
+          "模拟引用 DEMO-DE-LAMP-001 | 用户提供V3固定演示案例 | docs/plans/project-direction-v3.md | 版本v3-demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [\"DEMO-DE-LAMP-001\"], \"applicable_platforms\": [], \"applicable_countries\": []} | 德国固定演示Case台灯：USB供电、ABS材质、三档色温。功率、尺寸、颜色、交期、认证结论和证书编号未知。演示订单价格不得当作产品通用报价。",
+          "知识文件SHA256：{\"products.json\": \"40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f\", \"platform_rules.json\": \"e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f\", \"compliance_rules.json\": \"5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a\", \"demo_case_products.json\": \"ec5cfe606e8283456cdb32980b8e33e578d5aa4d04af04d9d98b4399a193de65\"}",
+          "待人工核对事实及目标市场/平台最新要求；模拟检索和平台集合校验不代表合规通过。"
+        ],
+        "correlation_id": "listing_83fd2abf9e414a0ba054f36a4d2aa69b",
+        "provider": "real",
+        "model": "deepseek-flash"
+      }
+    }
+  }
+}

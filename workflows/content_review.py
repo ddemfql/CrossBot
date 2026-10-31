@@ -45,3 +45,24 @@ def review_content(content: str, *, source_text: str = "") -> list[RiskItem]:
                 message=f"生成内容含输入未提供的数值“{match.group()}”，须人工核对；未自动放行。",
                 severity=RiskSeverity.WARNING, source="project_numeric_evidence_v1", evidence=match.group()))
     return risks
+
+
+def review_customer_output(content: str, *, target_language: str) -> list[RiskItem]:
+    """Advisory for obvious CJK mixing/internal notes; never rewrite model evidence."""
+    risks = []
+    language = target_language.strip().casefold()
+    if language in {"英文", "英语", "english", "en", "德文", "德语", "german", "de", "deutsch"}:
+        match = re.search(r"[\u3400-\u9fff]+", content)
+        if match:
+            risks.append(RiskItem(code="target_language_cjk",
+                message="目标为英文/德文，但对客正文包含汉字，需人工核对称呼、正文与落款；不代表已完成完整语言识别。",
+                source="project_customer_output_review_v1", field_name="target_language", evidence=match.group()[:120]))
+    match = re.search(
+        r"\binternal\s+(?:review|note|use|only)\b|\bdraft\s+for\s+manual\s+review\b|"
+        r"\binterne[nrs]?\s+Prüfung\b|\bnicht\s+an\s+den\s+Kunden\s+senden\b|"
+        r"内部(?:审查|复核|审核|备注|说明)|仅供内部|不要发送给客户", content, re.I)
+    if match:
+        risks.append(RiskItem(code="internal_note_in_customer_text",
+            message="对客正文疑似夹带内部审查备注，发送前请移至内部记录并人工核对；原始草稿保持不变。",
+            source="project_customer_output_review_v1", evidence=match.group()[:120]))
+    return risks
