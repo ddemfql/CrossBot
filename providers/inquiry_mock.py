@@ -13,5 +13,8 @@ class MockInquiryClient:
         fields = []
         for name, pattern in PATTERNS.items():
             for match in re.finditer(pattern, payload["inquiry"], re.I):
-                fields.append({"name": name, "value": match.group(), "start": match.start(), "end": match.end()})
+                value = match.group()
+                # The quote-only model contract cannot disambiguate repeated literals.
+                if payload["inquiry"].find(value, payload["inquiry"].find(value) + 1) < 0:
+                    fields.append({"name": name, "value": value})
         return json.dumps({"fields": fields[:20]}, ensure_ascii=False)

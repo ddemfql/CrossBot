@@ -41,14 +41,15 @@ def render_sales(config=None, ready=True):
     country = st.text_input("客户国家（可留空）", key="sales_country")
     quantity = st.number_input("已知采购数量（0表示未知）", min_value=0, step=1, key="sales_quantity")
     current_request = SalesRequest(inquiry, product, language, country.strip() or None, quantity or None)
-    with st.expander("询盘意图与字段候选（本地，不调用API）"):
+    with st.expander("询盘意图与字段候选"):
+        st.caption("本地预览（不调用API）；下方的独立识别按钮按当前模式运行。")
         st.caption("有限中英关键词与精确原文位置，不覆盖语义；否定、多个数量和不同目的地需人工判断。候选不会自动写回表单。")
         candidates = analyze_inquiry(current_request)
         if candidates:
             st.json([to_dict(item) for item in candidates])
         else:
             st.write("未发现可定位候选，请人工补充；不代表询盘没有要求。")
-        st.caption("下方可单独识别候选：模拟模式仍用本地模板；真实模式额外调用一次API。仅接受能逐字定位原文的候选，语义仍需人工判断。")
+        st.caption("下方可单独识别候选：模拟模式用本地模板；真实模式额外调用一次API。模型引用原文，代码计算字符位置；找不到或有歧义的引用会拦截，语义仍需人工判断。")
         if st.button(f"识别询盘候选（{mode}）", key="sales_extract", disabled=not ready):
             try:
                 fields = extract_inquiry_candidates(current_request,
