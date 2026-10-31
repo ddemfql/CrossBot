@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "MANUAL-FACTS",
+      "type": "process",
+      "content": "项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。",
+      "facts": {},
+      "data_kind": "synthetic",
+      "source": {
+        "title": "CrossBot项目自建模拟资料",
+        "path": "knowledge/README.md",
+        "kind": "synthetic",
+        "official": false
+      },
+      "version": "demo-1",
+      "effective_from": null,
+      "effective_until": null,
+      "applicable_product_skus": [],
+      "applicable_platforms": [],
+      "applicable_countries": []
+    },
+    {
+      "id": "DE-DEMO-REVIEW",
+      "type": "country",
+      "content": "德国演示案例的人工核对提示：当前模拟产品未提供证书资料，需厂家核实产品类别及适用要求；不判断认证义务。",
+      "facts": {},
+      "data_kind": "synthetic",
+      "source": {
+        "title": "CrossBot项目自建模拟资料",
+        "path": "knowledge/README.md",
+        "kind": "synthetic",
+        "official": false
+      },
+      "version": "demo-1",
+      "effective_from": null,
+      "effective_until": null,
+      "applicable_product_skus": [
+        "DEMO-LAMP-001",
+        "DEMO-CUP-001"
+      ],
+      "applicable_platforms": [],
+      "applicable_countries": [
+        "DE"
+      ]
+    }
+  ]
+}

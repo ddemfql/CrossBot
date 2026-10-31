@@ -1,0 +1,68 @@
+﻿CrossBot 业务备份
+导出时间（非生成时间）：2026-10-31T06:47:48.401473+00:00
+仅保存已有业务输入、草稿和引用，不是原始HTTP日志/请求ID/用量；没有记录各版生成时间。知识资料仍为模拟，内容须人工核对。
+
+保存的业务输入：
+{
+  "product_description": "DEMO-DE-LAMP-001\nUSB desk lamp，ABS材质，3档色温。\n以上为项目固定模拟参数；功率、尺寸、颜色、证书编号、认证结论和交期待确认。",
+  "platforms": [
+    "Amazon",
+    "TikTok"
+  ],
+  "target_country": "Germany",
+  "target_language": "英文",
+  "correlation_id": "listing_369410b2a5b24012b44039d7e20542bb"
+}
+
+W2 Amazon
+来源：real；模型：deepseek-flash
+草稿正文：
+Title (draft): USB Desk Lamp – ABS, 3 Color Temperature Modes (Other Specifications Pending Confirmation)
+
+Bullet points:
+- USB-powered desk lamp.
+- ABS material.
+- 3 color temperature modes.
+- Power, dimensions, color, certifications, certificate number, and lead time: to be confirmed.
+- Target market Germany; local requirements to be confirmed.
+
+Note: Only the facts above are provided. No certification, price, lead time, performance, or usage claims are made.
+风险及待确认项：
+[]
+全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。
+知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。
+目标国资料未知、待确认：未找到适用条目。
+模拟引用 STYLE-AMAZON | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": ["Amazon"], "applicable_countries": []} | 项目风格建议：按标题和产品要点组织，参数只引用已知资料；不代表官方规则。
+模拟引用 STYLE-TIKTOK | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": ["TikTok"], "applicable_countries": []} | 项目风格建议：短视频开场加产品介绍，不编造使用体验或功效；不代表官方规则。
+模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": [], "applicable_countries": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。
+模拟引用 DEMO-DE-LAMP-001 | 用户提供V3固定演示案例 | docs/plans/project-direction-v3.md | 版本v3-demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": ["DEMO-DE-LAMP-001"], "applicable_platforms": [], "applicable_countries": []} | 德国固定演示Case台灯：USB供电、ABS材质、三档色温。功率、尺寸、颜色、交期、认证结论和证书编号未知。演示订单价格不得当作产品通用报价。
+知识文件SHA256：{"products.json": "40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f", "platform_rules.json": "e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f", "compliance_rules.json": "5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a", "demo_case_products.json": "ec5cfe606e8283456cdb32980b8e33e578d5aa4d04af04d9d98b4399a193de65"}
+待人工核对事实及目标市场/平台最新要求；模拟检索和平台集合校验不代表合规通过。
+
+========================================
+
+W2 TikTok
+来源：real；模型：deepseek-flash
+草稿正文：
+Video opening idea: “USB desk lamp with 3 color temperature modes.”
+
+Product introduction:
+- USB-powered desk lamp.
+- ABS material.
+- 3 color temperature modes.
+- Power, dimensions, color, certifications, and lead time are not yet confirmed.
+
+Note: No usage experience, efficacy, certification, price, or lead-time claims are included; details require confirmation.
+风险及待确认项：
+[]
+全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。
+知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。
+目标国资料未知、待确认：未找到适用条目。
+模拟引用 STYLE-AMAZON | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": ["Amazon"], "applicable_countries": []} | 项目风格建议：按标题和产品要点组织，参数只引用已知资料；不代表官方规则。
+模拟引用 STYLE-TIKTOK | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": ["TikTok"], "applicable_countries": []} | 项目风格建议：短视频开场加产品介绍，不编造使用体验或功效；不代表官方规则。
+模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": [], "applicable_countries": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。
+模拟引用 DEMO-DE-LAMP-001 | 用户提供V3固定演示案例 | docs/plans/project-direction-v3.md | 版本v3-demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": ["DEMO-DE-LAMP-001"], "applicable_platforms": [], "applicable_countries": []} | 德国固定演示Case台灯：USB供电、ABS材质、三档色温。功率、尺寸、颜色、交期、认证结论和证书编号未知。演示订单价格不得当作产品通用报价。
+知识文件SHA256：{"products.json": "40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f", "platform_rules.json": "e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f", "compliance_rules.json": "5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a", "demo_case_products.json": "ec5cfe606e8283456cdb32980b8e33e578d5aa4d04af04d9d98b4399a193de65"}
+待人工核对事实及目标市场/平台最新要求；模拟检索和平台集合校验不代表合规通过。
+
+========================================

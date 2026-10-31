@@ -84,32 +84,31 @@ class DatabaseIntegrationTests(unittest.TestCase):
         token = auth.login("admin", "test-password-123")
         app_path = Path(__file__).resolve().parents[1] / "app.py"
 
-        def generate(*args):
-            yield "Demo reply"
-            yield ("###RISKS###", ["Needs confirmation"])
-
+        from workflows.access import GenerationService
         with patch("storage.bootstrap.open_store", return_value=self.store), \
-             patch("main.run_workflow_stream", side_effect=generate), \
-             patch("main.iterate_workflow_stream", side_effect=generate):
+             patch("providers.mock_client.MockChatClient.complete", return_value="Demo reply"):
             app = AppTest.from_file(str(app_path), default_timeout=20)
             app.session_state["session_token"] = token
             app.run()
             self.assertFalse(app.exception)
-            app.text_area[0].input("Hi\nNeed 500 lamps")
-            next(button for button in app.button if button.label == "生成商务回复").click().run()
+            app.text_area(key="v3_inquiry").set_value("Hi\nNeed 500 lamps").run()
+            app.text_area(key="v3_product").set_value("USB lamp ABS").run()
+            app.button(key="v3_generate_sales").click().run()
             self.assertFalse(app.exception)
             self.assertEqual(len(self.store.get_conversation(DEMO_ID, "sales").messages), 2)
-            app.chat_input[0].set_value("Make it shorter").run()
+            app.text_area(key="v3_feedback").set_value("Make it shorter").run()
+            app.button(key="v3_revise").click().run()
             self.assertFalse(app.exception)
             self.assertEqual(len(self.store.get_conversation(DEMO_ID, "sales").messages), 4)
             reloaded = AppTest.from_file(str(app_path), default_timeout=20)
             reloaded.session_state["session_token"] = token
             reloaded.run()
             self.assertFalse(reloaded.exception)
-            self.assertEqual(len(reloaded.chat_message), 4)
+            self.assertEqual(len(GenerationService(auth).list_for_case(token, DEMO_ID, workflow="sales")), 2)
             reloaded.radio[0].set_value("W2 多平台Listing生成").run()
             self.assertFalse(reloaded.exception)
-            self.assertEqual(len(reloaded.chat_message), 0)
+            self.assertFalse(any(w.label == "客户询盘" for w in reloaded.text_area))
+            self.assertEqual(GenerationService(auth).list_for_case(token, DEMO_ID, workflow="listing"), [])
 
     def test_web_creates_case_and_imports_demo(self):
         from streamlit.testing.v1 import AppTest

@@ -1,0 +1,160 @@
+﻿CrossBot 业务备份
+导出时间（非生成时间）：2026-10-31T05:08:02.274359+00:00
+仅保存已有业务输入、草稿和引用，不是原始HTTP日志/请求ID/用量；没有记录各版生成时间。知识资料仍为模拟，内容须人工核对。
+
+保存的业务输入：
+{
+  "inquiry": "Need 500 USB lamps.\nPlease confirm specifications.",
+  "product_info": "DEMO-LAMP-001\nUSB台灯，ABS材质\n颜色：白色",
+  "target_language": "英文",
+  "customer_country": null,
+  "requested_quantity": null,
+  "correlation_id": "sales_ceace1469d4646289efef1961a5d853b"
+}
+
+W1 V1 · initial
+来源：real；模型：deepseek-flash
+草稿正文：
+Subject: Re: Your USB Lamp Inquiry – Specification Confirmation Needed
+
+Dear Customer,
+
+Thank you for your inquiry regarding USB lamps.
+
+We understand you are interested in approximately 500 units. Before we can proceed, we would like to confirm the product specifications with you. Based on the information currently available to us, the product is described as follows:
+
+- Model: DEMO-LAMP-001
+- Product: USB desk lamp
+- Material: ABS
+- Color: White
+
+Please note that this information is for reference only and has not yet been fully verified with the factory. To ensure we meet your requirements, could you please confirm the following:
+
+1. Is the ABS material and white color acceptable for your needs?
+2. Do you have any specific requirements for size, power source (USB input), brightness, or other technical specifications?
+3. Are there any certification or compliance requirements for your market?
+4. What is your target destination country/region?
+5. Please confirm the order quantity of 500 units.
+
+In addition, please be advised that we do not currently have confirmed information regarding certifications, pricing, or lead time for this product. These details will need to be verified with the factory and will be communicated to you once available.
+
+We look forward to your confirmation so we can proceed with an accurate quotation.
+
+Best regards,
+[Your Name]
+[Your Company]
+
+---
+
+**Note:** This is a draft for internal review and does not constitute a confirmed offer. Specifications, certifications, prices, and lead times are subject to factory confirmation.
+风险及待确认项：
+[]
+全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。
+知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。
+目标国资料未知、待确认：未找到适用条目。
+模拟引用 DEMO-LAMP-001 | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": ["DEMO-LAMP-001"], "applicable_platforms": [], "applicable_countries": []} | 模拟USB台灯：ABS材质、白色；仅为练习设定，非真实供应商资料。
+模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": [], "applicable_countries": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。
+知识文件SHA256：{"products.json": "40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f", "platform_rules.json": "e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f", "compliance_rules.json": "5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a"}
+待人工核对业务事实；仅完成有限声明词筛查及模拟资料检索，不是完整合规校验。
+
+========================================
+
+W1 V2 · revision
+来源：real；模型：deepseek-flash
+本轮修改要求：
+请用更礼貌、简洁的英文回复，保留原有产品参数，不新增认证、价格或交期。
+草稿正文：
+Subject: Re: Your USB Lamp Inquiry – Specification Confirmation Needed
+
+Dear Customer,
+
+Thank you for your inquiry about our USB lamps.
+
+Based on the information currently available, the product is described as follows:
+
+- Model: DEMO-LAMP-001
+- Product: USB desk lamp
+- Material: ABS
+- Color: White
+
+Please note that these details are for reference only and have not yet been fully verified with the factory.
+
+To proceed, could you please confirm:
+1. Whether the ABS material and white color meet your requirements.
+2. Any specific requirements for size, power source, brightness, or other technical specifications.
+3. Any certification or compliance requirements for your market.
+4. Your target destination country or region.
+5. The order quantity of 500 units.
+
+We do not currently have confirmed information on certifications, pricing, or lead time. These will be verified with the factory and shared with you once available.
+
+We look forward to your confirmation so we can provide an accurate quotation.
+
+Best regards,
+[Your Name]
+[Your Company]
+
+---
+
+**Note:** This is a draft for internal review and does not constitute a confirmed offer. Specifications, certifications, prices, and lead times are subject to factory confirmation.
+风险及待确认项：
+[]
+全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。
+知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。
+目标国资料未知、待确认：未找到适用条目。
+模拟引用 DEMO-LAMP-001 | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": ["DEMO-LAMP-001"], "applicable_platforms": [], "applicable_countries": []} | 模拟USB台灯：ABS材质、白色；仅为练习设定，非真实供应商资料。
+模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": [], "applicable_countries": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。
+知识文件SHA256：{"products.json": "40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f", "platform_rules.json": "e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f", "compliance_rules.json": "5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a"}
+待人工核对业务事实；仅完成有限声明词筛查及模拟资料检索，不是完整合规校验。
+
+========================================
+
+W1 V3 · revision
+来源：real；模型：deepseek-flash
+本轮修改要求：
+请继续使用英文，在回复末尾询问买家是否有包装要求。保持产品参数不变，不新增认证、价格或交期，也不要假定包装规格或费用已确认。
+草稿正文：
+Subject: Re: Your USB Lamp Inquiry – Specification Confirmation Needed
+
+Dear Customer,
+
+Thank you for your inquiry and for specifying a quantity of 500 USB lamps.
+
+Based on the information currently available, the product is described as follows (reference only, pending factory verification):
+
+- Model: DEMO-LAMP-001
+- Product: USB desk lamp
+- Material: ABS
+- Color: White
+
+Please note that these details have not yet been fully verified with the factory. Certifications, pricing, and lead time are not currently confirmed; we will check them with the factory and share them once available.
+
+To proceed, could you please confirm:
+1. Whether the ABS material and white color meet your requirements.
+2. Any specific requirements for size, power source, brightness, or other technical specifications.
+3. Any certification or compliance requirements for your market.
+4. Your target destination country or region.
+5. The order quantity of 500 units (please confirm this is final).
+
+Also, do you have any packaging requirements (for example, retail packaging or outer carton specifications)? Please share your requirements so we can check feasibility with the factory; packaging specifications and costs are not yet confirmed.
+
+We look forward to your confirmation so we can prepare an accurate quotation.
+
+Best regards,
+[Your Name]
+[Your Company]
+
+---
+
+**Note:** This is a draft for internal review and does not constitute a confirmed offer. Specifications, certifications, prices, lead times, and packaging details are subject to factory confirmation.
+风险及待确认项：
+[]
+全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。
+知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。
+目标国资料未知、待确认：未找到适用条目。
+模拟引用 DEMO-LAMP-001 | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": ["DEMO-LAMP-001"], "applicable_platforms": [], "applicable_countries": []} | 模拟USB台灯：ABS材质、白色；仅为练习设定，非真实供应商资料。
+模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": [], "applicable_countries": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。
+知识文件SHA256：{"products.json": "40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f", "platform_rules.json": "e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f", "compliance_rules.json": "5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a"}
+待人工核对业务事实；仅完成有限声明词筛查及模拟资料检索，不是完整合规校验。
+
+========================================

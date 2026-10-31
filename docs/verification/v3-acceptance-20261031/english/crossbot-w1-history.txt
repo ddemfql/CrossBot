@@ -1,0 +1,166 @@
+﻿CrossBot 业务备份
+导出时间（非生成时间）：2026-10-31T06:47:48.401473+00:00
+仅保存已有业务输入、草稿和引用，不是原始HTTP日志/请求ID/用量；没有记录各版生成时间。知识资料仍为模拟，内容须人工核对。
+
+保存的业务输入：
+{
+  "inquiry": "We need 500 USB desk lamps for Germany. Please confirm the specifications, certification documents and delivery time.",
+  "product_info": "DEMO-DE-LAMP-001\nUSB desk lamp，ABS材质，3档色温。\n以上为项目固定模拟参数；功率、尺寸、颜色、证书编号、认证结论和交期待确认。\n模拟Case：CASE-DE-LAMP-001；订单数量500 pcs；单价18.50 EUR；货品金额9250.00 EUR；DAP Frankfurt。\n25箱，每箱20件；毛重185 kg，净重150 kg。\n这些是演示订单设定，不是实际报价或已确认合同；付款和运输费用范围仍待人工确认。",
+  "target_language": "英文",
+  "customer_country": "Germany",
+  "requested_quantity": 500,
+  "correlation_id": "sales_64dd704b9e284671a16ba48938dc559e"
+}
+
+W1 V1 · initial
+来源：real；模型：deepseek-flash
+草稿正文：
+Subject: Re: 500 USB Desk Lamps – Specification, Certification and Delivery Confirmation
+
+Dear Customer,
+
+Thank you for your inquiry regarding 500 USB desk lamps for delivery to Germany.
+
+We can confirm the following product information for this item (SKU: DEMO-DE-LAMP-001):
+
+- Product: USB desk lamp
+- Material: ABS
+- Colour temperature: 3 adjustable modes
+- Power supply: USB
+
+The following items are **not yet confirmed** and require clarification before we can provide a firm offer:
+
+- Power rating, dimensions and colour options
+- Certification documents and certification status for the German market
+- Lead time / delivery schedule
+
+We have noted your requested quantity of 500 pcs and destination Germany. For reference only, our internal demo case records show a unit price of EUR 18.50 and DAP Frankfurt terms, with 25 cartons of 20 pcs each (gross weight 185 kg, net weight 150 kg). Please note this is a demonstration setting and **not a confirmed quotation or contract**; payment terms and freight cost scope remain subject to manual confirmation.
+
+To proceed, could you please confirm:
+1. Which certification documents you require (and any specific standards)?
+2. Your required delivery date and preferred Incoterms?
+3. Any specific requirements on power, dimensions or colour?
+
+Once these points are clarified with our factory, we will revert with a confirmed specification, certification package and delivery schedule.
+
+Best regards,
+[Your Name]
+[Company]
+
+---
+*Note: This is a draft for manual review. Product parameters, certifications, price and lead time are not yet verified and must be confirmed by the responsible team and factory before sending.*
+风险及待确认项：
+[]
+全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。
+知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。
+目标国资料未知、待确认：未找到适用条目。
+模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": [], "applicable_countries": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。
+模拟引用 DEMO-DE-LAMP-001 | 用户提供V3固定演示案例 | docs/plans/project-direction-v3.md | 版本v3-demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": ["DEMO-DE-LAMP-001"], "applicable_platforms": [], "applicable_countries": []} | 德国固定演示Case台灯：USB供电、ABS材质、三档色温。功率、尺寸、颜色、交期、认证结论和证书编号未知。演示订单价格不得当作产品通用报价。
+知识文件SHA256：{"products.json": "40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f", "platform_rules.json": "e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f", "compliance_rules.json": "5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a", "demo_case_products.json": "ec5cfe606e8283456cdb32980b8e33e578d5aa4d04af04d9d98b4399a193de65"}
+意图及字段仅为带来源的本地候选，未人工确认，不自动覆盖订单数量、国家或其他输入。
+待人工核对业务事实；有限词项/数值检查及模拟资料检索不是完整合规校验。
+
+========================================
+
+W1 V2 · revision
+来源：real；模型：deepseek-flash
+本轮修改要求：
+请使用更礼貌、简洁的英文，保留产品和订单参数，不新增认证、价格、功率、尺寸或交期。
+草稿正文：
+Subject: Re: 500 USB Desk Lamps – Request for Specification, Certification and Delivery Details
+
+Dear Customer,
+
+Thank you for your inquiry about 500 USB desk lamps for delivery to Germany.
+
+For reference, the product information currently available for item DEMO-DE-LAMP-001 is:
+
+- Product: USB desk lamp
+- Material: ABS
+- Colour temperature: 3 adjustable modes
+- Power supply: USB
+
+The following details are not yet confirmed and will need clarification before we can provide a firm offer:
+
+- Power rating, dimensions and colour options
+- Certification documents and certification status for the German market
+- Lead time and delivery schedule
+
+We have noted your requested quantity of 500 pcs and destination Germany. Our internal demo case records show a unit price of EUR 18.50 on DAP Frankfurt terms, packed as 25 cartons of 20 pcs each (gross weight 185 kg, net weight 150 kg). Please note that these are demonstration settings only and do not constitute a confirmed quotation or contract; payment terms and the scope of freight costs remain subject to manual confirmation.
+
+To help us proceed, could you please confirm:
+1. Which certification documents you require, including any specific standards?
+2. Your required delivery date and preferred Incoterms?
+3. Any specific requirements regarding power, dimensions or colour?
+
+Once these points are clarified with our factory, we will revert with a confirmed specification, certification package and delivery schedule.
+
+Best regards,
+[Your Name]
+[Company]
+
+---
+*Note: This is a draft for manual review. Product parameters, certifications, price and lead time are not yet verified and must be confirmed by the responsible team and factory before sending.*
+风险及待确认项：
+[]
+全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。
+知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。
+目标国资料未知、待确认：未找到适用条目。
+模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": [], "applicable_countries": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。
+模拟引用 DEMO-DE-LAMP-001 | 用户提供V3固定演示案例 | docs/plans/project-direction-v3.md | 版本v3-demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": ["DEMO-DE-LAMP-001"], "applicable_platforms": [], "applicable_countries": []} | 德国固定演示Case台灯：USB供电、ABS材质、三档色温。功率、尺寸、颜色、交期、认证结论和证书编号未知。演示订单价格不得当作产品通用报价。
+知识文件SHA256：{"products.json": "40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f", "platform_rules.json": "e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f", "compliance_rules.json": "5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a", "demo_case_products.json": "ec5cfe606e8283456cdb32980b8e33e578d5aa4d04af04d9d98b4399a193de65"}
+意图及字段仅为带来源的本地候选，未人工确认，不自动覆盖订单数量、国家或其他输入。
+待人工核对业务事实；有限词项/数值检查及模拟资料检索不是完整合规校验。
+
+========================================
+
+W1 V3 · revision
+来源：real；模型：deepseek-flash
+本轮修改要求：
+请使用更礼貌、简洁的英文，保留产品和订单参数，不新增认证、价格、功率、尺寸或交期。在回复末尾询问包装要求，不假定包装规格、费用、认证或交期已经确认。
+草稿正文：
+Subject: Re: 500 USB Desk Lamps – Specification, Certification and Delivery Details
+
+Dear Customer,
+
+Thank you for your inquiry regarding 500 USB desk lamps for Germany.
+
+For reference, the available product information for item DEMO-DE-LAMP-001 is:
+- Product: USB desk lamp
+- Material: ABS
+- Colour temperature: 3 adjustable modes
+- Power supply: USB
+
+The following details are not yet confirmed and require clarification before we can provide a firm offer:
+- Power rating, dimensions and colour options
+- Certification documents and certification status for the German market
+- Lead time and delivery schedule
+
+We have noted your requested quantity of 500 pcs and destination Germany. Our internal demo case records show a unit price of EUR 18.50 on DAP Frankfurt terms, packed as 25 cartons of 20 pcs each (gross weight 185 kg, net weight 150 kg). Please note that these are demonstration settings only and do not constitute a confirmed quotation or contract; payment terms and the scope of freight costs remain subject to manual confirmation.
+
+To help us proceed, could you please confirm:
+1. Which certification documents you require, including any specific standards?
+2. Your required delivery date and preferred Incoterms?
+3. Any specific requirements regarding power, dimensions or colour?
+4. Your packaging requirements?
+
+Once these points are clarified with our factory, we will revert with a confirmed specification, certification package and delivery schedule.
+
+Best regards,
+[Your Name]
+[Company]
+
+---
+*Note: This is a draft for manual review. Product parameters, certifications, price and lead time are not yet verified and must be confirmed by the responsible team and factory before sending.*
+风险及待确认项：
+[]
+全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。
+知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。
+目标国资料未知、待确认：未找到适用条目。
+模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": [], "applicable_platforms": [], "applicable_countries": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。
+模拟引用 DEMO-DE-LAMP-001 | 用户提供V3固定演示案例 | docs/plans/project-direction-v3.md | 版本v3-demo-1 | 生效未知 | 截止未知 | 适用{"applicable_product_skus": ["DEMO-DE-LAMP-001"], "applicable_platforms": [], "applicable_countries": []} | 德国固定演示Case台灯：USB供电、ABS材质、三档色温。功率、尺寸、颜色、交期、认证结论和证书编号未知。演示订单价格不得当作产品通用报价。
+知识文件SHA256：{"products.json": "40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f", "platform_rules.json": "e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f", "compliance_rules.json": "5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a", "demo_case_products.json": "ec5cfe606e8283456cdb32980b8e33e578d5aa4d04af04d9d98b4399a193de65"}
+意图及字段仅为带来源的本地候选，未人工确认，不自动覆盖订单数量、国家或其他输入。
+待人工核对业务事实；有限词项/数值检查及模拟资料检索不是完整合规校验。
+
+========================================

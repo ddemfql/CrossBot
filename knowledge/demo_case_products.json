@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "entries": [{
+    "id": "DEMO-DE-LAMP-001",
+    "type": "product",
+    "content": "德国固定演示Case台灯：USB供电、ABS材质、三档色温。功率、尺寸、颜色、交期、认证结论和证书编号未知。演示订单价格不得当作产品通用报价。",
+    "facts": {"power_supply": "USB", "material": "ABS", "color_temperature_modes": 3, "certifications": null, "price": null, "lead_time": null, "dimensions": null, "power": null},
+    "data_kind": "synthetic",
+    "source": {"title": "用户提供V3固定演示案例", "path": "docs/plans/project-direction-v3.md", "kind": "synthetic", "official": false},
+    "version": "v3-demo-1",
+    "effective_from": null,
+    "effective_until": null,
+    "applicable_product_skus": ["DEMO-DE-LAMP-001"],
+    "applicable_platforms": [],
+    "applicable_countries": []
+  }]
+}

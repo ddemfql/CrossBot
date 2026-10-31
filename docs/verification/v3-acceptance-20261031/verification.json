@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "reviewed_at_utc": "2026-10-31T06:56:28.872109+00:00",
+  "user_reported_passed": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14
+  ],
+  "scope": "B independent workflows; not full V3 application acceptance",
+  "files": [
+    {
+      "path": "english/crossbot-business-history.json",
+      "bytes": 20087,
+      "sha256": "a3a1db95774ad4a9bda5094800d88db06c4e44d6a4168e42183d9576c647fc9d",
+      "original_bytes_preserved": true
+    },
+    {
+      "path": "english/crossbot-w1-history.txt",
+      "bytes": 12074,
+      "sha256": "91d1256621288eefc826d7b5436423a81dfa6bdabadea93c47ee614d597c6d1f",
+      "original_bytes_preserved": true
+    },
+    {
+      "path": "english/crossbot-w2-results.txt",
+      "bytes": 6333,
+      "sha256": "d70f721559c9ef46e4dfe3cf6021a096bffbeacae9d3dac502f98c39b43ad0e1",
+      "original_bytes_preserved": true
+    },
+    {
+      "path": "german/crossbot-business-history.json",
+      "bytes": 8801,
+      "sha256": "1bc3a1be0d00882046c931b45af557f79eff24bb541cff12b06cf30f89ae48fb",
+      "original_bytes_preserved": true
+    },
+    {
+      "path": "german/crossbot-w1-history.txt",
+      "bytes": 4990,
+      "sha256": "c67835eadb2872bebc42da90653b4dafa76a1902fb8b36c0bb942fbd50ceff12",
+      "original_bytes_preserved": true
+    },
+    {
+      "path": "german/crossbot-w2-results.txt",
+      "bytes": 3177,
+      "sha256": "4fab7a461923e5aed9564e3924277908aecbcfde7212223ce877c68294996a9b",
+      "original_bytes_preserved": true
+    }
+  ],
+  "bundles": {
+    "english": {
+      "business_digest_verified": true,
+      "txt_business_matches_json_ignoring_export_time": true,
+      "knowledge_hashes_match_current_sources": true,
+      "w1_versions": 3,
+      "w2_platforms": [
+        "Amazon",
+        "TikTok"
+      ],
+      "request_correlation_id": "sales_64dd704b9e284671a16ba48938dc559e",
+      "response_checks": [
+        {
+          "record": "w1_v1",
+          "original_risk_codes": [],
+          "post_review_risk_codes": [
+            "internal_note_in_customer_text"
+          ],
+          "content_chars": 1671
+        },
+        {
+          "record": "w1_v2",
+          "original_risk_codes": [],
+          "post_review_risk_codes": [
+            "internal_note_in_customer_text"
+          ],
+          "content_chars": 1710
+        },
+        {
+          "record": "w1_v3",
+          "original_risk_codes": [],
+          "post_review_risk_codes": [
+            "internal_note_in_customer_text"
+          ],
+          "content_chars": 1708
+        },
+        {
+          "record": "w2_Amazon",
+          "original_risk_codes": [],
+          "post_review_risk_codes": [],
+          "content_chars": 465
+        },
+        {
+          "record": "w2_TikTok",
+          "original_risk_codes": [],
+          "post_review_risk_codes": [],
+          "content_chars": 365
+        }
+      ],
+      "exported_at_utc": "2026-10-31T06:47:48.401473+00:00"
+    },
+    "german": {
+      "business_digest_verified": true,
+      "txt_business_matches_json_ignoring_export_time": true,
+      "knowledge_hashes_match_current_sources": true,
+      "w1_versions": 1,
+      "w2_platforms": [
+        "Amazon"
+      ],
+      "request_correlation_id": "sales_51ec74ac44a448079ea86dbd8e581d1d",
+      "response_checks": [
+        {
+          "record": "w1_v1",
+          "original_risk_codes": [],
+          "post_review_risk_codes": [
+            "target_language_cjk",
+            "internal_note_in_customer_text"
+          ],
+          "content_chars": 2047
+        },
+        {
+          "record": "w2_Amazon",
+          "original_risk_codes": [],
+          "post_review_risk_codes": [],
+          "content_chars": 447
+        }
+      ],
+      "exported_at_utc": "2026-10-31T06:49:58.425069+00:00"
+    }
+  },
+  "review_findings": [
+    {
+      "language": "english",
+      "record": "w1_v1",
+      "codes": [
+        "internal_note_in_customer_text"
+      ],
+      "evidence": [
+        "draft for manual review"
+      ]
+    },
+    {
+      "language": "english",
+      "record": "w1_v2",
+      "codes": [
+        "internal_note_in_customer_text"
+      ],
+      "evidence": [
+        "draft for manual review"
+      ]
+    },
+    {
+      "language": "english",
+      "record": "w1_v3",
+      "codes": [
+        "internal_note_in_customer_text"
+      ],
+      "evidence": [
+        "draft for manual review"
+      ]
+    },
+    {
+      "language": "german",
+      "record": "w1_v1",
+      "codes": [
+        "target_language_cjk",
+        "internal_note_in_customer_text"
+      ],
+      "evidence": [
+        "您好",
+        "interne Prüfung"
+      ]
+    }
+  ],
+  "not_independently_exported": [
+    "real inquiry candidates",
+    "independent customer simulator",
+    "UI invalid-input and consent checks"
+  ],
+  "notice": "provider/model are application metadata, not original HTTP logs or signatures; edited proposals remain pending human review.",
+  "proposed_edits": [
+    {
+      "path": "proposed-edits/proposed-w1-english-v3.txt",
+      "source": "english/crossbot-business-history.json",
+      "source_version": 3,
+      "original_content_sha256": "61d9e9bd53cc5e10031a875b2dbd9e2f9c6a6b40a66313b7debb0ea5ceb3a9e0",
+      "edits": [
+        "Removed trailing internal review section into original evidence; no business facts added."
+      ],
+      "edited_by": "assistant",
+      "approval_status": "pending_user_review",
+      "not_original_model_output": true
+    },
+    {
+      "path": "proposed-edits/proposed-w1-german-v1.txt",
+      "source": "german/crossbot-business-history.json",
+      "source_version": 1,
+      "original_content_sha256": "fc97249cbb87869225b1fe486495e5e2a8c9f2a73271c00e1b7b1535471ff0f5",
+      "edits": [
+        "Removed trailing internal review section into original evidence; no business facts added.",
+        "Replaced Chinese greeting with Guten Tag,; other customer-body text unchanged."
+      ],
+      "edited_by": "assistant",
+      "approval_status": "pending_user_review",
+      "not_original_model_output": true
+    }
+  ],
+  "additional_review_notes": [
+    "English V2 length is 1710 versus V1 1671 characters; rewording is observed but shorter wording is not demonstrated.",
+    "English inquiry is the fixed demo inquiry; export does not prove it equals the independent simulated buyer question."
+  ]
+}
