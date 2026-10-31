@@ -5,6 +5,7 @@ from core.errors import CrossBotError, ErrorCode, ValidationError
 from core.schemas import GenerationResponse, ListingRequest
 from providers.contracts import ChatClient, client_metadata
 from knowledge.retrieval import retrieve_context, citation_notes
+from workflows.content_review import review_content
 
 # Project-authored style hints, not statements of current official platform policy.
 PLATFORM_STYLES = {
@@ -84,6 +85,7 @@ def generate_listings(request: ListingRequest, client: ChatClient) -> dict[str, 
         platform: GenerationResponse(
             content=listings[platform], correlation_id=request.correlation_id,
             **client_metadata(client),
+            risks=review_content(listings[platform], source_text=request.product_description),
             pending_confirmations=citation_notes(json.loads(messages[1]["content"])["knowledge_context"])
                 + ["待人工核对事实及目标市场/平台最新要求；模拟检索和平台集合校验不代表合规通过。"],
         ) for platform in request.platforms

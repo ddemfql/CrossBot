@@ -9,15 +9,29 @@ from workflows.listing import PLATFORM_STYLES, generate_listings
 from knowledge.ui import render_knowledge_preview
 from core.config import AppConfig
 from providers.llm_client import HttpChatClient
+from workflows.demo_case import demo_listing_request
+
+
+def load_listing_demo():
+    request = demo_listing_request()
+    for key, value in {"listing_description": request.product_description, "listing_platforms": request.platforms,
+                       "listing_language": request.target_language, "listing_country": request.target_country}.items():
+        st.session_state[key] = value
 
 
 def render_listing(config=None, ready=True):
     config = config or AppConfig(mock_mode=True)
     mode = "模拟" if config.mock_mode else "真实，消耗额度"
     st.subheader("W2 · 按所选平台生成文案")
+    st.button("载入德国台灯演示资料", key="listing_demo", on_click=load_listing_demo)
+    st.caption("CASE-DE-LAMP-001 为固定模拟案例；载入只改表单，不调用API，不替换历史。当前未接入账号权限或持久Case。")
     st.info("模拟模式：不调用真实模型，不消耗API额度；仅验证所选平台与资料传递，不执行翻译。" if config.mock_mode else "真实模式：点击生成会发送产品和所选平台资料，消耗额度。知识条目仍为模拟参考，输出须人工核对。")
-    description = st.text_area("中文产品描述", "DEMO-CUP-001\n便携式咖啡杯，316不锈钢\n容量：350ml", key="listing_description")
-    platforms = st.multiselect("重点适配平台", list(PLATFORM_STYLES), default=["Amazon", "TikTok"], key="listing_platforms")
+    for key, value in {"listing_description": "DEMO-CUP-001\n便携式咖啡杯，316不锈钢\n容量：350ml",
+                       "listing_platforms": ["Amazon", "TikTok"]}.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+    description = st.text_area("中文产品描述", key="listing_description")
+    platforms = st.multiselect("重点适配平台", list(PLATFORM_STYLES), key="listing_platforms")
     language = st.selectbox("目标语言", ["英文", "德文"], key="listing_language")
     country = st.text_input("目标市场（可留空）", key="listing_country")
     render_knowledge_preview(description, platforms=platforms, country=country.strip() or None)
@@ -49,5 +63,7 @@ def render_listing(config=None, ready=True):
         st.subheader(f"{platform} · {label}")
         st.caption(f"本版来源：{response.provider or '未标注'}；模型：{response.model or '未标注'}")
         st.write(response.content)
+        for risk in response.risks:
+            st.warning(risk.message)
         for message in response.pending_confirmations:
             st.warning(message)

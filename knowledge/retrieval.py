@@ -9,7 +9,7 @@ import re
 from core.errors import CrossBotError, ErrorCode
 
 ROOT = Path(__file__).parent
-FILES = ("products.json", "platform_rules.json", "compliance_rules.json")
+FILES = ("products.json", "platform_rules.json", "compliance_rules.json", "demo_case_products.json")
 
 
 def load_entries():

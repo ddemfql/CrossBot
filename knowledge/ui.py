@@ -6,7 +6,7 @@ from knowledge.retrieval import retrieve_context
 
 def render_knowledge_preview(product_text, *, platforms=(), country=None):
     with st.expander("知识库来源与适用条件（当前输入预览）"):
-        st.caption("仅支持完整演示SKU：DEMO-LAMP-001、DEMO-CUP-001。命中仅表示模拟参考；不证明输入与目录一致。历史引用以各版结果为准。")
+        st.caption("支持完整演示SKU：DEMO-LAMP-001、DEMO-CUP-001、DEMO-DE-LAMP-001（V3德国案例）。命中仅表示模拟参考；不证明输入与目录一致。历史引用以各版结果为准。")
         try:
             context = retrieve_context(product_text, platforms=platforms, country=country)
         except CrossBotError as error:

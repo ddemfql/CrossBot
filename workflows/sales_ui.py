@@ -8,19 +8,62 @@ from workflows.conversation import revise_sales, start_sales
 from knowledge.ui import render_knowledge_preview
 from core.config import AppConfig
 from providers.llm_client import HttpChatClient
+from workflows.demo_case import demo_sales_request
+from workflows.inquiry_analysis import analyze_inquiry, extract_inquiry_candidates
+from providers.inquiry_mock import MockInquiryClient
+from core.models import to_dict
+from workflows.customer_simulator_ui import render_customer_simulator
+
+
+def load_sales_demo():
+    request = demo_sales_request()
+    for key, value in {"sales_inquiry": request.inquiry, "sales_product": request.product_info,
+                       "sales_language": request.target_language, "sales_country": request.customer_country,
+                       "sales_quantity": request.requested_quantity}.items():
+        st.session_state[key] = value
 
 
 def render_sales(config=None, ready=True):
     config = config or AppConfig(mock_mode=True)
     mode = "模拟" if config.mock_mode else "真实，消耗额度"
     st.subheader("W1 · 询盘回复与修订")
+    st.button("载入德国台灯演示资料", key="sales_demo", on_click=load_sales_demo)
+    st.caption("CASE-DE-LAMP-001 为固定模拟案例；仅载入表单，未创建持久Case或完成角色授权。旧历史保留，生成成功后才替换。")
     st.info("模拟模式：不调用真实模型，不消耗API额度。仅验证流程，不进行翻译或语义改写。" if config.mock_mode else "真实模式：点击生成会发送当前业务资料到所填服务，并消耗额度。知识参考仍全部为模拟资料。")
     st.caption("历史和密钥仅在当前会话，刷新或重启可能丢失；结果须人工复核。")
-    inquiry = st.text_area("客户询盘", "Need 500 USB lamps.\nPlease confirm specifications.", key="sales_inquiry")
-    product = st.text_area("中文产品信息", "DEMO-LAMP-001\nUSB台灯，ABS材质\n颜色：白色", key="sales_product")
+    for key, value in {"sales_inquiry": "Need 500 USB lamps.\nPlease confirm specifications.",
+                       "sales_product": "DEMO-LAMP-001\nUSB台灯，ABS材质\n颜色：白色"}.items():
+        if key not in st.session_state:
+            st.session_state[key] = value
+    inquiry = st.text_area("客户询盘", key="sales_inquiry")
+    product = st.text_area("中文产品信息", key="sales_product")
     language = st.selectbox("目标语言", ["英文", "德文"], key="sales_language")
     country = st.text_input("客户国家（可留空）", key="sales_country")
     quantity = st.number_input("已知采购数量（0表示未知）", min_value=0, step=1, key="sales_quantity")
+    current_request = SalesRequest(inquiry, product, language, country.strip() or None, quantity or None)
+    with st.expander("询盘意图与字段候选（本地，不调用API）"):
+        st.caption("有限中英关键词与精确原文位置，不覆盖语义；否定、多个数量和不同目的地需人工判断。候选不会自动写回表单。")
+        candidates = analyze_inquiry(current_request)
+        if candidates:
+            st.json([to_dict(item) for item in candidates])
+        else:
+            st.write("未发现可定位候选，请人工补充；不代表询盘没有要求。")
+        st.caption("下方可单独识别候选：模拟模式仍用本地模板；真实模式额外调用一次API。仅接受能逐字定位原文的候选，语义仍需人工判断。")
+        if st.button(f"识别询盘候选（{mode}）", key="sales_extract", disabled=not ready):
+            try:
+                fields = extract_inquiry_candidates(current_request,
+                    MockInquiryClient() if config.mock_mode else HttpChatClient(config, json_mode=True))
+            except CrossBotError as error:
+                st.error(error.message)
+            else:
+                st.session_state.sales_candidates = (inquiry, fields)
+        saved_candidates = st.session_state.get("sales_candidates")
+        if saved_candidates and saved_candidates[0] == inquiry:
+            st.json([to_dict(item) for item in saved_candidates[1]])
+            st.caption("候选已保存于当前会话，尚未人工确认；请在上方输入框手动核对补充，不自动修改数量或国家。")
+        elif saved_candidates:
+            st.caption("询盘已改变，旧识别候选不适用于当前文字。")
+    render_customer_simulator(current_request, config, ready)
     render_knowledge_preview(product, country=country.strip() or None)
     client = MockChatClient() if config.mock_mode else HttpChatClient(config)
     if st.button(f"生成首版（{mode}）", key="sales_generate", disabled=not ready):

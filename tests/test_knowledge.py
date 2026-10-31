@@ -19,7 +19,7 @@ from workflows.sales import generate_sales
 class KnowledgeTests(unittest.TestCase):
     def test_all_entries_have_provenance_and_never_look_official(self):
         records, hashes = load_entries()
-        self.assertEqual(len(records), 7)
+        self.assertEqual(len(records), 8)
         self.assertEqual(set(hashes), set(FILES))
         for record in records:
             self.assertEqual(record["data_kind"], "synthetic")
