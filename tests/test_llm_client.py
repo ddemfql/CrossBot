@@ -7,7 +7,7 @@ from urllib.error import HTTPError, URLError
 
 from core.config import AppConfig
 from core.errors import CrossBotError, ErrorCode
-from providers.llm_client import HttpChatClient, MAX_BYTES, NoRedirect
+from providers.llm_client import HttpChatClient, MAX_BYTES, NoRedirect, USER_AGENT, resolve_api_endpoint
 
 
 class Response:
@@ -49,6 +49,8 @@ class ClientTests(unittest.TestCase):
                 self.assertEqual("response_format" in body, json_mode)
                 self.assertEqual(opener.open.call_args.kwargs["timeout"], 60)
                 self.assertIsInstance(build.call_args.args[0], NoRedirect)
+                self.assertEqual(req.get_header("User-agent"), USER_AGENT)
+                self.assertEqual(req.get_header("Accept"), "application/json")
                 self.assertNotIn("test-token", repr(client))
                 opener.open.assert_called_once()
 
@@ -108,6 +110,69 @@ class ClientTests(unittest.TestCase):
             with self.assertRaises(CrossBotError) as caught:
                 HttpChatClient(self.config(openai_base_url="https://api.openai.com/v1")).complete([])
             self.assertEqual(caught.exception.code, ErrorCode.PARSE_FAILED)
+
+    def test_tokenhub_root_version_and_full_endpoint_resolve_without_duplicates(self):
+        for base in ["https://api.tokenhubcloud.net", "https://api.tokenhubcloud.net/",
+                     "https://api.tokenhubcloud.net/v1", "https://api.tokenhubcloud.net/v1/",
+                     "https://api.tokenhubcloud.net/v1/responses"]:
+            with self.subTest(base=base):
+                self.assertEqual(resolve_api_endpoint(base),
+                                 ("https://api.tokenhubcloud.net/v1/responses", "responses"))
+
+    def test_tokenhub_request_uses_responses_bearer_and_application_user_agent(self):
+        raw = json.dumps({"status": "completed", "output": [{"type": "message", "content": [
+            {"type": "output_text", "text": "OK"}]}]}).encode()
+        with patch("providers.llm_client.request.build_opener") as build:
+            build.return_value.open.return_value = Response(raw)
+            result = HttpChatClient(self.config(openai_base_url="https://api.tokenhubcloud.net",
+                                               model_name="gpt-6.1-sol")).complete([
+                                                   {"role": "user", "content": "Reply with OK only."}])
+            req = build.return_value.open.call_args.args[0]
+            body = json.loads(req.data)
+            self.assertEqual(result, "OK")
+            self.assertEqual(req.full_url, "https://api.tokenhubcloud.net/v1/responses")
+            self.assertEqual(req.get_header("User-agent"), USER_AGENT)
+            self.assertEqual(req.get_header("Authorization"), "Bearer test-token-not-a-real-key")
+            self.assertEqual(body["model"], "gpt-6.1-sol")
+            self.assertIn("input", body)
+            self.assertNotIn("messages", body)
+            build.return_value.open.assert_called_once()
+
+    def test_tokenhub_can_explicitly_use_chat_completions(self):
+        with patch("providers.llm_client.request.build_opener") as build:
+            build.return_value.open.return_value = Response()
+            HttpChatClient(self.config(openai_base_url="https://api.tokenhubcloud.net",
+                                      model_api_protocol="chat_completions")).complete([])
+            req = build.return_value.open.call_args.args[0]
+            self.assertEqual(req.full_url, "https://api.tokenhubcloud.net/v1/chat/completions")
+            self.assertIn("messages", json.loads(req.data))
+
+    def test_third_party_can_explicitly_select_responses(self):
+        self.assertEqual(resolve_api_endpoint("https://example.test/v1", "responses"),
+                         ("https://example.test/v1/responses", "responses"))
+        self.assertEqual(resolve_api_endpoint("https://example.test/v1/responses"),
+                         ("https://example.test/v1/responses", "responses"))
+
+    def test_conflicting_protocol_or_management_url_is_rejected_before_network(self):
+        for base, protocol in [("https://api.tokenhubcloud.net/keys", "auto"),
+                               ("https://api.tokenhubcloud.net/login", "auto"),
+                               ("https://api.tokenhubcloud.net/v1/messages", "auto"),
+                               ("https://api.tokenhubcloud.net/v1/responses", "chat_completions"),
+                               ("https://api.tokenhubcloud.net/v1/chat/completions", "responses"),
+                               ("https://example.test/v1", "unknown")]:
+            with self.subTest(base=base, protocol=protocol), patch("providers.llm_client.request.build_opener") as build:
+                with self.assertRaises(CrossBotError) as caught:
+                    HttpChatClient(self.config(openai_base_url=base, model_api_protocol=protocol)).complete([])
+                self.assertEqual(caught.exception.code, ErrorCode.CONFIGURATION)
+                build.assert_not_called()
+
+    def test_responses_malformed_top_level_is_reported_as_parse_error(self):
+        for raw in [b'[]', b'null', b'"text"', b'{"status":"completed","output":null}']:
+            with self.subTest(raw=raw), patch("providers.llm_client.request.build_opener") as build:
+                build.return_value.open.return_value = Response(raw)
+                with self.assertRaises(CrossBotError) as caught:
+                    HttpChatClient(self.config(openai_base_url="https://api.tokenhubcloud.net")).complete([])
+                self.assertEqual(caught.exception.code, ErrorCode.PARSE_FAILED)
 
     def test_invalid_configuration_never_opens_network(self):
         invalid = [dict(openai_api_key=""), dict(openai_api_key="has space"), dict(openai_api_key="x\ny"),

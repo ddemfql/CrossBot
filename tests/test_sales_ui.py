@@ -10,6 +10,21 @@ APP = Path(__file__).with_name("w1_w2_ui_harness.py")
 
 
 class SalesUI(unittest.TestCase):
+    def test_case_loader_only_fills_inputs_and_keeps_language_history_and_model_settings(self):
+        page = AppTest.from_file(str(APP), default_timeout=15).run()
+        page.button(key="sales_generate").click().run()
+        original = page.session_state.sales_conversation
+        page.selectbox(key="sales_language").set_value("德文").run()
+        with patch("workflows.sales_ui.MockChatClient.complete") as complete:
+            for loader in ["sales_animal_lamp_demo", "sales_demo"]:
+                page.button(key=loader).click().run()
+                self.assertFalse(page.exception)
+                self.assertEqual(page.selectbox(key="sales_language").value, "德文")
+                self.assertEqual(page.session_state.sales_conversation, original)
+                self.assertEqual(page.radio(key="provider_mode").value, "模拟")
+                self.assertEqual(page.number_input(key="sales_quantity").value, 500)
+            complete.assert_not_called()
+
     def test_multiline_first_and_two_rounds_are_stable_across_reruns(self):
         from providers.mock_client import MockChatClient
         client = MockChatClient()

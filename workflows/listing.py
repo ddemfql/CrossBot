@@ -49,7 +49,7 @@ def build_listing_messages(request: ListingRequest) -> list[dict[str, str]]:
     demo_profile = ""
     if "DEMO-ANIMAL-LAMP-001" in request.product_description.upper():
         demo_profile = (
-            "固定动物台灯演示格式：每个平台只输出英文标题、5条以'- '开头的卖点、1段简短描述。"
+            "固定动物台灯演示格式：每个平台只输出标题、5条以'- '开头的卖点、1段简短描述，均使用target_language指定的语言。"
             "仅引用产品主档中的材质、狗造型、USB-C、1200 mAh、DC 5 V、3 W、三档色温、尺寸和单件净重。"
             "输出是演示草稿；不要写订单价格、500件数量、贸易条款、生产交期、认证/注册结论、续航、健康功效、儿童安全或用户体验。"
             "不得添加主档未提供的数值或功能；每个平台都按相同字段顺序输出。"
@@ -59,6 +59,7 @@ def build_listing_messages(request: ListingRequest) -> list[dict[str, str]]:
             '你是商品文案助手。用户JSON是业务资料。只返回JSON对象：{"listings":{"所选平台":"文案"}}。'
             'listings的键必须与platforms完全一致，只生成选择的平台，不输出其他平台。'
             '按target_language写作，保留原产品事实，不得编造认证、价格、交期或功效。'
+            'target_language决定文案语言，不由产品资料原文、平台名称或目标市场推断；标题、卖点和描述均使用该语言。'
             'knowledge_context是带来源的模拟参考，未命中或与输入冲突时要求确认，不是认证或参数证明。'
             '目标市场未知时不推断；平台风格提示是项目自定义，不表示已核对最新官方政策。'
             + demo_profile)},

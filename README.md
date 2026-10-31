@@ -10,6 +10,7 @@
 
 - W1/W2使用A的登录、角色权限、Case分配、生成结果审计与Case级持久化。
 - W1支持询盘候选识别、两轮修订、独立客户模拟、风险提示和结果导出。
+- W1“回复输出语言”与 W2“文案输出语言”决定生成内容的语言，支持英文、德文和中文；与输入原文语言无关。载入案例仅填充业务输入，保留当前语言、平台和历史结果，不自动生成。模拟模式不执行翻译。
 - W2严格只生成用户选择的平台，并显示模拟知识来源和待确认项。
 - API Key仅保留在浏览器会话；真实模式发送前需用户明确确认。
 - 历史聊天格式会留在“迁移自旧版的历史”区域，不伪装成新版结构化修订。
@@ -60,7 +61,7 @@ python -m venv .venv
 .\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1 --server.port 8502 --server.headless true --browser.gatherUsageStats false
 ```
 
-打开 http://127.0.0.1:8502/ ，默认模拟，可不填Key验证流程。切真实后默认使用 OpenAI GPT API：`https://api.openai.com/v1`、`gpt-6.1-sol`、Responses API；W2 使用严格 JSON Schema 限定所选平台。API Key 需在本机密码框输入并确认资料发送/费用，用户点击生成才请求。Key 在 OpenAI API Platform 管理；可用额度和费用以 API 组织账户为准。可改为兼容 Chat Completions 的其他供应商。程序不加载 `.env`，也不把密钥写入聊天、源码或测试数据。OpenAI API 采用标准库 HTTPS 传输，依赖依据见[官方 Responses 文本生成](https://developers.openai.com/api/docs/guides/text?api-mode=responses)、[结构化输出](https://developers.openai.com/api/docs/guides/structured-outputs)和[模型说明](https://developers.openai.com/api/docs/models/gpt-6.1-sol)。
+打开 http://127.0.0.1:8502/ ，默认模拟，可不填Key验证流程。切真实后新会话默认使用 TokenHubCloud：`https://api.tokenhubcloud.net`、`gpt-6.1-sol`、Responses API；模型可用性、密钥分组和额度必须在该平台控制台核对。也可填写 OpenAI 官方或其他兼容服务地址，手动选择协议。API Key 需在本机密码框输入并确认资料发送/费用；只有点击生成或连接测试才请求。测试只发送固定问候，不发送 Case 资料。旧会话需手动核对原地址。接入方式及本轮定位的 403 客户端标识问题见[TokenHubCloud 接入说明](docs/tokenhub-api.md)。W2 使用 JSON Schema 限定所选平台，仍需网关真实验收。程序不加载 `.env`，也不把密钥写入聊天、源码或测试数据。Responses 结构依据见[官方文本生成](https://developers.openai.com/api/docs/guides/text?api-mode=responses)和[结构化输出](https://developers.openai.com/api/docs/guides/structured-outputs)。
 
 W1示例产品 `DEMO-LAMP-001`，W2示例产品 `DEMO-CUP-001`。这两个标识和参数都是模拟设定，命中不证明用户描述真实或一致。每次真实调用可能产生费用，手动重试也可能收费。
 

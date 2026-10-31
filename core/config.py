@@ -17,6 +17,7 @@ class AppConfig:
     request_timeout_seconds: float = 60.0
     max_upload_size_mb: int = 20
     storage_dir: str = "data"
+    model_api_protocol: str = "auto"
 
     @property
     def has_provider_credentials(self):
@@ -33,4 +34,5 @@ def load_config(environ: dict[str, str] | None = None) -> AppConfig:
         request_timeout_seconds=float(values.get("REQUEST_TIMEOUT_SECONDS", "60")),
         max_upload_size_mb=int(values.get("MAX_UPLOAD_SIZE_MB", "20")),
         storage_dir=values.get("STORAGE_DIR", "data"),
+        model_api_protocol=values.get("MODEL_API_PROTOCOL", "auto"),
     )

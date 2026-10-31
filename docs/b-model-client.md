@@ -1,5 +1,9 @@
 # B第五步：统一模型客户端与模式开关
 
+> 当前配置已更新：新会话默认 TokenHubCloud，可选择 Responses / Chat Completions，
+> 增加应用 User-Agent 和固定问候连接测试。以下保留历史说明，最新操作及 403 排查
+> 以 [TokenHubCloud 接入说明](tokenhub-api.md) 为准。
+
 2026-10-31｜feature/w1-w2-platform。用户已确认前四步，并批准本步实现。真实调用尚待用户手动验证。
 
 ## 修改与公共契约

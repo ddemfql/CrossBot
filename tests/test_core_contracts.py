@@ -32,6 +32,10 @@ class CoreContractTests(unittest.TestCase):
         self.assertTrue(config.has_provider_credentials)
         self.assertFalse(config.mock_mode)
 
+    def test_model_protocol_defaults_and_explicit_environment_setting(self):
+        self.assertEqual(load_config({}).model_api_protocol, "auto")
+        self.assertEqual(load_config({"MODEL_API_PROTOCOL": "responses"}).model_api_protocol, "responses")
+
     def test_error_and_risk_contracts_are_explicit(self):
         error = CrossBotError(ErrorCode.PARSE_FAILED, "Could not parse document")
         risk = RiskItem("missing_certificate", "Certificate requires confirmation", RiskSeverity.BLOCKING, blocking=True)

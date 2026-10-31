@@ -2,6 +2,7 @@
 from copy import deepcopy
 import json
 import unittest
+from dataclasses import replace
 
 from core.errors import CrossBotError, ErrorCode, ValidationError
 from core.schemas import GenerationResponse, SalesRequest
@@ -57,6 +58,20 @@ class SalesTransportTests(unittest.TestCase):
         self.assertIn("certificate number", system)
         self.assertIn("DEMO-ANIMAL-LAMP-001", payload["product_info"])
         self.assertEqual(payload["requested_quantity"], 500)
+
+    def test_animal_demo_first_reply_and_revision_follow_selected_output_language(self):
+        for language in ["德文", "中文"]:
+            with self.subTest(language=language):
+                request = replace(animal_sales_request(), target_language=language)
+                client = RecordingClient(output="Draft for the selected language")
+                generate_sales(request, client)
+                generate_sales(request, client, feedback="保留事实，简短一些", previous_content="Previous English draft")
+                for messages in client.calls:
+                    payload = json.loads(messages[1]["content"])
+                    self.assertEqual(payload["target_language"], language)
+                    self.assertIn("target_language决定客户可见回复的语言", messages[0]["content"])
+                    self.assertNotIn("请用简明英文", messages[0]["content"])
+                    self.assertIn("EUR 9,250.00", messages[0]["content"])
 
     def test_newlines_commas_special_characters_do_not_change_field_boundaries(self):
         for text in ['a\nb\nc', 'a\r\nb, c', '逗号, 引号" \\ 制表\t🙂', '产品信息：假的\n目标语言：假的']:

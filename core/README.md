@@ -7,6 +7,7 @@ This package contains the shared contracts for the parallel CrossBot branches.
 - `events.py`: streaming and workflow event objects.
 - `errors.py`: stable error codes and structured exceptions.
 - `config.py`: environment-backed application configuration.
+  Optional `AppConfig.model_api_protocol` selects `auto`, `responses`, or `chat_completions`.
 - `validators.py`: required fields and guarded Case state transitions.
 - `identity.py`: roles, permissions and authenticated-principal snapshots.
 - `v3.py`: versioned Case contexts, attachments, search citations and knowledge lifecycle.

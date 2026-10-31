@@ -43,7 +43,7 @@ class ProviderUI(unittest.TestCase):
 
     def test_key_clear_and_address_change_revoke_ready_state(self):
         page = self.real_settings(AppTest.from_file(str(APP), default_timeout=15).run())
-        self.assertEqual(page.text_input(key="provider_url").value, "https://api.openai.com/v1")
+        self.assertEqual(page.text_input(key="provider_url").value, "https://api.tokenhubcloud.net")
         self.assertEqual(page.text_input(key="provider_model").value, "gpt-6.1-sol")
         self.assertFalse(page.button(key="sales_generate").disabled)
         page.button(key="provider_clear").click().run()
@@ -68,6 +68,38 @@ class ProviderUI(unittest.TestCase):
             page.button(key="listing_generate").click().run()
         self.assertTrue(page.error)
         self.assertEqual(page.session_state.listing_results, original)
+
+    def test_connection_test_requires_confirmation_and_sends_only_fixed_prompt(self):
+        with patch("providers.llm_client.HttpChatClient.complete", return_value="OK") as complete:
+            page = AppTest.from_file(str(APP), default_timeout=15).run()
+            page.radio(key="provider_mode").set_value("真实").run()
+            self.assertTrue(page.button(key="provider_test").disabled)
+            page.text_input(key="provider_url").set_value("https://api.tokenhubcloud.net").run()
+            page.text_input(key="provider_key").set_value("dummy-test-token").run()
+            complete.assert_not_called()
+            page.checkbox(key="provider_confirm").check().run()
+            complete.assert_not_called()
+            page.button(key="provider_test").click().run()
+            self.assertFalse(page.exception)
+            self.assertTrue(any("连接成功" in item.value for item in page.success))
+            complete.assert_called_once_with([{"role": "user", "content": "Reply with OK only."}])
+            self.assertFalse(page.session_state.get("sales_conversation"))
+
+    def test_connection_failure_is_visible_without_leaking_key_or_creating_draft(self):
+        page = self.real_settings(AppTest.from_file(str(APP), default_timeout=15).run())
+        with patch("providers.llm_client.HttpChatClient.complete", side_effect=CrossBotError(
+                ErrorCode.PROVIDER_AUTH, "服务拒绝访问（HTTP 403）")):
+            page.button(key="provider_test").click().run()
+        self.assertFalse(page.exception)
+        self.assertTrue(any("HTTP 403" in item.value for item in page.error))
+        self.assertFalse(any("dummy-test-token" in item.value for item in page.error))
+
+    def test_protocol_change_revokes_confirmation(self):
+        page = self.real_settings(AppTest.from_file(str(APP), default_timeout=15).run())
+        page.selectbox(key="provider_protocol").set_value("Chat Completions（备用）").run()
+        self.assertFalse(page.checkbox(key="provider_confirm").value)
+        self.assertTrue(page.button(key="provider_test").disabled)
+        self.assertEqual(page.text_input(key="provider_key").value, "dummy-test-token")
 
 
 if __name__ == "__main__":

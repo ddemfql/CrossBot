@@ -11,19 +11,20 @@ from core.config import AppConfig
 from providers.llm_client import HttpChatClient
 from workflows.demo_case import demo_listing_request
 from workflows.animal_lamp_demo import animal_listing_request
+from workflows.result_ui import render_generation_result
 
 
 def load_listing_demo():
     request = demo_listing_request()
-    for key, value in {"listing_description": request.product_description, "listing_platforms": request.platforms,
-                       "listing_language": request.target_language, "listing_country": request.target_country}.items():
+    for key, value in {"listing_description": request.product_description,
+                       "listing_country": request.target_country}.items():
         st.session_state[key] = value
 
 
 def load_animal_lamp_listing_demo():
     request = animal_listing_request()
-    for key, value in {"listing_description": request.product_description, "listing_platforms": request.platforms,
-                       "listing_language": request.target_language, "listing_country": request.target_country}.items():
+    for key, value in {"listing_description": request.product_description,
+                       "listing_country": request.target_country}.items():
         st.session_state[key] = value
 
 
@@ -33,7 +34,7 @@ def render_listing(config=None, ready=True, *, case_id=None, generation_service=
     st.subheader("W2 · 按所选平台生成文案")
     st.button("载入德国台灯演示资料", key="listing_demo", on_click=load_listing_demo)
     st.button("载入动物台灯固定案例（自编演示数据）", key="listing_animal_lamp_demo", on_click=load_animal_lamp_listing_demo)
-    st.caption(f"当前 Case：{case_id or '未关联'}。Listing结果按Case保存；演示资料仅载入表单，不替换历史。")
+    st.caption(f"当前 Case：{case_id or '未关联'}。载入案例只填充产品资料和目标市场；输出平台与语言保持当前选择。")
     st.info("模拟模式：不调用真实模型，不消耗API额度；仅验证所选平台与资料传递，不执行翻译。" if config.mock_mode else "真实模式：点击生成会发送产品和所选平台资料，消耗额度。知识条目仍为模拟参考，输出须人工核对。")
     for key, value in {"listing_description": "DEMO-CUP-001\n便携式咖啡杯，316不锈钢\n容量：350ml",
                        "listing_platforms": ["Amazon", "TikTok"]}.items():
@@ -41,7 +42,8 @@ def render_listing(config=None, ready=True, *, case_id=None, generation_service=
             st.session_state[key] = value
     description = st.text_area("中文产品描述", key="listing_description")
     platforms = st.multiselect("重点适配平台", list(PLATFORM_STYLES), key="listing_platforms")
-    language = st.selectbox("目标语言", ["英文", "德文"], key="listing_language")
+    language = st.selectbox("文案输出语言", ["英文", "德文", "中文"], key="listing_language",
+                            help="决定标题、卖点和描述的语言，与产品资料原文及目标市场无关。模拟模式不执行翻译。")
     country = st.text_input("目标市场（可留空）", key="listing_country")
     render_knowledge_preview(description, platforms=platforms, country=country.strip() or None)
     if not platforms:
@@ -75,8 +77,4 @@ def render_listing(config=None, ready=True, *, case_id=None, generation_service=
         label = "模拟结果" if response.provider == "mock" else "真实模型结果" if response.provider == "real" else "未标注来源"
         st.subheader(f"{platform} · {label}")
         st.caption(f"本版来源：{response.provider or '未标注'}；模型：{response.model or '未标注'}")
-        st.write(response.content)
-        for risk in response.risks:
-            st.warning(risk.message)
-        for message in response.pending_confirmations:
-            st.warning(message)
+        render_generation_result(response)

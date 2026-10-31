@@ -13,6 +13,22 @@ class ListingUI(unittest.TestCase):
         page.radio[0].set_value("W2 多平台Listing生成").run()
         return page
 
+    def test_case_loader_only_fills_inputs_and_preserves_output_settings_and_results(self):
+        page = self.page()
+        page.button(key="listing_generate").click().run()
+        original = page.session_state.listing_results
+        page.selectbox(key="listing_language").set_value("中文").run()
+        page.multiselect(key="listing_platforms").set_value(["阿里国际站"]).run()
+        with patch("workflows.listing_ui.MockListingClient.complete") as complete:
+            for loader in ["listing_animal_lamp_demo", "listing_demo"]:
+                page.button(key=loader).click().run()
+                self.assertFalse(page.exception)
+                self.assertEqual(page.selectbox(key="listing_language").value, "中文")
+                self.assertEqual(page.multiselect(key="listing_platforms").value, ["阿里国际站"])
+                self.assertEqual(page.session_state.listing_results, original)
+                self.assertEqual(page.text_input(key="listing_country").value, "Germany")
+            complete.assert_not_called()
+
     def test_single_and_multiple_selections_replace_all_sections(self):
         page = self.page()
         page.text_area(key="listing_description").set_value('咖啡杯, 350ml\n颜色"白"').run()

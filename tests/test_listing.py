@@ -1,4 +1,5 @@
 import json
+from dataclasses import replace
 import unittest
 from unittest.mock import Mock
 
@@ -35,11 +36,22 @@ class ListingTests(unittest.TestCase):
     def test_animal_demo_api_prompt_pins_listing_fields_and_exclusions(self):
         system = build_listing_messages(animal_listing_request())[0]["content"]
         payload = json.loads(build_listing_messages(animal_listing_request())[1]["content"])
-        self.assertIn("英文标题、5条", system)
+        self.assertIn("标题、5条", system)
         self.assertIn("不要写订单价格", system)
         self.assertIn("健康功效", system)
         self.assertEqual(payload["platforms"], ["Amazon", "TikTok"])
         self.assertIn("DEMO-ANIMAL-LAMP-001", payload["product_description"])
+
+    def test_animal_demo_listing_respects_selected_language_without_english_override(self):
+        for language in ["德文", "中文"]:
+            with self.subTest(language=language):
+                request = replace(animal_listing_request(), target_language=language)
+                messages = build_listing_messages(request)
+                payload = json.loads(messages[1]["content"])
+                self.assertEqual(payload["target_language"], language)
+                self.assertIn("target_language决定文案语言", messages[0]["content"])
+                self.assertNotIn("只输出英文标题", messages[0]["content"])
+                self.assertEqual(payload["platforms"], request.platforms)
 
     def test_empty_unsupported_duplicate_or_wrong_platform_type_never_calls(self):
         for platforms in [[], None, "Amazon", ["Unknown"], ["Amazon", "Amazon"], [False], [["Amazon"]]]:

@@ -14,12 +14,13 @@ from workflows.inquiry_analysis import analyze_inquiry, extract_inquiry_candidat
 from providers.inquiry_mock import MockInquiryClient
 from core.models import to_dict
 from workflows.customer_simulator_ui import render_customer_simulator
+from workflows.result_ui import render_generation_result
 
 
 def load_sales_demo():
     request = demo_sales_request()
     for key, value in {"sales_inquiry": request.inquiry, "sales_product": request.product_info,
-                       "sales_language": request.target_language, "sales_country": request.customer_country,
+                       "sales_country": request.customer_country,
                        "sales_quantity": request.requested_quantity}.items():
         st.session_state[key] = value
 
@@ -27,7 +28,7 @@ def load_sales_demo():
 def load_animal_lamp_sales_demo():
     request = animal_sales_request()
     for key, value in {"sales_inquiry": request.inquiry, "sales_product": request.product_info,
-                       "sales_language": request.target_language, "sales_country": request.customer_country,
+                       "sales_country": request.customer_country,
                        "sales_quantity": request.requested_quantity}.items():
         st.session_state[key] = value
 
@@ -38,7 +39,7 @@ def render_sales(config=None, ready=True, *, case_id=None, generation_service=No
     st.subheader("W1 · 询盘回复与修订")
     st.button("载入德国台灯演示资料", key="sales_demo", on_click=load_sales_demo)
     st.button("载入动物台灯固定案例（自编演示数据）", key="sales_animal_lamp_demo", on_click=load_animal_lamp_sales_demo)
-    st.caption(f"当前 Case：{case_id or '未关联'}。演示资料仅载入表单，不替换历史；生成草稿仍需人工复核。")
+    st.caption(f"当前 Case：{case_id or '未关联'}。载入案例只填充询盘、产品资料和已知业务条件；输出语言保持当前选择。")
     st.info("模拟模式：不调用真实模型，不消耗API额度。仅验证流程，不进行翻译或语义改写。" if config.mock_mode else "真实模式：点击生成会发送当前业务资料到所填服务，并消耗额度。知识参考仍全部为模拟资料。")
     st.caption("W1历史按Case保存在本地数据库；API Key仅留在当前浏览器会话。结果须人工复核。")
     for key, value in {"sales_inquiry": "Need 500 USB lamps.\nPlease confirm specifications.",
@@ -47,7 +48,8 @@ def render_sales(config=None, ready=True, *, case_id=None, generation_service=No
             st.session_state[key] = value
     inquiry = st.text_area("客户询盘", key="sales_inquiry")
     product = st.text_area("中文产品信息", key="sales_product")
-    language = st.selectbox("目标语言", ["英文", "德文"], key="sales_language")
+    language = st.selectbox("回复输出语言", ["英文", "德文", "中文"], key="sales_language",
+                            help="决定首次生成和后续修订的回复语言，与客户询盘原文的语言无关。模拟模式不执行翻译。")
     country = st.text_input("客户国家（可留空）", key="sales_country")
     quantity = st.number_input("已知采购数量（0表示未知）", min_value=0, step=1, key="sales_quantity")
     context = None
@@ -108,12 +110,8 @@ def render_sales(config=None, ready=True, *, case_id=None, generation_service=No
         with st.expander(f"V{number} · {'首次生成' if turn.kind == 'initial' else '修改'}", expanded=number == len(conversation.turns)):
             if turn.feedback:
                 st.write("本轮修改要求：", turn.feedback)
-            st.write(turn.response.content)
+            render_generation_result(turn.response)
             st.caption(f"本版来源：{turn.response.provider or '未标注'}；模型：{turn.response.model or '未标注'}")
-            for risk in turn.response.risks:
-                st.warning(risk.message)
-            for pending in turn.response.pending_confirmations:
-                st.warning(pending)
     feedback = st.text_area("本轮修改意见", key="sales_feedback")
     if st.button(f"生成修订版（{mode}）", key="sales_revise", disabled=not (can_revise and ready)):
         try:
