@@ -11,3 +11,12 @@ __pycache__/
 # 系统文件
 .DS_Store
 Thumbs.db
+
+# Optional local W3 workspace (default storage is outside the repository)
+.w3-data/
+
+# Confidential local transaction imports and legacy showcase artifacts
+/outputs/
+/tests/fixtures/real_transaction_*.json
+/scripts/build_real_w3_demo.py
+*.zip

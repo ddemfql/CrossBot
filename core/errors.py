@@ -5,6 +5,7 @@ from enum import Enum
 from typing import Any
 
 class ErrorCode(str, Enum):
+    FORBIDDEN = "forbidden"
     INVALID_INPUT = "invalid_input"
     CONFIGURATION = "configuration_error"
     PROVIDER_AUTH = "provider_auth_error"
