@@ -191,6 +191,7 @@ class Case:
     cross_check_result_ids: list[str] = field(default_factory=list)
     created_at: datetime = field(default_factory=utc_now)
     updated_at: datetime = field(default_factory=utc_now)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
 def to_dict(value: Any) -> Any:
     if isinstance(value, Enum):

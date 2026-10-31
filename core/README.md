@@ -8,6 +8,14 @@ This package contains the shared contracts for the parallel CrossBot branches.
 - `errors.py`: stable error codes and structured exceptions.
 - `config.py`: environment-backed application configuration.
 - `validators.py`: required fields and guarded Case state transitions.
+- `identity.py`: roles, permissions and authenticated-principal snapshots.
+- `v3.py`: versioned Case contexts, attachments, search citations and knowledge lifecycle.
+- `ports.py`: provider/attachment integration protocols.
+
+V3 integration services and examples: [B handoff](../docs/B_V3接入说明.md).
+Use the `auth`, `documents.access`, `workflows.access`, `knowledge.governance`,
+and `providers.search_contract` services for request-facing operations.
+Raw SQLite storage is an internal persistence adapter, not an authorization boundary.
 
 Workflow, parser, UI, and validation modules should depend on these contracts
 instead of passing ad-hoc dictionaries or newline-delimited strings.

@@ -9,6 +9,8 @@ CrossBot/
 │   ├── events.py                  # 流式和工作流事件
 │   ├── errors.py                  # 统一错误码和异常
 │   └── config.py                  # 环境变量和运行配置
+├── auth/                          # A：登录、服务端角色核权和 Case 分配
+├── ui/                            # 公共登录/Case 页面编排
 ├── workflows/                     # B：W1/W2 业务工作流
 ├── providers/                     # B：OpenAI 兼容接口和 Mock 适配
 ├── knowledge/                     # B：结构化知识库和检索
@@ -88,3 +90,8 @@ git rebase origin/feature/foundation-contracts
 ```
 
 公共模型发生变化时，先同步 A 的分支，再继续自己的模块开发。
+
+V3 公共服务详见 [B 接入说明](B_V3接入说明.md)。A 新增的 `workflows/access.py`、
+`documents/access.py`、`providers/search_contract.py`、`knowledge/governance.py` 是
+各业务分支共用的授权/存储门禁，不包含真实模型、解析器或搜索供应商实现。
+业务扩展优先调用这些服务，不另建角色模型或跳过版本审核。

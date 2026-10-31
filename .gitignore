@@ -14,4 +14,7 @@ Thumbs.db
 data/
 *.db
 *.sqlite
+*.db-wal
+*.db-shm
+*.sqlite3
 

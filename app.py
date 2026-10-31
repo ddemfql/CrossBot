@@ -1,152 +1,154 @@
+"""Streamlit entry point with Case-scoped, persistent W1/W2 conversations."""
+import sqlite3
+
 import streamlit as st
-from main import run_workflow_stream, iterate_workflow_stream
+
+from core.errors import CrossBotError
+from core.models import to_dict
+from core.schemas import ListingRequest, SalesRequest
+from core.identity import Permission
+from core.v3 import RequestContext
+from auth.cases import CaseAccessService
+from auth.service import ROLE_PERMISSIONS
+from main import iterate_workflow_stream, run_workflow_stream
+from storage.bootstrap import open_store
+from ui.case_panel import render_case_panel, render_case_summary
+from ui.auth_panel import render_auth_panel, render_admin_panel
+from workflows.access import GenerationService
 
 st.set_page_config(page_title="CrossBot", layout="wide")
 st.title("CrossBot 外贸智能业务员与合规助手")
-st.caption("🎯 赛题闭环：理解 → 生成 → 校验 → 反馈")
 
-# 侧边栏
+
+def save_or_stop(access, token, conversation):
+    try:
+        access.save_conversation(token, conversation)
+    except (CrossBotError, sqlite3.Error) as error:
+        st.error(f"保存失败：{error}")
+        st.stop()
+
+
+def render_risks(risks):
+    if risks:
+        with st.expander("合规校验反馈", expanded=True):
+            for risk in risks:
+                st.warning(risk)
+    else:
+        st.caption("当前关键词检查未发现命中项，仍需人工复核。")
+
+
+try:
+    store = open_store()
+    auth, token, principal = render_auth_panel(store)
+    access = CaseAccessService(auth)
+    render_admin_panel(auth, token, principal)
+    case = render_case_panel(store, auth, token, principal)
+except (CrossBotError, sqlite3.Error, OSError) as error:
+    st.error(f"无法打开本地数据：{error}")
+    st.stop()
+
+if case is None:
+    st.info("请先新建 Case，或导入台灯演示案例。")
+    st.stop()
+
+render_case_summary(store, case, auth, token)
+options = []
+if Permission.W1_GENERATE in ROLE_PERMISSIONS[principal.active_role]:
+    options.append("W1 询盘极速转化")
+if Permission.W2_GENERATE in ROLE_PERMISSIONS[principal.active_role]:
+    options.append("W2 多平台Listing生成")
+if not options:
+    st.info("当前岗位暂无已接入的生成任务。")
+    st.stop()
 with st.sidebar:
     st.header("工作流选择")
-    wf = st.radio("工作流", ["W1 询盘极速转化", "W2 多平台Listing生成"], label_visibility="collapsed")
-    st.divider()
-    st.info("💡 提示：当前处于系统测试模式，接入真实 API 后将输出真实生成结果。")
+    wf = st.radio("工作流", options)
 
-# 初始化状态 (统一使用 messages 数组记录对话)
-if "messages" not in st.session_state:
-    st.session_state.messages = [] # 格式: {"role": "user/assistant", "content": "...", "risks": []}
-if "current_wf" not in st.session_state:
-    st.session_state.current_wf = wf
+workflow = "sales" if wf.startswith("W1") else "listing"
+conversation = access.get_conversation(token, case.case_id, workflow)
+request = None
+locked = case.status.value in {"passed", "closed"}
+prefix = f"{case.case_id}_{workflow}"
+product = case.metadata.get("fixture", {}).get("product", {})
+product_default = (
+    f"{product.get('name', '')}，{product.get('material', '')}，USB供电，三档色温。"
+    if product else ""
+)
 
-# 切换工作流时，彻底清空对话历史，开启新会话
-if st.session_state.current_wf != wf:
-    st.session_state.messages = []
-    st.session_state.current_wf = wf
-
-col1, col2 = st.columns([1, 1])
-
-# W1 界面
-if wf.startswith("W1"):
-    with col1:
-        st.subheader("客户输入")
-        inquiry = st.text_area("客户询盘 (小语种/英文)", "Hi, do you have CE certified desk lamp? Need 500 pcs to Germany.")
-        lang = st.selectbox("目标语言", ["英文", "德文"])
-    with col2:
-        st.subheader("我方信息")
-        product = st.text_area("中文产品信息", "桌面护眼台灯，USB供电，三档色温，ABS材质。")
-        st.write("")
-        if st.button("🚀 生成商务回复", use_container_width=True):
-            st.session_state.messages = [] # 清空历史
-            prompt = f"目标语言：{lang}\n客户询盘：{inquiry}\n中文产品信息：{product}"
-            st.session_state.messages.append({"role": "user", "content": prompt, "hidden": True}) # 隐藏用户输入
-            st.rerun() # 刷新页面进入统一渲染流
-
-# W2 界面
-else:
-    with col1:
-        st.subheader("产品输入")
-        desc = st.text_area("中文产品描述", "便携式咖啡杯，316不锈钢，保温12小时，适合户外场景。")
-    with col2:
-        st.subheader("平台设置")
-        platform = st.multiselect("重点适配平台", ["Amazon", "TikTok", "阿里国际站"], default=["Amazon", "TikTok"])
-        st.write("")
-        if st.button("🚀 生成双平台 Listing", use_container_width=True):
-            st.session_state.messages = []
-            prompt = f"中文描述：{desc}\n适配平台：{','.join(platform)}"
-            st.session_state.messages.append({"role": "user", "content": prompt, "hidden": True})
-            st.rerun()
-
-# ================= 统一渲染区 =================
-if st.session_state.messages:
-    st.divider()
-    
-    # 遍历渲染历史对话
-    for msg in st.session_state.messages:
-        # 隐藏内部拼接的 Prompt，只展示真实对话
-        if not msg.get("hidden"):
-            with st.chat_message(msg["role"], avatar="👤" if msg["role"] == "user" else "🤖"):
-                st.markdown(msg["content"])
-                
-        # 如果是 assistant 的回复，展示风险校验
-        if msg["role"] == "assistant" and "risks" in msg:
-            with st.chat_message("assistant", avatar="🤖"):
-                if msg["risks"]:
-                    with st.expander("🛡️ 合规校验反馈 (发现风险)", expanded=True):
-                        for r in msg["risks"]:
-                            st.error(r)
-                else:
-                    st.success("✅ 合规校验通过，未发现风险。")
-
-    # 如果最后一条是用户输入（刚点了生成按钮），则触发流式生成
-    if st.session_state.messages[-1]["role"] == "user":
-        prompt_content = st.session_state.messages[-1]["content"]
-        
-        with st.chat_message("assistant", avatar="🤖"):
-            placeholder = st.empty()
-            full_text = ""
-            risks = []
-            
-            # 判断调用哪个工作流
-            if wf.startswith("W1"):
-                # 拆分 prompt 重新传给业务逻辑
-                parts = prompt_content.split("\n")
-                lang_part = parts[0].replace("目标语言：", "")
-                inquiry_part = parts[1].replace("客户询盘：", "")
-                product_part = parts[2].replace("中文产品信息：", "")
-                generator = run_workflow_stream("sales", inquiry_part, f"{lang_part}, {product_part}")
+with st.form(f"request_{prefix}"):
+    col1, col2 = st.columns(2)
+    if workflow == "sales":
+        with col1:
+            inquiry = st.text_area("客户询盘", key=f"inquiry_{prefix}")
+            lang = st.selectbox("目标语言", ["英文", "德文"], key=f"lang_{prefix}")
+        with col2:
+            product_info = st.text_area("中文产品信息", value=product_default, key=f"product_{prefix}")
+        if st.form_submit_button("生成商务回复", disabled=locked):
+            if not inquiry.strip() or not product_info.strip():
+                st.error("请填写客户询盘和产品信息。")
             else:
-                desc_part = prompt_content.split("\n")[0].replace("中文描述：", "")
-                plat_part = prompt_content.split("\n")[1].replace("适配平台：", "")
-                generator = run_workflow_stream("listing", desc_part, plat_part)
+                request = SalesRequest(inquiry, product_info, lang, customer_country=case.destination_country, context=RequestContext(case.case_id))
+    else:
+        with col1:
+            description = st.text_area("中文产品描述", value=product_default, key=f"description_{prefix}")
+        with col2:
+            platforms = st.multiselect("目标平台", ["Amazon", "TikTok", "阿里国际站"], default=["Amazon", "TikTok"], key=f"platforms_{prefix}")
+        if st.form_submit_button("生成 Listing", disabled=locked):
+            if not description.strip() or not platforms:
+                st.error("请填写产品描述并选择平台。")
+            else:
+                request = ListingRequest(description, platforms, target_country=case.destination_country, context=RequestContext(case.case_id))
 
+for message in conversation.messages:
+    with st.chat_message(message["role"]):
+        if message.get("error"):
+            st.error(message["content"])
+        else:
+            st.markdown(message["content"])
+            if message["role"] == "assistant":
+                render_risks(message.get("risks", []))
+
+feedback = st.chat_input("输入修改意见", disabled=locked or not any(
+    message["role"] == "assistant" and not message.get("error") for message in conversation.messages
+), key=f"feedback_{prefix}")
+
+if request is not None or feedback:
+    if request is not None:
+        try:
+            request = GenerationService(auth).authorize_request(token, request)
+        except CrossBotError as error:
+            st.error(str(error))
+            st.stop()
+        data = to_dict(request)
+        content = request.inquiry if isinstance(request, SalesRequest) else request.product_description
+        conversation.messages.append({"role": "user", "content": content, "request": data})
+        if isinstance(request, SalesRequest):
+            generator = run_workflow_stream("sales", request.inquiry, f"{request.target_language}, {request.product_info}")
+        else:
+            generator = run_workflow_stream("listing", request.product_description, ",".join(request.platforms))
+    else:
+        auth.require_permission(token, Permission.W1_GENERATE if workflow == "sales" else Permission.W2_GENERATE, case.case_id)
+        previous = next(message["content"] for message in reversed(conversation.messages)
+                        if message["role"] == "assistant" and not message.get("error"))
+        content = feedback
+        conversation.messages.append({"role": "user", "content": feedback, "kind": "feedback"})
+        generator = iterate_workflow_stream(previous, feedback)
+    # Save before calling the provider. Reruns never replay requests automatically.
+    save_or_stop(access, token, conversation)
+    with st.chat_message("user"):
+        st.markdown(content)
+    full_text, risks = "", []
+    with st.chat_message("assistant"):
+        placeholder = st.empty()
+        try:
             for chunk in generator:
                 if isinstance(chunk, tuple) and chunk[0] == "###RISKS###":
                     risks = chunk[1]
                 else:
                     full_text += chunk
                     placeholder.markdown(full_text + "▌")
-            placeholder.markdown(full_text)
-            
-            if risks:
-                with st.expander("🛡️ 合规校验反馈 (发现风险)", expanded=True):
-                    for r in risks:
-                        st.error(r)
-            else:
-                st.success("✅ 合规校验通过，未发现风险。")
-                
-        # 将生成结果加入历史记录
-        st.session_state.messages.append({"role": "assistant", "content": full_text, "risks": risks})
-        st.rerun()
-
-# ================= 底部输入框 =================
-if st.session_state.messages and st.session_state.messages[-1]["role"] == "assistant":
-    if fb := st.chat_input("输入修改意见，对生成结果进行对话式迭代..."):
-        st.session_state.messages.append({"role": "user", "content": fb})
-        st.rerun()
-
-    # 如果倒数第二条是用户要求迭代（存在历史记录中）
-    if len(st.session_state.messages) >= 3 and st.session_state.messages[-2]["role"] == "user":
-        with st.chat_message("assistant", avatar="🤖"):
-            placeholder = st.empty()
-            full_text = ""
-            risks = []
-            previous_ai_text = st.session_state.messages[-3]["content"]
-            feedback = st.session_state.messages[-2]["content"]
-            
-            for chunk in iterate_workflow_stream(previous_ai_text, feedback):
-                if isinstance(chunk, tuple) and chunk[0] == "###RISKS###":
-                    risks = chunk[1]
-                else:
-                    full_text += chunk
-                    placeholder.markdown(full_text + "▌")
-            placeholder.markdown(full_text)
-            
-            if risks:
-                with st.expander("🛡️ 最新合规校验反馈", expanded=True):
-                    for r in risks:
-                        st.error(r)
-            else:
-                st.success("✅ 最新合规校验通过。")
-                
-        st.session_state.messages.append({"role": "assistant", "content": full_text, "risks": risks})
-        st.rerun()
+            conversation.messages.append({"role": "assistant", "content": full_text, "risks": risks})
+        except Exception:
+            conversation.messages.append({"role": "assistant", "content": "生成失败，请检查模型服务后重新提交。", "error": True})
+    save_or_stop(access, token, conversation)
+    st.rerun()
