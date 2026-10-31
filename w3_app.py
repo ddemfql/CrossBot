@@ -74,8 +74,25 @@ def _accounts(actor):
             _run(lambda: identity.add_user(name, password, [role]), "账号已开通。")
 
 
-def render():
+def _session_actor():
+    """Keep an authenticated session across Streamlit's module hot reload."""
     actor = st.session_state.get("w3_actor")
+    if (actor is not None and not isinstance(actor, Actor)
+            and type(actor).__module__ == "core.models" and type(actor).__name__ == "Actor"
+            and getattr(actor, "authenticated", False) is True
+            and getattr(actor, "kind", None) == "human"):
+        # The object is held in trusted server session state from an earlier
+        # module instance. Rebind to the current class, using provisioned roles.
+        user = next((user for user in identity.list_users()
+                     if user["user_id"] == getattr(actor, "user_id", None)), None)
+        if user is not None:
+            actor = Actor(user["user_id"], user["roles"], authenticated=True, kind="human")
+            st.session_state.w3_actor = actor
+    return actor
+
+
+def render():
+    actor = _session_actor()
     if not isinstance(actor, Actor) or not actor.authenticated:
         _login()
         return
@@ -108,6 +125,11 @@ def render():
     if not workspaces:
         st.info("新建一笔交易或导入 ZIP 开始。")
         return
+    requested_case = st.query_params.get("case")
+    if (requested_case and requested_case != st.session_state.get("w3_requested_case")
+            and requested_case in {w.case.case_id for w in workspaces}):
+        st.session_state.w3_case_id = requested_case
+        st.session_state.w3_requested_case = requested_case
     if st.session_state.get("w3_case_id") not in {w.case.case_id for w in workspaces}:
         st.session_state.pop("w3_case_id", None)
     selected = st.selectbox("选择交易", [w.case.case_id for w in workspaces],

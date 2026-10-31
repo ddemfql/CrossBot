@@ -403,6 +403,45 @@ class WorkItem:
     note: str = ""
 
 @dataclass(slots=True)
+class FormValueOrigin:
+    """Read-only explanation of one displayed/exported form value."""
+    field_name: str
+    value: str
+    origin_kind: str
+    row_number: int | None = None
+    document_id: str = ""
+    version_id: str = ""
+    filename: str = ""
+    version_number: int | None = None
+    location: str = ""
+    actor_id: str = ""
+    occurred_at: datetime | None = None
+    note: str = ""
+
+@dataclass(slots=True)
+class FormFieldCandidate:
+    """Unconfirmed value tied to a specific source file version and position."""
+    value: str
+    document_id: str
+    version_id: str
+    field_name: str = ""
+    page_number: int | None = None
+    sheet_name: str | None = None
+    cell_reference: str | None = None
+
+@dataclass(slots=True)
+class FormRowCandidate:
+    """One source row; identity is its source version/table/row, not its SKU."""
+    values: dict[str, str]
+    document_id: str
+    version_id: str
+    table_index: int
+    row_number: int
+    table_name: str = ""
+    page_number: int | None = None
+    cell_references: dict[str, str] = field(default_factory=dict)
+
+@dataclass(slots=True)
 class DocumentForm:
     document_type: DocumentType
     values: dict[str, str] = field(default_factory=dict)
@@ -411,6 +450,12 @@ class DocumentForm:
     revision: int = 1
     confirmed_by: str | None = None
     confirmed_at: datetime | None = None
+    field_candidates: dict[str, list[FormFieldCandidate]] = field(default_factory=dict)
+    row_candidates: list[FormRowCandidate] = field(default_factory=list)
+    auto_values: dict[str, str] = field(default_factory=dict)
+    auto_rows: list[dict[str, str]] = field(default_factory=list)
+    manual_fields: list[str] = field(default_factory=list)
+    rows_manually_edited: bool = False
 
 @dataclass(slots=True)
 class ImportContext:

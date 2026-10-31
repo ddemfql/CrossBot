@@ -29,14 +29,28 @@ def get_form(workspace, kind) -> DocumentForm:
 
 def effective_values(trade, form):
     values = {name: str(getattr(trade, name, "") or "") for name in FORM_FIELDS[form.document_type]}
-    values.update(form.values)
+    values.update({name: value for name, value in form.values.items()
+                   if value or name in form.manual_fields})
     return values
+
+
+def effective_rows(trade, form):
+    """Use actual form rows, including deliberate emptiness, before trade rows."""
+    if form.rows or form.rows_manually_edited:
+        return deepcopy(form.rows)
+    allowed = ROW_FIELDS.get(form.document_type, {})
+    if not {"description", "quantity"} <= allowed.keys():
+        return []
+    return [{name: "" if getattr(line, name, "") is None else str(getattr(line, name, ""))
+             for name in allowed}
+            for line in trade.line_items]
 
 
 def missing_form_fields(trade, form):
     values = effective_values(trade, form)
     missing = [name for name in REQUIRED_FIELDS[form.document_type] if not values.get(name, "").strip()]
-    has_trade_rows = form.document_type in TRADE_ROW_TYPES and bool(trade.line_items)
+    has_trade_rows = (form.document_type in TRADE_ROW_TYPES and bool(trade.line_items)
+                      and not form.rows_manually_edited)
     if not has_trade_rows and (not form.rows or not any(any(value.strip() for value in row.values()) for row in form.rows)):
         missing.append("rows")
     for number, row in enumerate(form.rows, 1):
@@ -162,7 +176,8 @@ class FormService:
     def __init__(self, repository):
         self.repository = repository
 
-    def save(self, case_id, actor, kind, values, rows, reason, confirm=False):
+    def save(self, case_id, actor, kind, values, rows, reason, confirm=False,
+             manual_fields=None, rows_manually_edited=None):
         workspace = self.repository.get(case_id)
         try:
             require(workspace, actor, "manual_field")
@@ -195,10 +210,28 @@ class FormService:
         cleaned = clean(values, FORM_FIELDS[kind])
         cleaned_rows = [clean(row, ROW_FIELDS[kind]) for row in rows]
         previous = get_form(workspace, kind)
+        if (manual_fields is not None and (not isinstance(manual_fields, (list, tuple))
+                or any(name not in FORM_FIELDS[kind] for name in manual_fields))):
+            raise ValidationError("人工字段标记无效。")
+        if rows_manually_edited is not None and not isinstance(rows_manually_edited, bool):
+            raise ValidationError("人工明细标记无效。")
+        protected = set(previous.manual_fields) | set(manual_fields or [])
+        protected.update(name for name, value in cleaned.items()
+                         if value != previous.values.get(name, "")
+                         or (name not in previous.auto_values and name not in previous.values))
+        protected.update(name for name, value in previous.values.items()
+                         if value and name not in previous.auto_values)
         form = DocumentForm(document_type=kind, values=cleaned, rows=cleaned_rows,
             source_document_ids=previous.source_document_ids, revision=previous.revision + 1,
             confirmed_by=actor.user_id if confirm else None,
-            confirmed_at=utc_now() if confirm else None)
+            confirmed_at=utc_now() if confirm else None,
+            field_candidates=previous.field_candidates, row_candidates=previous.row_candidates,
+            auto_values={name: value for name, value in previous.auto_values.items() if name not in protected},
+            auto_rows=previous.auto_rows,
+            manual_fields=sorted(protected),
+            rows_manually_edited=(previous.rows_manually_edited
+                or cleaned_rows != effective_rows(workspace.trade, previous)
+                or bool(rows_manually_edited)))
         invalidate(workspace, actor, reason.strip())
         workspace.document_forms = [item for item in workspace.document_forms if item.document_type is not kind]
         workspace.document_forms.append(form)

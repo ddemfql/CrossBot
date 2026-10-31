@@ -45,17 +45,18 @@ _LOOKUP["seller"] = "shipper"
 _LOOKUP["supplier"] = "shipper"
 
 
-def _key_value(text: str):
+def _key_value(text: str, lookup=None):
     """Return a recognized field and non-empty value from an explicit label row."""
+    lookup = _LOOKUP if lookup is None else lookup
     parts = re.split(r"\s*[:：=]\s*|\t+|\s{2,}", text.strip(), maxsplit=1)
     if len(parts) != 2 or not parts[1].strip():
         return None
     key = _normalize(parts[0].strip(" .#-"))
-    name = _LOOKUP.get(key)
+    name = lookup.get(key)
     if not name:
         return None
     value = parts[1].strip(" \t:：=;；")
-    if not value or _normalize(value) in _LOOKUP:
+    if not value or _normalize(value) in lookup:
         return None
     return name, value
 
@@ -83,16 +84,17 @@ def from_text_lines(lines: list[tuple[str, int | None]]) -> list[ExtractedField]
     return list(found.values())
 
 
-def from_ocr_lines(lines) -> list[ExtractedField]:
+def from_ocr_lines(lines, *, lookup=None) -> list[ExtractedField]:
     """Parse OCR label rows and simple label/value pairs adjacent on one visual row."""
+    lookup = _LOOKUP if lookup is None else lookup
     ordered = sorted(lines, key=lambda item: (item.page_number or 0, item.bbox[1], item.bbox[0]))
     found: OrderedDict[str, ExtractedField] = OrderedDict()
     for index, item in enumerate(ordered):
-        parsed = _key_value(item.text)
+        parsed = _key_value(item.text, lookup)
         if parsed:
             name, value = parsed
         else:
-            label = _LOOKUP.get(_normalize(item.text.strip(" .#-:")))
+            label = lookup.get(_normalize(item.text.strip(" .#-:")))
             if not label:
                 continue
             height = max(1.0, item.bbox[3] - item.bbox[1])
@@ -107,7 +109,7 @@ def from_ocr_lines(lines) -> list[ExtractedField]:
                 if candidate.bbox[0] < item.bbox[2] or abs(cy - center_y) > max(8, height * 0.85):
                     continue
                 value = candidate.text.strip()
-                if _normalize(value.strip(" .#-:")) in _LOOKUP:
+                if _normalize(value.strip(" .#-:")) in lookup:
                     continue
                 neighbors.append((candidate.bbox[0], candidate, value))
             if not neighbors:

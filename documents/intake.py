@@ -25,6 +25,9 @@ MAX_CELLS = 250000
 INTAKE_VERSION = "w3-source-intake-2"
 
 EXTRA_LABELS = {
+    # Intake preserves seller and shipping parties as separate facts. The
+    # strict parser's legacy seller->shipper alias is not appropriate here.
+    "seller": ("seller", "supplier", "seller name", "supplier name", "卖方", "供应商", "卖方名称"),
     "order_no": ("p.o. no", "po #", "order #", "purchase order #"),
     "invoice_no": ("invoice no", "invoice number", "发票号"),
     "document_date": ("date", "document date", "日期"),
@@ -250,7 +253,7 @@ def collect_source(content: bytes, extension: str, *, ocr_images: bool = False) 
                     lines = OCRBackend().recognize_image(content, page_number=1)
                     text = "[Page 1]\n" + "\n".join(line.text for line in lines)
                     try:
-                        image_fields = from_ocr_lines(lines)
+                        image_fields = from_ocr_lines(lines, lookup=LABELS)
                     except ParseError:
                         warnings.append("OCR 标签出现互相冲突候选；未自动选择，请核对原图。")
                     warnings.append("图中文字为 OCR 转录候选，未虚构补齐未知值；请逐项对照原图确认。")

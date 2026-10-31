@@ -10,6 +10,20 @@
 
 以下为早期完整流程的模型和兼容服务说明；与上述简化界面不一致时，以上述当前契约为准。
 
+## 采集填表契约补充
+
+`DocumentForm` 兼容追加 `field_candidates`、`row_candidates`、`auto_values`、`auto_rows`、`manual_fields`、`rows_manually_edited`。旧快照缺少这些属性时按默认值读取。`FormFieldCandidate` 和 `FormRowCandidate` 是 `core.models` 公共类型，记录未确认候选、来源文档版本、页码、工作表和单元格/行位置。后续完整性核对、人工核对及校验模块直接读取这些结构，不依赖界面字符串，不把自动填写视为人工批准。
+
+`PrefillService.fill(case_id, actor, kind, document_ids)` 读取本交易指定来源的当前采集结果并填入目标表单；空来源列表撤下机器填写、保留人工维护内容。`collect_document(..., target_type=None, ocr_images=False)` 在同一工作区保存采集与对应预填；ZIP 初始化、重新分类、文件移除和版本替换复用同一映射/刷新逻辑。订单主数据不会被预填服务改写。已确认字段优先作为来源值，但填入另一张表单仍不会自动确认该表单。
+
+`effective_values(trade, form)` 和 `effective_rows(trade, form)` 是表单显示、编辑和导出的统一取值入口。人工明确清空的字段/明细保持为空。未被人工维护的空项才允许使用订单基础数据；不要求每个业务值绑定文件，手工录入由审计记录人员、时间和前后值。重新采集使用当前机器结果，已确认或人工来源字段保留；采集完全相同不会重复生成待办或失效产物。
+
+使用既有 WorkspaceRepository 的 compare-and-save 与追加快照，不新增私有存储接口。改动应同步给公共契约、存储、人工核对和校验模块维护者；无需新增存储表，旧审计和快照不改写。生成仍使用既有显式人工确认入口；完整性规则、人工核对业务和跨文件规则的扩展另行负责。
+
+`FormValueOrigin` 为只读公共展示契约，`documents.provenance.form_value_origins(workspace, kind)` 为每个有效字段/明细单元格解释实际来源，区分 file/manual/trade/default/unknown/derived；候选与实际来源分开。人工来源依赖可核实的填写审计，旧保护标记本身不足以证明人工录入；重复 SKU、删行或变更后无法确定原单元格时保守标为来源未核实。
+
+`SimpleExportService.preview(case_id, actor, document_type) -> RenderedOutput` 仅检查读取权限并生成待人工核对预览字节，不写数据库、blob、审计、正式版本或批准。预览明确标注未确认且确认人留空；与正式 generate 共用取值、来源记录、排版及只读规则提示。自动测试可使用该接口检查导出，不模拟真人确认。
+
 本次 W3 实施先补齐契约再实现适配器。现有公共状态、事件、错误保持兼容；新增交易、产物、身份、审批和收款数据统一位于 `core.models`，不在 W3 内复制领域模型。跨分支集成时，公共契约应先同步至 `feature/foundation-contracts`，再由其他功能分支同步。本地实现不移动分支或覆盖其他成员的改动。
 
 ## 公共模型

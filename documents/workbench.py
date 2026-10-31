@@ -8,12 +8,13 @@ from pathlib import PurePath
 from zipfile import ZIP_DEFLATED, ZipFile
 
 from core.errors import CrossBotError, ErrorCode, ValidationError
-from core.models import (Actor, CaseStatus, DocumentStatus, DocumentType,
-                         ReviewTask, Workspace, to_dict)
+from core.models import (Actor, CaseStatus, DocumentStatus, DocumentType, FieldSource,
+                         ReviewStatus, ReviewTask, Workspace, to_dict)
 from review.policy import PERMISSIONS, audit, invalidate, require
 
 
-def collect_document(repository, blobs, case_id: str, document_id: str, actor: Actor):
+def collect_document(repository, blobs, case_id: str, document_id: str, actor: Actor,
+                     target_type=None, *, ocr_images=False):
     """Collect source structure without replacing confirmed values or originals."""
     from .intake import collect_source
     workspace = repository.get(case_id)
@@ -27,9 +28,13 @@ def collect_document(repository, blobs, case_id: str, document_id: str, actor: A
     if version is None:
         raise CrossBotError(ErrorCode.NOT_FOUND, "资料当前版本不存在。")
     text, tables, fields, warnings = collect_source(
-        blobs.get(version.storage_path), PurePath(version.original_filename).suffix.lower())
-    invalidate(workspace, actor, "重新采集文件结构，请核对当前版本。")
-    previous = {field.name: field for field in version.fields}
+        blobs.get(version.storage_path), PurePath(version.original_filename).suffix.lower(),
+        ocr_images=ocr_images)
+    before = to_dict(version)
+    # Human edits survive a new transcription; obsolete machine candidates do
+    # not. Prior workspace snapshots retain the earlier machine extraction.
+    previous = {field.name: field for field in version.fields
+                if field.confirmed_by or field.source is FieldSource.HUMAN}
     version.fields = list(previous.values()) + [field for field in fields if field.name not in previous]
     version.source_text, version.source_tables = text, tables
     version.extraction_warnings = warnings
@@ -37,13 +42,28 @@ def collect_document(repository, blobs, case_id: str, document_id: str, actor: A
     version.status = DocumentStatus.PARSED if text or tables or fields else DocumentStatus.PARSE_FAILED
     version.parse_error = None if version.status is DocumentStatus.PARSED else "未采集到结构化内容，请查看原件并人工补录。"
     document.status = version.status
-    workspace.case.status = CaseStatus.PENDING_REVIEW
+    changed = to_dict(version) != before
     unconfirmed = [field.name for field in version.fields if not field.confirmed_by]
-    if unconfirmed:
+    if unconfirmed and not any(task.document_id == document_id
+            and task.status is ReviewStatus.PENDING
+            and set(task.field_names) == set(unconfirmed) for task in workspace.review_tasks):
         task = ReviewTask(case_id=case_id, document_id=document_id,
                           required=document.required, field_names=unconfirmed)
         workspace.review_tasks.append(task)
         workspace.case.review_task_ids.append(task.task_id)
+        changed = True
+    from .catalog import FORM_FIELDS
+    from .prefill import prefill_form, refresh_prefills
+    changed = refresh_prefills(workspace) or changed
+    target = DocumentType(target_type) if target_type is not None else document.document_type
+    if target in FORM_FIELDS:
+        existing = next((form for form in workspace.document_forms if form.document_type is target), None)
+        ids = list(existing.source_document_ids) if existing else []
+        changed = prefill_form(workspace, target, [*ids, document_id]) or changed
+    if not changed:
+        return workspace
+    invalidate(workspace, actor, "采集内容或预填来源变化，请核对当前版本。")
+    workspace.case.status = CaseStatus.PENDING_REVIEW
     audit(workspace, actor, "source_collected", "document_version", version.version_id,
           after={"table_count": len(tables), "field_count": len(version.fields)},
           reason="采集原文与表格；保留人工已确认字段。")
@@ -80,6 +100,8 @@ def reclassify(repository, case_id: str, document_id: str, actor: Actor,
         matching_form.source_document_ids.append(document_id)
         matching_form.confirmed_by = matching_form.confirmed_at = None
         matching_form.revision += 1
+    from .prefill import refresh_prefills
+    refresh_prefills(workspace)
     audit(workspace, actor, "document_reclassified", "document", document_id,
           before=before, after={"document_type": kind.value, "responsibility": responsibility},
           reason=reason.strip())

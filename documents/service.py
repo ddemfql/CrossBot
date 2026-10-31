@@ -119,6 +119,8 @@ class DocumentService:
         if not document_id:
             workspace.documents.append(document)
             workspace.case.document_ids.append(document.document_id)
+        from .prefill import refresh_prefills
+        refresh_prefills(workspace)
         audit(workspace, actor, "document_uploaded", entity_type="document",
               entity_id=document.document_id, before=before,
               after={"version_id": version.version_id, "sha256": version.sha256,
@@ -179,6 +181,12 @@ class DocumentService:
         audit(workspace, actor, "document_parsed", entity_type="document", entity_id=document_id,
               after={"version_id": version.version_id, "fields": [f.name for f in fields],
                      "parser_version": PARSER_VERSION})
+        from .catalog import FORM_FIELDS
+        from .prefill import prefill_form, refresh_prefills
+        refresh_prefills(workspace)
+        if document.document_type in FORM_FIELDS:
+            form = get_form(workspace, document.document_type)
+            prefill_form(workspace, document.document_type, [*form.source_document_ids, document_id])
         workspace.case.updated_at = utc_now()
         return self._save(workspace)
 
@@ -320,6 +328,8 @@ class DocumentService:
         document.deleted_at = utc_now()
         document.deleted_by = actor.user_id
         document.deletion_reason = reason.strip()
+        from .prefill import refresh_prefills
+        refresh_prefills(workspace)
         audit(workspace, actor, "document_removed_by_admin" if "admin" in actor.roles
               else "document_removed", "document", document_id,
               before=before, after={"deleted_at": document.deleted_at.isoformat()},

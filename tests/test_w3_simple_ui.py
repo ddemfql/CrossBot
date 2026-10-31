@@ -101,12 +101,32 @@ class SimpleUITests(unittest.TestCase):
         workspace = service.upload(workspace.case.case_id, self.actor, "two.txt", b"two", D.PURCHASE_ORDER)
         rows = file_inventory(workspace)
         self.assertEqual(len(rows), 3)
-        self.assertEqual(rows[0]["情况"], "缺失")
+        self.assertEqual(rows[0]["情况"], "待填写")
         with ZipFile(BytesIO(selected_bundle(workspace, service, self.actor,
                 [workspace.documents[1].document_id], []))) as archive:
             self.assertEqual(len(archive.namelist()), 1)
             self.assertTrue(archive.namelist()[0].endswith("two.txt"))
             self.assertEqual(archive.read(archive.namelist()[0]), b"two")
+
+    def test_case_link_and_unconfirmed_preview_do_not_write_artifacts(self):
+        from case_workflow.service import CaseService
+        from validation.rules import DeterministicRules
+        cases = CaseService(self.repo, DeterministicRules())
+        first = cases.create(self.actor, TradeData(order_no="SYN-LINK-A"))
+        target = cases.create(self.actor, TradeData(order_no="SYN-LINK-B"))
+        app = self.app()
+        app.query_params["case"] = target.case.case_id
+        app.run()
+        self.assertFalse(app.exception, [item.message for item in app.exception])
+        self.assertEqual(widget(app.selectbox, "选择交易").value, target.case.case_id)
+        before = self.repo.get(target.case.case_id).revision
+        widget(app.button, "准备待人工核对的 Excel 预览").click().run()
+        self.assertFalse(app.exception, [item.message for item in app.exception])
+        saved = self.repo.get(target.case.case_id)
+        self.assertEqual(saved.revision, before)
+        self.assertFalse(saved.artifacts)
+        self.assertFalse(saved.approvals)
+        self.assertFalse(self.repo.get(first.case.case_id).artifacts)
 
 
 if __name__ == "__main__":

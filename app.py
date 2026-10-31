@@ -8,7 +8,8 @@ st.caption("🎯 赛题闭环：理解 → 生成 → 校验 → 反馈")
 # 侧边栏
 with st.sidebar:
     st.header("工作流选择")
-    wf = st.radio("工作流", ["W1 询盘极速转化", "W2 多平台Listing生成", "W3 交易单证工作台"], label_visibility="collapsed")
+    wf = st.radio("工作流", ["W1 询盘极速转化", "W2 多平台Listing生成", "W3 交易单证工作台"],
+                  index=2 if st.query_params.get("case") else 0, label_visibility="collapsed")
     st.divider()
     if not wf.startswith("W3"):
         st.info("💡 提示：当前处于系统测试模式，接入真实 API 后将输出真实生成结果。")

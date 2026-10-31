@@ -9,7 +9,7 @@ import json
 from core.errors import CrossBotError
 from core.models import CaseStatus, CrossCheckStatus, DocumentType as D, TradeLine, to_dict
 from documents.catalog import DOC_LABELS, SELLER_TYPES, FORM_FIELDS, ROW_FIELDS
-from documents.forms import FormService, get_form
+from documents.forms import FormService, effective_values, get_form
 from documents.intake import classify_source
 from documents.workbench import reclassify, collect_document
 
@@ -36,6 +36,8 @@ def _source_preview(st, ws, doc, documents, actor, context):
         st.image(content, caption=version.original_filename)
     if version.parse_error:
         st.warning(version.parse_error)
+    for warning in version.extraction_warnings:
+        st.caption(warning)
     if version.original_path:
         st.caption(version.original_path)
     if version.source_text:
@@ -60,9 +62,14 @@ def file_inventory(workspace):
                      and d.current_version_id and d.document_type is kind]
         generated = [a for a in workspace.artifacts if a.document_type is kind
                      and a.status in {"draft", "approved"}]
+        form = get_form(workspace, kind)
+        has_data = bool(form.rows or any(value for name, value in
+                        effective_values(workspace.trade, form).items() if name != "currency")
+                        or workspace.trade.line_items)
         rows.append({"文件分类": DOC_LABELS[kind], "需要": kind in workspace.required_document_types,
             "原件": len(originals), "生成文件": len(generated),
-            "情况": "已有原件" if originals else "已生成（无原件）" if generated else "缺失"})
+            "情况": ("已有原件" if originals else "已生成" if generated else
+                ("待生成" if has_data else "待填写") if kind in SELLER_TYPES else "待获取")})
     return rows
 
 
@@ -149,12 +156,22 @@ def _files(st, ws, actor, documents, repository):
             available = [d for d in ws.documents if d.deleted_at is None]
             previous = st.selectbox("保存为", [None, *[d.document_id for d in available]],
                 format_func=lambda key: "新文件" if key is None else next(d.title + " 的新版本" for d in available if d.document_id == key))
+            collect_after = st.checkbox("保存后采集并填入对应表单", value=True)
             submit = st.form_submit_button("保存文件")
         if submit and uploaded:
             actual = kind or (next(d.document_type for d in available if d.document_id == previous)
                               if previous else classify_source(uploaded.name)[0])
-            _run(st, lambda: documents.upload(case_id, actor, uploaded.name, uploaded.getvalue(),
-                 actual, document_id=previous), "原件已保存，请核对分类。")
+            def save_source():
+                saved = documents.upload(case_id, actor, uploaded.name, uploaded.getvalue(),
+                    actual, document_id=previous)
+                source_id = previous or saved.documents[-1].document_id
+                if collect_after:
+                    return collect_document(repository, documents.blobs, case_id, source_id,
+                        actor, ocr_images=PurePath(uploaded.name).suffix.lower() in
+                        {".jpg", ".jpeg", ".png", ".webp"})
+                return saved
+            _run(st, save_source, "原件已保存。采集内容可在对应表单查看；自动填写仍待人工核对。"
+                 if collect_after else "原件已保存，请核对分类。")
     available = [d for d in ws.documents if d.deleted_at is None]
     filter_kind = st.selectbox("按分类查看", [None, *dict.fromkeys(d.document_type for d in available)],
         format_func=lambda k: "全部文件" if k is None else DOC_LABELS[k])
@@ -172,9 +189,17 @@ def _files(st, ws, actor, documents, repository):
         _run(st, lambda: reclassify(repository, case_id, doc.document_id, actor, kind,
             "seller" if kind in SELLER_TYPES else "external", "人工核对文件分类"), "分类已保存。")
     _source_preview(st, ws, doc, documents, actor, "simple")
-    with st.expander("采集文件内容 / 移除文件"):
-        if st.button("采集原文和表格", key=f"simple-collect-{doc.document_id}"):
-            _run(st, lambda: collect_document(repository, documents.blobs, case_id, doc.document_id, actor), "内容已采集，原件保留。")
+    with st.expander("采集并填入表单 / 移除文件"):
+        targets = list(dict.fromkeys([doc.document_type, *SELLER_TYPES]))
+        target = st.selectbox("采集后填入哪份表单", targets, format_func=DOC_LABELS.get,
+            index=targets.index(doc.document_type if doc.document_type in SELLER_TYPES
+                                else D.COMMERCIAL_INVOICE), key=f"simple-target-{doc.document_id}")
+        st.caption("可以用客户订单或工厂资料填写我方文件；采集不会修改订单主数据或自动确认。")
+        if st.button("采集并填入表单", key=f"simple-collect-{doc.document_id}"):
+            version = next(v for v in doc.versions if v.version_id == doc.current_version_id)
+            _run(st, lambda: collect_document(repository, documents.blobs, case_id, doc.document_id,
+                actor, target_type=target, ocr_images=version.media_type.startswith("image/")),
+                "内容已采集并尝试填入表单；人工修改保留，请到生成与导出查看。")
         confirmed = st.checkbox("确认移除当前文件，保留原件和历史", key=f"simple-remove-{doc.document_id}")
         if st.button("移除文件", disabled=not confirmed):
             _run(st, lambda: documents.delete_document(case_id, doc.document_id, actor,
@@ -184,25 +209,100 @@ def _files(st, ws, actor, documents, repository):
 def _exports(st, ws, actor, documents, repository, blobs):
     import pandas as pd
     from .simple_export import SimpleExportService
-    st.caption("无需上传模板。填写已知内容，人工确认后生成简单 Excel；未知内容留空。")
+    from .prefill import PrefillService
+    from .forms import effective_rows
+    from .provenance import form_value_origins, ORIGIN_LABELS
+    st.caption("直接填写业务数据即可制作我方文件，无需原文件或模板；已有资料也可以采集填入。")
     kind = st.selectbox("需要生成的文件", SELLER_TYPES, format_func=DOC_LABELS.get,
                         index=SELLER_TYPES.index(D.COMMERCIAL_INVOICE))
     form = get_form(ws, kind)
+    origins = form_value_origins(ws, kind)
+    scalar_origins = {item.field_name: item for item in origins if item.row_number is None}
+
+    def explain(item):
+        if item is None:
+            return "尚未填写"
+        parts = [ORIGIN_LABELS[item.origin_kind]]
+        if item.filename:
+            parts.append(item.filename + (f" · v{item.version_number}" if item.version_number else ""))
+        if item.location:
+            parts.append(item.location)
+        if item.actor_id:
+            parts.append("办理人：" + item.actor_id)
+        if item.note:
+            parts.append(item.note)
+        return " · ".join(parts)
+
+    with st.expander("当前填写内容及来源", expanded=True):
+        st.caption("逐项展示当前值的来源；采集候选另列，人工修改不会被误标为原文件内容。")
+        origin_rows = []
+        for item in origins:
+            label = (FORM_FIELDS[kind] if item.row_number is None else ROW_FIELDS[kind]).get(item.field_name, item.field_name)
+            origin_rows.append({"填写位置": "表头" if item.row_number is None else f"明细第 {item.row_number} 行",
+                "填写项": label, "当前内容": item.value,
+                "来源类型": ORIGIN_LABELS[item.origin_kind], "来源文件": item.filename,
+                "版本": f"v{item.version_number}" if item.version_number else "",
+                "表格/位置": item.location, "办理人": item.actor_id,
+                "说明": item.note})
+        if origin_rows:
+            st.dataframe(origin_rows, hide_index=True, use_container_width=True)
+        else:
+            st.caption("暂无已填写内容；可先采集资料或手工填写。")
+        if any(item.origin_kind == "unknown" for item in origins):
+            st.info("部分历史内容尚无可靠来源记录，已标为来源待补。不会自动认定为人工填写；可重新采集或由人工核实后修订。")
+    available = [d for d in ws.documents if d.deleted_at is None and d.current_version_id]
+    with st.expander("从已有资料填入（可选）"):
+        source_ids = st.multiselect("选择填表来源", [d.document_id for d in available],
+            default=[key for key in form.source_document_ids if any(d.document_id == key for d in available)],
+            format_func=lambda key: next(d.title for d in available if d.document_id == key),
+            key=f"simple-prefill-sources-{ws.case.case_id}-{kind.value}-{form.revision}")
+        st.caption("使用已经采集的内容；不同候选保留来源，不覆盖人工修改。无需来源时可直接填写下方表单。")
+        if st.button("将采集结果填入当前表单", disabled=not source_ids,
+                     key=f"simple-prefill-{ws.case.case_id}-{kind.value}"):
+            _run(st, lambda: PrefillService(repository).fill(ws.case.case_id, actor, kind, source_ids),
+                "采集结果已填入，候选仍待人工核对。")
+        if form.source_document_ids and st.button("撤下自动填入内容，保留人工修改",
+                key=f"simple-unlink-{ws.case.case_id}-{kind.value}"):
+            _run(st, lambda: PrefillService(repository).fill(ws.case.case_id, actor, kind, []),
+                "已撤下自动填入内容，人工修改保留。")
+    if form.field_candidates or form.row_candidates:
+        with st.expander("查看填写来源与候选"):
+            candidates = []
+            for name, sources in form.field_candidates.items():
+                for source in sources:
+                    candidates.append({"填写项": FORM_FIELDS[kind].get(name, name),
+                        "采集候选": source.value,
+                        "来源文件": next((d.title for d in available if d.document_id == source.document_id), source.document_id),
+                        "文件版本": source.version_id,
+                        "位置": " · ".join(str(v) for v in (source.page_number, source.sheet_name, source.cell_reference) if v is not None),
+                        "填写方式": "人工维护" if name in form.manual_fields else "采集候选（待核对）"})
+            if candidates:
+                st.dataframe(candidates, hide_index=True, use_container_width=True)
+            if any(len({source.value for source in sources}) > 1
+                   for sources in form.field_candidates.values()):
+                st.info("部分字段有不同来源值，未替你选择。请对照来源填写，或交由核对模块处理。")
+            if form.row_candidates:
+                st.caption(f"保留 {len(form.row_candidates)} 行来源候选；来源版本和单元格随数据保存。")
+                if not form.rows and not form.rows_manually_edited:
+                    st.info("明细候选尚未填入；可以选择单一来源，或对照来源手工填写明细。")
+            st.caption("来源记录用于追溯；不代表已完成完整性核对、人工确认或业务校验。")
     with st.expander("补充此文件内容（可选）"):
-        default_fields = list(dict.fromkeys([*(k for k, v in form.values.items() if v),
-            "document_no", "document_date", "notes"]))
+        display_values = effective_values(ws.trade, form)
+        default_fields = list(dict.fromkeys([*(k for k, v in display_values.items() if v),
+            *form.field_candidates, *form.manual_fields, "document_no", "document_date", "notes"]))
         chosen = st.multiselect("显示填写项", list(FORM_FIELDS[kind]),
             default=[k for k in default_fields if k in FORM_FIELDS[kind]], format_func=FORM_FIELDS[kind].get,
-            key=f"simple-form-fields-{ws.case.case_id}-{kind.value}")
+            key=f"simple-form-fields-{ws.case.case_id}-{kind.value}-{form.revision}")
         with st.form(f"simple-form-{ws.case.case_id}-{kind.value}-{form.revision}"):
             values = dict(form.values)
             for name in chosen:
-                values[name] = st.text_input(FORM_FIELDS[kind][name], values.get(name, ""))
+                values[name] = st.text_input(FORM_FIELDS[kind][name], display_values.get(name, ""),
+                    help=explain(scalar_origins.get(name)))
             row_fields = ROW_FIELDS[kind]
-            frame = pd.DataFrame(form.rows, columns=list(row_fields)).fillna("")
+            frame = pd.DataFrame(effective_rows(ws.trade, form), columns=list(row_fields)).fillna("")
             updated = st.data_editor(frame, num_rows="dynamic", hide_index=True,
                 column_config={k: st.column_config.TextColumn(v) for k, v in row_fields.items()},
-                use_container_width=True, key=f"simple-form-rows-{kind.value}")
+                use_container_width=True, key=f"simple-form-rows-{ws.case.case_id}-{kind.value}-{form.revision}")
             save = st.form_submit_button("保存补充内容")
         if save:
             rows = [{k: "" if pd.isna(row[k]) else str(row[k]) for k in row_fields}
@@ -210,6 +310,23 @@ def _exports(st, ws, actor, documents, repository, blobs):
             rows = [row for row in rows if any(row.values())]
             _run(st, lambda: FormService(repository).save(ws.case.case_id, actor, kind,
                 values, rows, "人工填写文件内容", confirm=False), "补充内容已保存。")
+    with st.expander("导出前查看已保存内容"):
+        st.caption("此处展示当前已保存的数据；修改表单后请先保存，再生成文件。")
+        st.dataframe([{"填写项": label, "内容": effective_values(ws.trade, form).get(name, "")}
+            for name, label in FORM_FIELDS[kind].items()], hide_index=True, use_container_width=True)
+        preview_rows = effective_rows(ws.trade, form)
+        if preview_rows:
+            st.dataframe(pd.DataFrame(preview_rows, columns=list(ROW_FIELDS[kind])).fillna(""),
+                hide_index=True, use_container_width=True)
+        if st.button("准备待人工核对的 Excel 预览", key=f"simple-preview-{ws.case.case_id}-{kind.value}"):
+            try:
+                preview = SimpleExportService(repository, blobs).preview(ws.case.case_id, actor, kind)
+                st.download_button("下载待人工核对预览", preview.content,
+                    f"{kind.value}-待人工核对预览.xlsx", mime=preview.media_type,
+                    key=f"simple-preview-download-{ws.case.case_id}-{kind.value}")
+                st.caption("预览未经过人工确认，不记为正式生成版本，也不会改变交易状态。")
+            except CrossBotError as exc:
+                st.error(exc.message)
     fingerprint = sha256(json.dumps({"trade": to_dict(ws.trade), "forms": to_dict(ws.document_forms),
         "sources": [(d.document_id, d.current_version_id, d.document_type.value, d.deleted_at)
                     for d in ws.documents], "artifacts": [a.artifact_id for a in ws.artifacts]},
@@ -265,11 +382,13 @@ def render_workspace(ws, actor, cases, documents, repository, blobs):
         return
     _edit_trade(st, ws, actor, cases)
     rows = file_inventory(ws)
-    missing = [r["文件分类"] for r in rows if r["需要"] and r["情况"] == "缺失"]
+    missing = [r["文件分类"] for r in rows if r["需要"] and not r["原件"] and not r["生成文件"]]
     if missing:
         st.warning("缺失文件：" + "、".join(missing))
-    else:
+    elif ws.required_document_types:
         st.success("当前清单所需文件均已留存。")
+    else:
+        st.info("尚未设置本单所需文件清单，当前仅展示已有资料；不表示资料完整。")
     if rows:
         st.dataframe(rows, hide_index=True, use_container_width=True)
     with st.expander("调整本单所需文件"):

@@ -1,6 +1,7 @@
 from hashlib import sha256
 from datetime import datetime, timezone
 from io import BytesIO
+from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 from unittest.mock import patch
@@ -10,8 +11,9 @@ from zipfile import ZipFile
 from openpyxl import load_workbook
 
 from core.errors import CrossBotError, ErrorCode
-from core.models import (Actor, Case, CaseStatus, DocumentForm, DocumentType,
-                         TradeData, TradeLine, Workspace)
+from core.models import (Actor, Case, CaseStatus, Document, DocumentForm, DocumentType,
+                         DocumentVersion, FormFieldCandidate, FormRowCandidate,
+                         TradeData, TradeLine, Workspace, to_dict)
 from documents.simple_export import SimpleExportService
 from storage.blobs import LocalBlobStore
 from storage.sqlite import SQLiteWorkspaceRepository
@@ -145,7 +147,193 @@ class SimpleExportTests(unittest.TestCase):
         self.addCleanup(workbook.close)
         sheet = workbook["文件"]
         self.assertTrue(any([cell.value for cell in row] ==
-            ["SYN-A", "Synthetic item", "2.5", "pcs", "3", "7.5"] for row in sheet))
+            ["SYN-A", "Synthetic item", 2.5, "pcs", 3, 7.5] for row in sheet))
+
+    def workbook(self, result):
+        workbook = load_workbook(BytesIO(self.blobs.get(result.artifacts[-1].storage_path)))
+        self.addCleanup(workbook.close)
+        return workbook
+
+    def test_manual_first_form_exports_numbers_and_subtotal_without_source_files(self):
+        from documents.forms import FormService
+        FormService(self.repo).save(self.case_id, self.actor, DocumentType.COMMERCIAL_INVOICE,
+            {"currency": "USD", "buyer": "Manual Buyer"},
+            [{"description": "Synthetic A", "quantity": "2.5", "unit": "pcs", "unit_price": "3"},
+             {"description": "Synthetic B", "quantity": "1", "unit": "pcs", "unit_price": "4"}],
+            "Synthetic manual form entry")
+        result = self.generate()
+        self.assertFalse(result.documents)
+        workbook = self.workbook(result)
+        totals = list(workbook["明细合计"].values)
+        self.assertIn(("产品行数量之和", 3.5, "pcs", None), totals)
+        self.assertIn(("产品行金额小计", 11.5, "USD", "不含另列费用或调整，不代表最终应付总额"), totals)
+        self.assertTrue(any(cell.data_type == "n" and cell.value == 2.5
+                            for row in workbook["文件"] for cell in row))
+        self.assertTrue(any(row[2] == "人工填写" for row in workbook["字段来源"].values))
+
+    def test_mixed_units_and_missing_amount_do_not_produce_false_totals(self):
+        workspace = self.repo.get(self.case_id)
+        workspace.document_forms = [DocumentForm(document_type=DocumentType.COMMERCIAL_INVOICE,
+            values={"currency": "USD"}, rows=[{"description": "A", "quantity": "2", "unit": "pcs", "unit_price": "3"},
+                  {"description": "B", "quantity": "1", "unit": "kg", "unit_price": ""}])]
+        self.repo.save(workspace, expected_revision=workspace.revision)
+        totals = list(self.workbook(self.generate())["明细合计"].values)
+        self.assertEqual(totals[1][1], None)
+        self.assertEqual(totals[2][1], None)
+
+    def test_pl_line_sums_are_explicit_and_missing_values_remain_blank(self):
+        workspace = self.repo.get(self.case_id)
+        workspace.document_forms = [DocumentForm(document_type=DocumentType.PACKING_LIST,
+            rows=[{"description": "A", "quantity": "2", "unit": "pcs", "packages": "0", "gross_weight_kg": "2.5", "net_weight_kg": ""},
+                  {"description": "B", "quantity": "1", "unit": "pcs", "packages": "2", "gross_weight_kg": "3.5", "net_weight_kg": "1"}])]
+        self.repo.save(workspace, expected_revision=workspace.revision)
+        result = self.service.generate(self.case_id, self.actor, DocumentType.PACKING_LIST, human_confirmed=True)
+        totals = {row[0]: row for row in self.workbook(result)["明细合计"].values}
+        self.assertEqual(totals["明细行箱数之和（未去重）"][1], 2)
+        self.assertEqual(totals["明细行毛重之和（未去重）"][1], 6)
+        self.assertEqual(totals["明细行净重之和（未去重）"][1], None)
+
+    def test_source_sheet_retains_candidates_positions_and_manual_override(self):
+        workspace = self.repo.get(self.case_id)
+        doc = Document(case_id=self.case_id, document_type=DocumentType.COMMERCIAL_INVOICE, title="synthetic.xlsx")
+        version = DocumentVersion(document_id=doc.document_id, original_filename="synthetic.xlsx")
+        doc.versions.append(version)
+        doc.current_version_id = version.version_id
+        workspace.documents.append(doc)
+        workspace.document_forms = [DocumentForm(document_type=DocumentType.COMMERCIAL_INVOICE,
+            values={"buyer": "Source buyer"},
+            field_candidates={"buyer": [FormFieldCandidate("Source buyer", doc.document_id,
+                version.version_id, field_name="customer_name", sheet_name="Sheet A", cell_reference="B3")]},
+            row_candidates=[FormRowCandidate({"quantity": "3"}, doc.document_id,
+                version.version_id, 0, 4, "Sheet A", cell_references={"quantity": "C4"})])]
+        self.repo.save(workspace, expected_revision=workspace.revision)
+        from documents.forms import FormService
+        FormService(self.repo).save(self.case_id, self.actor, DocumentType.COMMERCIAL_INVOICE,
+            {"buyer": "Corrected buyer"}, [], "Synthetic manual correction")
+        rows = list(self.workbook(self.generate())["字段来源"].values)
+        buyer = next(row for row in rows if row[0] == "buyer")
+        self.assertEqual(buyer[1:4], ("Corrected buyer", "人工填写", None))
+        self.assertEqual(buyer[10], self.actor.user_id)
+        candidate = next(row for row in rows if row[0] == "候选字段 buyer")
+        self.assertEqual(candidate[3:6], ("Source buyer", "synthetic.xlsx", "v1"))
+        self.assertEqual(candidate[8:10], ("Sheet A", "B3"))
+        self.assertTrue(any(row[0] == "来源明细行 4" and 'C4' in row[9] for row in rows))
+
+    def test_edit_form_exports_newest_values_and_preserves_previous_output(self):
+        from documents.forms import FormService
+        forms = FormService(self.repo)
+        forms.save(self.case_id, self.actor, DocumentType.COMMERCIAL_INVOICE,
+                   {"buyer": "First buyer"}, [], "manual first", confirm=False)
+        first = self.generate().artifacts[-1]
+        forms.save(self.case_id, self.actor, DocumentType.COMMERCIAL_INVOICE,
+                   {"buyer": "Newest buyer"}, [], "manual edit", confirm=False)
+        result = self.generate()
+        latest = result.artifacts[-1]
+        self.assertNotEqual(first.sha256, latest.sha256)
+        self.assertEqual(latest.form_snapshot["values"]["buyer"], "Newest buyer")
+        self.assertTrue(any(cell.value == "Newest buyer" for row in self.workbook(result)["文件"] for cell in row))
+
+    def test_print_layout_and_precision_safe_numeric_cells(self):
+        workspace = self.repo.get(self.case_id)
+        workspace.document_forms = [DocumentForm(document_type=DocumentType.COMMERCIAL_INVOICE,
+            rows=[{"description": "Synthetic", "quantity": "1234567890123456", "unit": "pcs", "unit_price": "3"}])]
+        self.repo.save(workspace, expected_revision=workspace.revision)
+        sheet = self.workbook(self.generate())["文件"]
+        self.assertEqual(sheet.page_setup.fitToWidth, 1)
+        self.assertEqual(sheet.page_setup.orientation, "landscape")
+        self.assertIsNotNone(sheet.print_title_rows)
+        self.assertIsNotNone(sheet.freeze_panes)
+        value = next(cell for row in sheet for cell in row if cell.value == "1234567890123456")
+        self.assertEqual(value.data_type, "s")
+
+    def test_explicit_manual_row_deletion_does_not_restore_trade_lines(self):
+        workspace = self.repo.get(self.case_id)
+        workspace.trade.line_items = [TradeLine("SYN-A", "Should stay deleted", "1", "2")]
+        workspace.document_forms = [DocumentForm(document_type=DocumentType.COMMERCIAL_INVOICE,
+                                                rows=[], rows_manually_edited=True)]
+        self.repo.save(workspace, expected_revision=workspace.revision)
+        self.assertFalse(any(cell.value == "Should stay deleted"
+                             for row in self.workbook(self.generate())["文件"] for cell in row))
+
+    def test_extreme_decimal_inputs_stay_text_and_uncomputable_total_stays_blank(self):
+        workspace = self.repo.get(self.case_id)
+        workspace.document_forms = [DocumentForm(document_type=DocumentType.COMMERCIAL_INVOICE,
+            rows=[{"description": "A", "quantity": "1e1000000", "unit_price": "2", "unit": "pcs"},
+                  {"description": "B", "quantity": "-1e1000000", "unit_price": "2", "unit": "pcs"}])]
+        self.repo.save(workspace, expected_revision=workspace.revision)
+        workbook = self.workbook(self.generate())
+        for text in ("1e1000000", "-1e1000000"):
+            matching = [cell for row in workbook["文件"] for cell in row if cell.value == text]
+            self.assertTrue(matching)
+            self.assertEqual(matching[0].data_type, "s")
+        totals = {row[0]: row for row in workbook["明细合计"].values}
+        self.assertIsNone(totals["产品行金额小计"][1])
+
+    def test_preview_sourced_form_is_unconfirmed_and_does_not_change_repository_or_blobs(self):
+        workspace = self.repo.get(self.case_id)
+        doc = Document(case_id=self.case_id, document_type=DocumentType.COMMERCIAL_INVOICE,
+                       title="synthetic-source.xlsx")
+        original = b"synthetic-original-preserved"
+        version = DocumentVersion(document_id=doc.document_id, original_filename=doc.title,
+                                  storage_path=self.blobs.put(original), sha256=sha256(original).hexdigest())
+        doc.versions.append(version)
+        doc.current_version_id = version.version_id
+        workspace.documents.append(doc)
+        workspace.document_forms = [DocumentForm(document_type=DocumentType.COMMERCIAL_INVOICE,
+            values={"buyer": "Synthetic source buyer"},
+            auto_values={"buyer": "Synthetic source buyer"}, source_document_ids=[doc.document_id],
+            field_candidates={"buyer": [FormFieldCandidate("Synthetic source buyer", doc.document_id,
+                version.version_id, field_name="customer_name", sheet_name="Source", cell_reference="B2")]})]
+        self.repo.save(workspace, expected_revision=workspace.revision)
+        before = to_dict(self.repo.get(self.case_id))
+        blobs_before = sorted(p.name for p in Path(self.temp.name).iterdir())
+        output = self.service.preview(self.case_id, self.actor, DocumentType.COMMERCIAL_INVOICE)
+        self.assertEqual(to_dict(self.repo.get(self.case_id)), before)
+        self.assertEqual(sorted(p.name for p in Path(self.temp.name).iterdir()), blobs_before)
+        self.assertEqual(self.blobs.get(version.storage_path), original)
+        workbook = load_workbook(BytesIO(output.content))
+        self.addCleanup(workbook.close)
+        self.assertEqual(workbook["文件"]["B2"].value, "否（待人工确认）")
+        self.assertIsNone(workbook["文件"]["D2"].value)
+        self.assertIn("未人工确认预览", workbook["文件"]["B3"].value)
+        trace = dict(workbook["生成记录"].values)
+        self.assertIsNone(trace["人工确认人"])
+        self.assertEqual(trace["预览申请账号"], self.actor.user_id)
+        origins = list(workbook["字段来源"].values)
+        self.assertTrue(any(row[0] == "buyer" and row[1] == "Synthetic source buyer" for row in origins))
+        self.assertTrue(any("B2" in str(row) for row in origins))
+        self.assertEqual(output.extension, "xlsx")
+        self.assertEqual(output.media_type, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+    def test_preview_is_reproducible_and_leaves_prior_confirmed_outputs_untouched(self):
+        confirmed = self.generate().artifacts[-1]
+        before = to_dict(self.repo.get(self.case_id))
+        first = self.service.preview(self.case_id, self.actor, DocumentType.COMMERCIAL_INVOICE)
+        second = self.service.preview(self.case_id, self.actor, DocumentType.COMMERCIAL_INVOICE)
+        self.assertEqual(first.content, second.content)
+        self.assertNotEqual(sha256(first.content).hexdigest(), confirmed.sha256)
+        self.assertEqual(to_dict(self.repo.get(self.case_id)), before)
+        self.assertEqual(sha256(self.blobs.get(confirmed.storage_path)).hexdigest(), confirmed.sha256)
+        with self.assertRaises(CrossBotError) as raised:
+            self.service.generate(self.case_id, self.actor,
+                                  DocumentType.COMMERCIAL_INVOICE, human_confirmed=False)
+        self.assertEqual(raised.exception.code, ErrorCode.REVIEW_REQUIRED)
+
+    def test_preview_denies_external_invalid_and_unauthorized_requests_without_writes(self):
+        before = to_dict(self.repo.get(self.case_id))
+        for kind in (DocumentType.BILL_OF_LADING, DocumentType.TEST_REPORT):
+            with self.assertRaises(CrossBotError) as raised:
+                self.service.preview(self.case_id, self.actor, kind)
+            self.assertEqual(raised.exception.code, ErrorCode.FILE_TYPE_UNSUPPORTED)
+        with self.assertRaises(CrossBotError):
+            self.service.preview(self.case_id, self.actor, "invalid-document-type")
+        for actor in (Actor("guest", ["sales"], authenticated=False),
+                      Actor("unknown", ["unknown"], authenticated=True),
+                      Actor("ai", ["admin"], authenticated=True, kind="ai")):
+            with self.assertRaises(CrossBotError) as raised:
+                self.service.preview(self.case_id, actor, DocumentType.COMMERCIAL_INVOICE)
+            self.assertEqual(raised.exception.code, ErrorCode.FORBIDDEN)
+        self.assertEqual(to_dict(self.repo.get(self.case_id)), before)
 
 
 if __name__ == "__main__":

@@ -49,63 +49,21 @@ def _archive_path(info) -> str:
 
 
 def _row_candidates(tables, allowed: dict[str, str]) -> list[dict[str, str]]:
-    """Preserve explicitly headed product rows, never infer totals or prices."""
-    rows = []
-    for table in tables:
-        for index, row in enumerate(table.rows):
-            headers = {column: source_label(value) for column, value in enumerate(row)}
-            if "description" in allowed:
-                headers = {column: "description" if name == "product_name" else name
-                           for column, name in headers.items()}
-            headers = {column: name for column, name in headers.items() if name in allowed}
-            # A single label and value is not a matrix header. Product identity
-            # is required so a list of quantities alone never becomes products.
-            if len(headers) < 2 or not ({"product_code", "product_name", "description"} & set(headers.values())):
-                continue
-            for source_row in table.rows[index + 1:]:
-                if not any(str(value).strip() for value in source_row):
-                    break
-                if any(source_label(value) for value in source_row):
-                    break
-                candidate = {name: source_row[column] for column, name in headers.items()
-                             if column < len(source_row) and str(source_row[column]).strip()
-                             and not str(source_row[column]).startswith("=")}
-                if not any(candidate.get(name) for name in ("product_code", "product_name", "description")):
-                    continue
-                rows.append(candidate)
-            break
-    return rows
+    """Compatibility helper using the ordinary deterministic prefill mapper."""
+    from core.models import DocumentVersion
+    from documents.prefill import row_candidates
+    return [row.values for row in row_candidates(DocumentVersion(source_tables=tables), "", allowed)]
 
 
 def _candidate_forms(workspace: Workspace):
-    from documents.catalog import FORM_FIELDS, ROW_FIELDS
-    workspace.document_forms = [DocumentForm(document_type=kind,
-        values={key: "" for key in labels}) for kind, labels in FORM_FIELDS.items()]
-    for form in workspace.document_forms:
-        matching = [document for document in workspace.documents
-                    if document.document_type is form.document_type
-                    or (document.document_type is Type.COMBINED_INVOICE_PACKING_LIST
-                        and form.document_type in {Type.COMMERCIAL_INVOICE, Type.PACKING_LIST})]
-        seen, conflicts = {}, set()
-        for document in matching:
-            version = document.versions[-1]
-            form.source_document_ids.append(document.document_id)
-            for field in version.fields:
-                aliases = {"customer_name": "buyer", "shipper": "seller"}
-                name = field.name if field.name in form.values else aliases.get(field.name, field.name)
-                if name not in form.values or field.value is None:
-                    continue
-                value = str(field.value)
-                if name in seen and seen[name] != value:
-                    conflicts.add(name)
-                else:
-                    seen[name] = value
-            row_labels = ROW_FIELDS.get(form.document_type, {}) if isinstance(ROW_FIELDS, dict) else {}
-            if isinstance(row_labels, dict):
-                form.rows.extend(_row_candidates(version.source_tables, row_labels))
-        for name, value in seen.items():
-            if name not in conflicts:
-                form.values[name] = value
+    from documents.catalog import FORM_FIELDS
+    from documents.prefill import prefill_form
+    for kind in FORM_FIELDS:
+        ids = [doc.document_id for doc in workspace.documents
+               if doc.document_type is kind
+               or (doc.document_type is Type.COMBINED_INVOICE_PACKING_LIST
+                   and kind in {Type.COMMERCIAL_INVOICE, Type.PACKING_LIST})]
+        prefill_form(workspace, kind, ids)
 
 
 class ArchiveImporter:
