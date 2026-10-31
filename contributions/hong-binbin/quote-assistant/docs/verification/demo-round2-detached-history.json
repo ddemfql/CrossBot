@@ -1,0 +1,124 @@
+﻿{
+  "notice": "模拟业务资料与 AI 草稿；未经人工业务审核，未发送给客户。",
+  "versions": [
+    {
+      "version": 1,
+      "created_at": "2026-10-29T18:14:46+00:00",
+      "context": {
+        "data_kind": "synthetic",
+        "source": "planning/fixtures/products.json; 自定义完整性规则 C01",
+        "product": {
+          "sku": "BAG-001",
+          "name": "洪彬斌的练习布袋",
+          "material": "棉布",
+          "moq": 100
+        },
+        "quantity": 300,
+        "currency": "USD",
+        "unit_price": "1.20",
+        "goods_total": "360.00",
+        "payment_terms": "拟议条款，30%预付款，70%发货前支付，待双方确认",
+        "payment_status": "provided",
+        "price_scope": "货品金额，不含运费、税费、定制费",
+        "unconfirmed": [
+          "目的地",
+          "运输条件与运费",
+          "发货及到货时间",
+          "报价有效期",
+          "付款条件是否双方确认"
+        ],
+        "dialogue": {
+          "user_message": "付款条件改为：拟议条款，30%预付款，70%发货前支付，待双方确认。数量保持1000个。",
+          "feedback": [
+            {
+              "字段": "付款条件",
+              "上一版": "未填写",
+              "新版": "拟议条款，30%预付款，70%发货前支付，待双方确认"
+            },
+            {
+              "字段": "付款填写状态",
+              "上一版": "missing",
+              "新版": "provided"
+            }
+          ]
+        }
+      },
+      "draft": {
+        "english_reply": "Subject: Simulated draft — Quotation for cotton bags (BAG-001)\n\nDear Customer,\n\nThis is a simulated draft for practice purposes only.\n\nThank you for your inquiry. For SKU BAG-001, described as cotton bags (product name as listed: 洪彬斌的练习布袋), the quantity shown in the data is 300 pieces at USD 1.20 per piece, giving a goods total of USD 360.00. Please note this is the goods amount only; it does not include shipping, taxes, or customization fees.\n\nRegarding payment, the terms entered are proposed terms: 30% advance payment and 70% before shipment, subject to confirmation by both parties. This is not a statement that either party has already agreed.\n\nTo proceed, could you please provide: the destination, your expected arrival date, and your shipping preference, and let us know whether you would consider an alternative product. On our side, we still need to verify the shipping cost, confirm the available shipping/arrival timing, and propose a quotation validity period.\n\nBest regards,\n[Your name]\n\nSimulated draft — for practice only; no platform submission or message has been sent.",
+        "chinese_checklist": "模拟数据，仅供外贸业务练习，不代表真实交易或平台操作。\n\n一、资料与价格\n- 商品：BAG-001 洪彬斌的练习布袋；资料材质：棉布；MOQ：100。\n- 报价数量与单价：300 个 × USD 1.20 = USD 360.00（货品金额，不含运费、税费、定制费；未有包运费到货的说法）。\n- 金额与数量按程序给定数据原样使用，未重算或改价。\n- 注意：对话消息中用户提到数量保持1000个，但本次资料字段 quantity 为300；两个数量不一致，需人工确认以哪个为准后再更新报价，本稿按300处理。\n\n二、向买家补问\n- 目的地。\n- 期望到货日期。\n- 运输偏好。\n- 是否考虑替代产品。\n\n三、卖方待核实\n- 运费需另行核算。\n- 可发货时间/预计到货时间需核实。\n- 报价有效期需提出。\n- 付款条件是否双方确认，目前仅为拟议条款，须 subject to confirmation by both parties。\n\n四、双方待协商\n- 付款条件：拟议 30% 预付款、70% 发货前支付；算术检查合计 100%，但仅为自定义算术检查，不证明双方已同意，仍需双方确认。\n- 运输条件与运费。\n- 发货及到货时间。\n\n五、来源与规则说明\n- 资料来源：本次 JSON 中的商品、数量、币种、单价、货品总额、付款条款、未确认事项及对话/检查报告。\n- 付款比例检查：自定义完整性规则 C02，status=consistent，仅为算术一致，不是平台规定或法律审查。\n- platform_report：scene=general_email，状态 not_applicable；普通邮件不套用 RFQ 平台规则。本稿未声称已审核合规、未声称已发送消息、未预测平台审核结果。\n- 商品英文描述仅依据资料材质“棉布”使用 cotton bag，未添加 canvas、100% cotton、organic、waterproof 等未提供信息。\n\n六、待确认事项\n- 数量以300还是1000为准，需人工核对。\n- 付款条件仍待双方确认。\n- 运费、税费、定制费均未包含，均未提供。\n- 客户身份、认证、库存、交期、运输费用、付款承诺均未在资料中确认，不得编造。"
+      },
+      "check_report": {
+        "rule_id": "C02",
+        "rule_version": "1",
+        "rule_name": "两笔付款比例算术一致性",
+        "checked_at": "2026-10-29T18:14:41+00:00",
+        "checked_by": "local_python_decimal",
+        "input_payment_terms": "拟议条款，30%预付款，70%发货前支付，待双方确认",
+        "status": "consistent",
+        "status_label": "算术一致，仍需双方确认",
+        "message": "两笔付款比例合计为 100%，算术一致；条款仍需双方确认。",
+        "advance_percent": "30",
+        "before_shipment_percent": "70",
+        "total_percent": "100",
+        "expected_total_percent": "100",
+        "source": "docs/payment-ratio-practice.md",
+        "basis": "项目模拟练习设定：两笔付款覆盖全部款项；每项大于0且不超过100，合计100%。",
+        "limitation": "自定义算术检查，不是平台规定或法律审查，不证明双方已同意。未支持的句式须人工核对。"
+      },
+      "wording_report": {
+        "rule_id": "C03",
+        "rule_version": "1",
+        "rule_name": "付款条件确认状态表达检查",
+        "category": "合同条款表达（与 C02 同类，不计作第二类别）",
+        "basis": "本应用只有付款条件填写状态，没有双方接受条款的证据字段；因此英文中的已同意、已接受、已确认表述需要人工复核。",
+        "reference_title": "UNCITRAL CISG Article 18 (2004 Digest)",
+        "reference_url": "https://digitallibrary.un.org/record/535327/files/A_CN.9_SER.C_DIGEST_CISG_18-EN.pdf",
+        "reference_note": "第18条区分接受要约的意思表示/行为与单纯沉默。仅作背景参考；本地短语规则为项目自定义，不判断公约适用、合同成立或法律效力。",
+        "verified_on": "2026-10-29",
+        "source": "local_lab/rules/payment-wording.json",
+        "limitation": "只筛查部分英文付款表述，可能漏检或误报；未命中不等于条款正确或合规。否定、疑问、条件句等仍需人工阅读。不会自动改写或发送原稿。",
+        "suggestion": "The proposed payment terms remain subject to confirmation by both parties.",
+        "suggestion_zh": "拟议付款条件仍待双方确认。替换前请人工核对原句中的比例等细节，必要时保留。",
+        "checked_at": "2026-10-29T18:14:46+00:00",
+        "checked_by": "local_english_phrase_rules",
+        "input_english_reply": "Subject: Simulated draft — Quotation for cotton bags (BAG-001)\n\nDear Customer,\n\nThis is a simulated draft for practice purposes only.\n\nThank you for your inquiry. For SKU BAG-001, described as cotton bags (product name as listed: 洪彬斌的练习布袋), the quantity shown in the data is 300 pieces at USD 1.20 per piece, giving a goods total of USD 360.00. Please note this is the goods amount only; it does not include shipping, taxes, or customization fees.\n\nRegarding payment, the terms entered are proposed terms: 30% advance payment and 70% before shipment, subject to confirmation by both parties. This is not a statement that either party has already agreed.\n\nTo proceed, could you please provide: the destination, your expected arrival date, and your shipping preference, and let us know whether you would consider an alternative product. On our side, we still need to verify the shipping cost, confirm the available shipping/arrival timing, and propose a quotation validity period.\n\nBest regards,\n[Your name]\n\nSimulated draft — for practice only; no platform submission or message has been sent.",
+        "input_payment_terms": "拟议条款，30%预付款，70%发货前支付，待双方确认",
+        "agreement_evidence": "not_recorded_by_application",
+        "status": "manual",
+        "status_label": "未发现明确肯定表述，仍需人工审核",
+        "findings": []
+      },
+      "platform_report": {
+        "rule_id": "P01",
+        "rule_version": "1",
+        "rule_name": "RFQ 商品材质匹配预检",
+        "category": "平台规则参考预检",
+        "reference_title": "阿里巴巴国际站采购直达公开规则：二、关联规则第5项",
+        "reference_url": "https://activity.alibaba.com/rfq/service_term.html",
+        "reference_version": "公开页面注明2016-10-01生效；不作为2026最新版证明",
+        "reviewed_on": "2026-10-29",
+        "current_rule_url": "https://rulechannel.alibaba.com/icbu?type=detail&ruleId=2039&cId=1276",
+        "freshness": "已读取公开旧版；当前规则中心仅取得页面框架，最新正文待人工核对。",
+        "basis": "公开RFQ规则将报价产品不符列为可能被拒绝匹配的情况。本项目将材质对照作为产品匹配的一项预检。",
+        "implementation": "本地自定义检测：仅归一明确的棉布/涤纶材质名称；两者不同则提示差异，相同只说明材质字段相符，其他描述需人工核对。平台未规定此算法。",
+        "source": "local_lab/rules/rfq-material.json",
+        "limitation": "仅适用于选择的阿里国际站RFQ模拟场景；未接入平台、未提交报价。只检查一个材质字段，不检查全部规格或平台资质，不预测平台审核结果。普通邮件场景不套用此平台规则。",
+        "simulation_notice": "商品与买家要求均为练习数据；买家要求由用户填写，未从真实RFQ抓取或由AI提取。",
+        "checked_at": "2026-10-29T18:14:41+00:00",
+        "checked_by": "local_material_comparison",
+        "scene": "general_email",
+        "input_requested_material": "",
+        "input_product": {
+          "sku": "BAG-001",
+          "name": "洪彬斌的练习布袋",
+          "material": "棉布"
+        },
+        "normalized_requested": null,
+        "normalized_offered": "cotton",
+        "status": "not_applicable",
+        "status_label": "当前是普通邮件场景，不套用 RFQ 平台规则",
+        "suggestion": "如需检查模拟RFQ，请主动选择对应场景，并填写买家要求。"
+      }
+    }
+  ]
+}

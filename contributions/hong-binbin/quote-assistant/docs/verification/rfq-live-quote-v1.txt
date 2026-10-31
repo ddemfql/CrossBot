@@ -1,0 +1,63 @@
+﻿模拟报价草稿 · V1
+生成时间（UTC）：2026-10-29T09:41:17+00:00
+未经人工业务审核，未发送给客户。
+
+商品：BAG-001 · 洪彬斌的练习布袋
+代码计算：500 × 1.20 USD = 600.00 USD
+范围：货品金额，不含运费、税费、定制费
+
+英文客户回复
+Simulated draft — Subject: Re: Your RFQ for bags
+
+Thank you for your inquiry. We note that your requested material is polyester, whereas the item we are currently able to quote (SKU BAG-001, practice canvas bag) is made of cotton. The material differs from your request. This quotation covers only that item, at USD 1.20 per unit for 500 units, giving a goods total of USD 600.00. That amount is for goods only and excludes shipping, taxes and customization fees.
+
+Because of the material difference, please confirm whether you would consider a cotton alternative or whether polyester is required. If it is required, we can look at other options separately.
+
+On payment, the proposed terms (not yet agreed by either side) are 50% in advance and 50% before shipment, subject to confirmation by both parties.
+
+We would also need you to confirm: destination, shipping terms and freight cost, dispatch and delivery timing, and how long the quotation remains valid. We have not reviewed compliance or sent any message; this is a practice draft only.
+
+中文内部核对清单
+【模拟数据核对清单】
+1. 资料来源：products.json（SKU BAG-001，练习布袋，材质棉布，MOQ 100）；用户填写的数量500、币种USD、单价1.20、货品总额600.00（由程序计算，原样使用，未重算）；用户填写的拟议付款条件（50%预付+50%发货前，待双方确认）。以上均为模拟练习数据。
+2. 场景：alibaba_rfq 首次回复。买家 requested_material=涤纶，商品 material=棉布，平台报告状态 mismatch（材质不一致）。回复已明确说明差异，未改写买家需求，也未声称全部需求满足或平台审核通过。
+3. 金额口径：600.00 USD 仅货品金额，不含运费、税费、定制费；不得称包运费到货价。
+4. 付款条件：50%/50% 仅为用户填写的拟议条款，算术预检显示合计100%（自定义检查，非平台规定或法律审查），不能视为买卖双方已同意，仍需双方确认。
+5. 待确认条件：目的地；运输条件与运费；发货及到货时间；报价有效期；付款条件是否双方确认；买家是否接受棉布替代品或坚持涤纶。
+6. 合规提示：平台规则参考为公开旧版（2016-10-01生效），最新正文待人工核对；本预检只对照一个材质字段，不检查全部规格或平台资质，不预测平台审核结果。普通邮件场景不套用RFQ规则。
+7. 未确认认证、库存、交期、运费、客户身份、付款承诺，草稿中未编造。
+
+本版校验报告：C02 v1 · 两笔付款比例算术一致性
+检查时间：2026-10-29T09:41:13+00:00
+检查者：本地程序（Decimal），非模型判定
+检查输入：模拟拟议条款，50% 预付款，50% 发货前支付，待双方确认
+结果：算术一致，仍需双方确认
+说明：两笔付款比例合计为 100%，算术一致；条款仍需双方确认。
+依据：项目模拟练习设定：两笔付款覆盖全部款项；每项大于0且不超过100，合计100%。
+来源：docs/payment-ratio-practice.md
+适用边界：自定义算术检查，不是平台规定或法律审查，不证明双方已同意。未支持的句式须人工核对。
+
+英文表达检查：C03 v1 · 未发现明确肯定表述，仍需人工审核
+检查时间：2026-10-29T09:41:17+00:00
+依据：本应用只有付款条件填写状态，没有双方接受条款的证据字段；因此英文中的已同意、已接受、已确认表述需要人工复核。
+来源：local_lab/rules/payment-wording.json
+背景参考：https://digitallibrary.un.org/record/535327/files/A_CN.9_SER.C_DIGEST_CISG_18-EN.pdf
+参考范围：第18条区分接受要约的意思表示/行为与单纯沉默。仅作背景参考；本地短语规则为项目自定义，不判断公约适用、合同成立或法律效力。
+边界：只筛查部分英文付款表述，可能漏检或误报；未命中不等于条款正确或合规。否定、疑问、条件句等仍需人工阅读。不会自动改写或发送原稿。
+原句：On payment, the proposed terms (not yet agreed by either side) are 50% in advance and 50% before shipment, subject to confirmation by both parties.
+批注：含确认词及否定/条件/疑问等表达，需人工判断语义。
+建议：The proposed payment terms remain subject to confirmation by both parties.
+拟议付款条件仍待双方确认。替换前请人工核对原句中的比例等细节，必要时保留。
+
+平台规则参考预检：P01 v1 · 材质不一致：报价商品与买家要求存在差异
+场景：alibaba_rfq
+检查时间：2026-10-29T09:41:13+00:00
+买家材质要求：涤纶
+商品材质：棉布
+建议：选择符合要求的商品；如拟提供替代品，先向买家说明差异并确认，不能改写真实需求来消除提醒。
+依据：公开RFQ规则将报价产品不符列为可能被拒绝匹配的情况。本项目将材质对照作为产品匹配的一项预检。
+规则来源：https://activity.alibaba.com/rfq/service_term.html
+版本：公开页面注明2016-10-01生效；不作为2026最新版证明
+有效性边界：已读取公开旧版；当前规则中心仅取得页面框架，最新正文待人工核对。
+实现范围：本地自定义检测：仅归一明确的棉布/涤纶材质名称；两者不同则提示差异，相同只说明材质字段相符，其他描述需人工核对。平台未规定此算法。
+适用边界：仅适用于选择的阿里国际站RFQ模拟场景；未接入平台、未提交报价。只检查一个材质字段，不检查全部规格或平台资质，不预测平台审核结果。普通邮件场景不套用此平台规则。

@@ -1,0 +1,17 @@
+{
+  "rule_id": "P01",
+  "rule_version": "1",
+  "rule_name": "RFQ 商品材质匹配预检",
+  "category": "平台规则参考预检",
+  "reference_title": "阿里巴巴国际站采购直达公开规则：二、关联规则第5项",
+  "reference_url": "https://activity.alibaba.com/rfq/service_term.html",
+  "reference_version": "公开页面注明2016-10-01生效；不作为2026最新版证明",
+  "reviewed_on": "2026-10-29",
+  "current_rule_url": "https://rulechannel.alibaba.com/icbu?type=detail&ruleId=2039&cId=1276",
+  "freshness": "已读取公开旧版；当前规则中心仅取得页面框架，最新正文待人工核对。",
+  "basis": "公开RFQ规则将报价产品不符列为可能被拒绝匹配的情况。本项目将材质对照作为产品匹配的一项预检。",
+  "implementation": "本地自定义检测：仅归一明确的棉布/涤纶材质名称；两者不同则提示差异，相同只说明材质字段相符，其他描述需人工核对。平台未规定此算法。",
+  "source": "local_lab/rules/rfq-material.json",
+  "limitation": "仅适用于选择的阿里国际站RFQ模拟场景；未接入平台、未提交报价。只检查一个材质字段，不检查全部规格或平台资质，不预测平台审核结果。普通邮件场景不套用此平台规则。",
+  "simulation_notice": "商品与买家要求均为练习数据；买家要求由用户填写，未从真实RFQ抓取或由AI提取。"
+}
