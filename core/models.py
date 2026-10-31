@@ -182,6 +182,9 @@ class Case:
     invoice_total: Decimal | None = None
     owner_id: str | None = None
     due_at: datetime | None = None
+    required_document_types: list[DocumentType] = field(
+        default_factory=lambda: [DocumentType.COMMERCIAL_INVOICE, DocumentType.PACKING_LIST]
+    )
     status: CaseStatus = CaseStatus.DRAFT
     document_ids: list[str] = field(default_factory=list)
     review_task_ids: list[str] = field(default_factory=list)

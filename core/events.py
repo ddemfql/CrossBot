@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
 from typing import Any, Mapping
-from .models import new_id, utc_now
+from .models import new_id, to_dict, utc_now
 
 class EventType(str, Enum):
     TEXT_DELTA = "text_delta"
@@ -20,6 +20,9 @@ class WorkflowEvent:
     event_id: str = field(default_factory=lambda: new_id("event"))
     correlation_id: str | None = None
     occurred_at: datetime = field(default_factory=utc_now)
+
+    def to_dict(self) -> dict[str, Any]:
+        return to_dict(self)
 
     @classmethod
     def text_delta(cls, text: str, correlation_id: str | None = None):
