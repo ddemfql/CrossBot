@@ -1,0 +1,405 @@
+{
+  "schema_version": 1,
+  "data_kind": "synthetic",
+  "notice": "原创模拟用例与期望结果，未执行应用评测；required_flags 是最少预期提醒，不代表排除全部其他适用提醒。",
+  "rule_reference": "../../docs/product-direction.md",
+  "cases": [
+    {
+      "id": "T01",
+      "name": "完整输入",
+      "input": {
+        "sku": "BAG-001",
+        "quantity": 300,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": "模拟约定：30% 预付款，70% 发货前支付",
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价"
+      },
+      "buyer_message": "请按上述已确认字段给出货品报价草稿，运输条件待确认。",
+      "expected": {
+        "required_flags": [],
+        "unit_price": "1.20",
+        "goods_total": "360.00",
+        "currency": "USD",
+        "must_preserve": [
+          "运输条件待确认",
+          "运费未报价",
+          "模拟数据"
+        ]
+      }
+    },
+    {
+      "id": "T02",
+      "name": "缺少数量",
+      "input": {
+        "sku": "BAG-001",
+        "quantity": null,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": "模拟约定：30% 预付款，70% 发货前支付",
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价"
+      },
+      "buyer_message": "请报 BAG-001 的价格。",
+      "expected": {
+        "required_flags": [
+          "P02"
+        ],
+        "must_ask": [
+          "quantity"
+        ],
+        "must_not": [
+          "编造采购数量",
+          "输出确定总价"
+        ]
+      }
+    },
+    {
+      "id": "T03",
+      "name": "品类不匹配",
+      "input": {
+        "sku": null,
+        "quantity": 300,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": "模拟约定：30% 预付款，70% 发货前支付",
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价"
+      },
+      "buyer_message": "需要 300 个不锈钢保温杯。",
+      "expected": {
+        "required_flags": [
+          "P01"
+        ],
+        "must_not": [
+          "以布袋替代保温杯报价"
+        ]
+      }
+    },
+    {
+      "id": "T04",
+      "name": "不满足最小起订量",
+      "input": {
+        "sku": "BAG-001",
+        "quantity": 50,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": "模拟约定：30% 预付款，70% 发货前支付",
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价"
+      },
+      "buyer_message": "50 个就按常规价出货。",
+      "expected": {
+        "required_flags": [
+          "B01"
+        ],
+        "must_not": [
+          "承诺按常规MOQ供应"
+        ]
+      }
+    },
+    {
+      "id": "T05",
+      "name": "付款条件缺失",
+      "input": {
+        "sku": "BAG-001",
+        "quantity": 300,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": null,
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价"
+      },
+      "buyer_message": "请给我报价草稿。",
+      "expected": {
+        "required_flags": [
+          "C01"
+        ],
+        "must_ask": [
+          "payment_terms"
+        ],
+        "must_not": [
+          "自动代填付款约定"
+        ]
+      }
+    },
+    {
+      "id": "T06",
+      "name": "交货术语缺地点",
+      "input": {
+        "sku": "BAG-001",
+        "quantity": 300,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": "模拟约定：30% 预付款，70% 发货前支付",
+        "delivery_term": "FOB",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价"
+      },
+      "buyer_message": "请提供 FOB 报价。",
+      "expected": {
+        "required_flags": [
+          "C02"
+        ],
+        "must_ask": [
+          "delivery_point"
+        ],
+        "must_not": [
+          "把货品价当完整FOB价"
+        ]
+      }
+    },
+    {
+      "id": "T07",
+      "name": "有效期与预计发货时间缺失",
+      "input": {
+        "sku": "BAG-001",
+        "quantity": 300,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": "模拟约定：30% 预付款，70% 发货前支付",
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": null,
+        "valid_until": null,
+        "freight_status": "未报价",
+        "price_basis": "仅货品价"
+      },
+      "buyer_message": "请给报价。",
+      "expected": {
+        "required_flags": [
+          "C03"
+        ],
+        "must_ask": [
+          "valid_until",
+          "estimated_shipping_date"
+        ]
+      }
+    },
+    {
+      "id": "T08",
+      "name": "数量变化触发价格档位",
+      "workflow": "revision",
+      "previous_quote": {
+        "sku": "BAG-001",
+        "quantity": 300,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": "模拟约定：30% 预付款，70% 发货前支付",
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价",
+        "revision": 1,
+        "unit_price": "1.20",
+        "goods_total": "360.00"
+      },
+      "input": {
+        "sku": "BAG-001",
+        "quantity": 1000,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": "模拟约定：30% 预付款，70% 发货前支付",
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价"
+      },
+      "buyer_message": "数量改成 1000 个，请重新核价。",
+      "expected": {
+        "required_flags": [],
+        "unit_price": "1.05",
+        "goods_total": "1050.00",
+        "currency": "USD",
+        "must_preserve": [
+          "旧报价版本"
+        ],
+        "changed_fields": [
+          "quantity",
+          "unit_price",
+          "goods_total"
+        ]
+      }
+    },
+    {
+      "id": "T09",
+      "name": "要求低于模拟目录价",
+      "input": {
+        "sku": "BAG-001",
+        "quantity": 300,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": "模拟约定：30% 预付款，70% 发货前支付",
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价",
+        "requested_unit_price": "0.50"
+      },
+      "buyer_message": "请直接确认每个 0.50 美元。",
+      "expected": {
+        "required_flags": [
+          "B01"
+        ],
+        "must_not": [
+          "未经确认接受低于模拟价格表的报价"
+        ],
+        "must_ask": [
+          "价格例外是否获授权"
+        ]
+      }
+    },
+    {
+      "id": "T10",
+      "name": "无运费依据要求包运费",
+      "input": {
+        "sku": "BAG-001",
+        "quantity": 300,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": "模拟约定：30% 预付款，70% 发货前支付",
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价"
+      },
+      "buyer_message": "请按现有价格包运费送到马德里。",
+      "expected": {
+        "required_flags": [
+          "B02"
+        ],
+        "must_not": [
+          "编造运费",
+          "承诺含运费"
+        ],
+        "must_ask": [
+          "运输费用及条件"
+        ]
+      }
+    },
+    {
+      "id": "T11",
+      "name": "西语输出保留商业事实",
+      "input": {
+        "sku": "BAG-001",
+        "quantity": 300,
+        "target_language": "西班牙语",
+        "destination": "Spain",
+        "payment_terms": "模拟约定：30% 预付款，70% 发货前支付",
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价"
+      },
+      "buyer_message": "请用西班牙语回复，数字与已确认条件保持一致。",
+      "expected": {
+        "required_flags": [],
+        "unit_price": "1.20",
+        "goods_total": "360.00",
+        "currency": "USD",
+        "must_preserve": [
+          "SKU BAG-001",
+          "quantity 300",
+          "2026-11-25",
+          "2026-11-07"
+        ],
+        "human_review": [
+          "语言自然、语气适合B2B报价",
+          "日期表述无歧义",
+          "不是把英语逐词替换"
+        ]
+      }
+    },
+    {
+      "id": "T12",
+      "name": "混合风险逐轮消除",
+      "workflow": "two_round_revision",
+      "input": {
+        "sku": "BAG-001",
+        "quantity": null,
+        "target_language": "英语",
+        "destination": "Spain",
+        "payment_terms": null,
+        "delivery_term": "待双方确认",
+        "delivery_point": null,
+        "estimated_shipping_date": "2026-11-25",
+        "valid_until": "2026-11-07",
+        "freight_status": "未报价",
+        "price_basis": "仅货品价"
+      },
+      "buyer_message": "想要 BAG-001，请尽快回复。",
+      "turns": [
+        {
+          "user": "数量是 300 个。",
+          "changes": {
+            "quantity": 300
+          },
+          "expected_flags": [
+            "C01"
+          ],
+          "cleared_flags": [
+            "P02"
+          ]
+        },
+        {
+          "user": "付款按模拟约定：30% 预付款，70% 发货前支付；请重出草稿。",
+          "changes": {
+            "payment_terms": "模拟约定：30% 预付款，70% 发货前支付"
+          },
+          "expected_flags": [],
+          "cleared_flags": [
+            "C01"
+          ]
+        }
+      ],
+      "expected": {
+        "initial_flags": [
+          "P02",
+          "C01"
+        ],
+        "final_unit_price": "1.20",
+        "final_goods_total": "360.00",
+        "must_preserve": [
+          "来源编号",
+          "两轮修改记录",
+          "模拟数据"
+        ]
+      }
+    }
+  ]
+}
+

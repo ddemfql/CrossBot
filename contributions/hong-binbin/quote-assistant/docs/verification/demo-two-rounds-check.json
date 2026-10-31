@@ -1,0 +1,22 @@
+{
+  "source_name": "simulated-quote-history (7).json",
+  "archive_name": "demo-two-rounds-history.json",
+  "sha256": "8613ade8325c777eaf673429165d32b80d94d5c0c9479a9d4e8299d6892c408f",
+  "versions": [
+    1,
+    2,
+    3
+  ],
+  "first_two_records_unchanged": true,
+  "native_dialogue_rounds": 2,
+  "latest_quantity": 1000,
+  "latest_unit_price": "1.05",
+  "latest_goods_total": "1050.00",
+  "latest_payment_percent": [
+    30,
+    70
+  ],
+  "C02": "consistent",
+  "C03": "manual",
+  "P01": "mismatch"
+}

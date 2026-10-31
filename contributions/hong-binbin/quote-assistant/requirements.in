@@ -1,0 +1,4 @@
+# Direct dependencies; use requirements-lock.txt to reproduce the verified environment.
+streamlit>=1.40,<2
+pydantic>=2.10,<3
+
