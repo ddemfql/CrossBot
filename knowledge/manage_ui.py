@@ -18,6 +18,7 @@ def render_knowledge_management(auth, token, principal):
     service = KnowledgeService(auth)
     st.subheader("产品、知识与词项版本")
     st.caption("草稿 → 独立审核 → 管理员发布；新版本不覆盖旧版本。演示/外部参考不能直接发布为正式事实。")
+    st.caption("候选公开来源与使用边界见 docs/b-official-source-register.md。规则中心需逐篇核实后才可建 external_reference 草稿；OneTouch 不作为知识数据源。")
     published = service.list_published(token)
     with st.expander("当前已发布版本（正式检索入口）"):
         st.json([to_dict(v) for v in published])

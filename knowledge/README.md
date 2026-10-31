@@ -1,5 +1,7 @@
 # 第四步知识资料：全部为模拟
 
+赛事官方补充的候选外部来源及使用边界见 [B知识库候选来源登记](../docs/b-official-source-register.md)。当前尚未导入阿里国际站规则正文；OneTouch 供应链门户明确排除为知识数据源。
+
 本目录7条资料为项目自建设定：2款产品、3条平台组织提示、1条通用人工核对流程、1条德国演示流程提示。不是供应商证明、法律意见或平台官方规则；没有抓取真实客户资料，也没有验证最新政策。
 
 每条包含id/type/content/facts、source、version、effective_from/effective_until及产品/平台/国家适用列表。生效/截止未知时用null；列表为空表示不按该维度限制。source.kind=synthetic、official=false。所有认证、价格、交期均未给出知识依据，禁止据此补写。
