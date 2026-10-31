@@ -1,0 +1,125 @@
+{
+  "schema_version": 1,
+  "data_kind": "synthetic",
+  "notice": "全部商品、价格、MOQ及交期为原创测试设定，不是实际供应商承诺或市场报价。",
+  "currency": "USD",
+  "source_id": "SYNTHETIC-CATALOG-001",
+  "products": [
+    {
+      "sku": "BAG-001",
+      "name_zh": "洪彬斌的练习布袋",
+      "material": "棉布",
+      "dimensions_cm": [
+        38,
+        42
+      ],
+      "moq": 100,
+      "lead_time_days": 15,
+      "price_tiers": [
+        {
+          "min_quantity": 100,
+          "unit_price": "1.20"
+        },
+        {
+          "min_quantity": 1000,
+          "unit_price": "1.05"
+        }
+      ]
+    },
+    {
+      "sku": "BAG-002",
+      "name_zh": "黑色棉布手提袋",
+      "material": "棉布",
+      "dimensions_cm": [
+        38,
+        42
+      ],
+      "moq": 200,
+      "lead_time_days": 18,
+      "price_tiers": [
+        {
+          "min_quantity": 200,
+          "unit_price": "1.35"
+        },
+        {
+          "min_quantity": 1000,
+          "unit_price": "1.18"
+        }
+      ]
+    },
+    {
+      "sku": "BAG-003",
+      "name_zh": "拉链帆布手提袋",
+      "material": "帆布",
+      "dimensions_cm": [
+        35,
+        40
+      ],
+      "moq": 100,
+      "lead_time_days": 20,
+      "price_tiers": [
+        {
+          "min_quantity": 100,
+          "unit_price": "2.40"
+        },
+        {
+          "min_quantity": 500,
+          "unit_price": "2.15"
+        }
+      ]
+    },
+    {
+      "sku": "BAG-004",
+      "name_zh": "小号棉布礼品袋",
+      "material": "棉布",
+      "dimensions_cm": [
+        25,
+        30
+      ],
+      "moq": 300,
+      "lead_time_days": 12,
+      "price_tiers": [
+        {
+          "min_quantity": 300,
+          "unit_price": "0.80"
+        },
+        {
+          "min_quantity": 1500,
+          "unit_price": "0.70"
+        }
+      ]
+    },
+    {
+      "sku": "BAG-005",
+      "name_zh": "加宽底帆布袋",
+      "material": "帆布",
+      "dimensions_cm": [
+        40,
+        35,
+        10
+      ],
+      "moq": 200,
+      "lead_time_days": 22,
+      "price_tiers": [
+        {
+          "min_quantity": 200,
+          "unit_price": "2.60"
+        },
+        {
+          "min_quantity": 1000,
+          "unit_price": "2.30"
+        }
+      ]
+    }
+  ],
+  "shared_policy": {
+    "price_basis": "仅模拟货品单价，不含运费、税费、定制费；不能据此自动声称为完整 FOB/CIF 等报价。",
+    "certifications": [],
+    "certification_status": "未提供证明，不能宣称已认证",
+    "customization": "需另行确认图案、费用与交期",
+    "lead_time_basis": "模拟供应商备货时间参考，不是到货日期承诺",
+    "missing_information": "保持未确认并提问，不能由模型编造",
+    "supplier_claims": "所有供应能力都是测试设定，输出必须保留模拟数据标记"
+  }
+}
+

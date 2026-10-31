@@ -1,0 +1,370 @@
+﻿{
+  "notice": "模拟业务资料与 AI 草稿；未经人工业务审核，未发送给客户。",
+  "versions": [
+    {
+      "version": 1,
+      "created_at": "2026-10-29T09:41:17+00:00",
+      "context": {
+        "data_kind": "synthetic",
+        "source": "planning/fixtures/products.json; 自定义完整性规则 C01",
+        "product": {
+          "sku": "BAG-001",
+          "name": "洪彬斌的练习布袋",
+          "material": "棉布",
+          "moq": 100
+        },
+        "quantity": 500,
+        "currency": "USD",
+        "unit_price": "1.20",
+        "goods_total": "600.00",
+        "payment_terms": "模拟拟议条款，50% 预付款，50% 发货前支付，待双方确认",
+        "payment_status": "provided",
+        "price_scope": "货品金额，不含运费、税费、定制费",
+        "unconfirmed": [
+          "目的地",
+          "运输条件与运费",
+          "发货及到货时间",
+          "报价有效期",
+          "付款条件是否双方确认"
+        ],
+        "platform_request": {
+          "scene": "alibaba_rfq",
+          "requested_material": "涤纶",
+          "data_kind": "synthetic_user_input"
+        }
+      },
+      "draft": {
+        "english_reply": "Simulated draft — Subject: Re: Your RFQ for bags\n\nThank you for your inquiry. We note that your requested material is polyester, whereas the item we are currently able to quote (SKU BAG-001, practice canvas bag) is made of cotton. The material differs from your request. This quotation covers only that item, at USD 1.20 per unit for 500 units, giving a goods total of USD 600.00. That amount is for goods only and excludes shipping, taxes and customization fees.\n\nBecause of the material difference, please confirm whether you would consider a cotton alternative or whether polyester is required. If it is required, we can look at other options separately.\n\nOn payment, the proposed terms (not yet agreed by either side) are 50% in advance and 50% before shipment, subject to confirmation by both parties.\n\nWe would also need you to confirm: destination, shipping terms and freight cost, dispatch and delivery timing, and how long the quotation remains valid. We have not reviewed compliance or sent any message; this is a practice draft only.",
+        "chinese_checklist": "【模拟数据核对清单】\n1. 资料来源：products.json（SKU BAG-001，练习布袋，材质棉布，MOQ 100）；用户填写的数量500、币种USD、单价1.20、货品总额600.00（由程序计算，原样使用，未重算）；用户填写的拟议付款条件（50%预付+50%发货前，待双方确认）。以上均为模拟练习数据。\n2. 场景：alibaba_rfq 首次回复。买家 requested_material=涤纶，商品 material=棉布，平台报告状态 mismatch（材质不一致）。回复已明确说明差异，未改写买家需求，也未声称全部需求满足或平台审核通过。\n3. 金额口径：600.00 USD 仅货品金额，不含运费、税费、定制费；不得称包运费到货价。\n4. 付款条件：50%/50% 仅为用户填写的拟议条款，算术预检显示合计100%（自定义检查，非平台规定或法律审查），不能视为买卖双方已同意，仍需双方确认。\n5. 待确认条件：目的地；运输条件与运费；发货及到货时间；报价有效期；付款条件是否双方确认；买家是否接受棉布替代品或坚持涤纶。\n6. 合规提示：平台规则参考为公开旧版（2016-10-01生效），最新正文待人工核对；本预检只对照一个材质字段，不检查全部规格或平台资质，不预测平台审核结果。普通邮件场景不套用RFQ规则。\n7. 未确认认证、库存、交期、运费、客户身份、付款承诺，草稿中未编造。"
+      },
+      "check_report": {
+        "rule_id": "C02",
+        "rule_version": "1",
+        "rule_name": "两笔付款比例算术一致性",
+        "checked_at": "2026-10-29T09:41:13+00:00",
+        "checked_by": "local_python_decimal",
+        "input_payment_terms": "模拟拟议条款，50% 预付款，50% 发货前支付，待双方确认",
+        "status": "consistent",
+        "status_label": "算术一致，仍需双方确认",
+        "message": "两笔付款比例合计为 100%，算术一致；条款仍需双方确认。",
+        "advance_percent": "50",
+        "before_shipment_percent": "50",
+        "total_percent": "100",
+        "expected_total_percent": "100",
+        "source": "docs/payment-ratio-practice.md",
+        "basis": "项目模拟练习设定：两笔付款覆盖全部款项；每项大于0且不超过100，合计100%。",
+        "limitation": "自定义算术检查，不是平台规定或法律审查，不证明双方已同意。未支持的句式须人工核对。"
+      },
+      "wording_report": {
+        "rule_id": "C03",
+        "rule_version": "1",
+        "rule_name": "付款条件确认状态表达检查",
+        "category": "合同条款表达（与 C02 同类，不计作第二类别）",
+        "basis": "本应用只有付款条件填写状态，没有双方接受条款的证据字段；因此英文中的已同意、已接受、已确认表述需要人工复核。",
+        "reference_title": "UNCITRAL CISG Article 18 (2004 Digest)",
+        "reference_url": "https://digitallibrary.un.org/record/535327/files/A_CN.9_SER.C_DIGEST_CISG_18-EN.pdf",
+        "reference_note": "第18条区分接受要约的意思表示/行为与单纯沉默。仅作背景参考；本地短语规则为项目自定义，不判断公约适用、合同成立或法律效力。",
+        "verified_on": "2026-10-29",
+        "source": "local_lab/rules/payment-wording.json",
+        "limitation": "只筛查部分英文付款表述，可能漏检或误报；未命中不等于条款正确或合规。否定、疑问、条件句等仍需人工阅读。不会自动改写或发送原稿。",
+        "suggestion": "The proposed payment terms remain subject to confirmation by both parties.",
+        "suggestion_zh": "拟议付款条件仍待双方确认。替换前请人工核对原句中的比例等细节，必要时保留。",
+        "checked_at": "2026-10-29T09:41:17+00:00",
+        "checked_by": "local_english_phrase_rules",
+        "input_english_reply": "Simulated draft — Subject: Re: Your RFQ for bags\n\nThank you for your inquiry. We note that your requested material is polyester, whereas the item we are currently able to quote (SKU BAG-001, practice canvas bag) is made of cotton. The material differs from your request. This quotation covers only that item, at USD 1.20 per unit for 500 units, giving a goods total of USD 600.00. That amount is for goods only and excludes shipping, taxes and customization fees.\n\nBecause of the material difference, please confirm whether you would consider a cotton alternative or whether polyester is required. If it is required, we can look at other options separately.\n\nOn payment, the proposed terms (not yet agreed by either side) are 50% in advance and 50% before shipment, subject to confirmation by both parties.\n\nWe would also need you to confirm: destination, shipping terms and freight cost, dispatch and delivery timing, and how long the quotation remains valid. We have not reviewed compliance or sent any message; this is a practice draft only.",
+        "input_payment_terms": "模拟拟议条款，50% 预付款，50% 发货前支付，待双方确认",
+        "agreement_evidence": "not_recorded_by_application",
+        "status": "manual",
+        "status_label": "未发现明确肯定表述，仍需人工审核",
+        "findings": [
+          {
+            "severity": "manual",
+            "original": "On payment, the proposed terms (not yet agreed by either side) are 50% in advance and 50% before shipment, subject to confirmation by both parties.",
+            "reason": "含确认词及否定/条件/疑问等表达，需人工判断语义。",
+            "suggestion": "The proposed payment terms remain subject to confirmation by both parties.",
+            "suggestion_zh": "拟议付款条件仍待双方确认。替换前请人工核对原句中的比例等细节，必要时保留。"
+          }
+        ]
+      },
+      "platform_report": {
+        "rule_id": "P01",
+        "rule_version": "1",
+        "rule_name": "RFQ 商品材质匹配预检",
+        "category": "平台规则参考预检",
+        "reference_title": "阿里巴巴国际站采购直达公开规则：二、关联规则第5项",
+        "reference_url": "https://activity.alibaba.com/rfq/service_term.html",
+        "reference_version": "公开页面注明2016-10-01生效；不作为2026最新版证明",
+        "reviewed_on": "2026-10-29",
+        "current_rule_url": "https://rulechannel.alibaba.com/icbu?type=detail&ruleId=2039&cId=1276",
+        "freshness": "已读取公开旧版；当前规则中心仅取得页面框架，最新正文待人工核对。",
+        "basis": "公开RFQ规则将报价产品不符列为可能被拒绝匹配的情况。本项目将材质对照作为产品匹配的一项预检。",
+        "implementation": "本地自定义检测：仅归一明确的棉布/涤纶材质名称；两者不同则提示差异，相同只说明材质字段相符，其他描述需人工核对。平台未规定此算法。",
+        "source": "local_lab/rules/rfq-material.json",
+        "limitation": "仅适用于选择的阿里国际站RFQ模拟场景；未接入平台、未提交报价。只检查一个材质字段，不检查全部规格或平台资质，不预测平台审核结果。普通邮件场景不套用此平台规则。",
+        "simulation_notice": "商品与买家要求均为练习数据；买家要求由用户填写，未从真实RFQ抓取或由AI提取。",
+        "checked_at": "2026-10-29T09:41:13+00:00",
+        "checked_by": "local_material_comparison",
+        "scene": "alibaba_rfq",
+        "input_requested_material": "涤纶",
+        "input_product": {
+          "sku": "BAG-001",
+          "name": "洪彬斌的练习布袋",
+          "material": "棉布"
+        },
+        "normalized_requested": "polyester",
+        "normalized_offered": "cotton",
+        "status": "mismatch",
+        "status_label": "材质不一致：报价商品与买家要求存在差异",
+        "suggestion": "选择符合要求的商品；如拟提供替代品，先向买家说明差异并确认，不能改写真实需求来消除提醒。"
+      }
+    },
+    {
+      "version": 2,
+      "created_at": "2026-10-29T12:44:18+00:00",
+      "context": {
+        "data_kind": "synthetic",
+        "source": "planning/fixtures/products.json; 自定义完整性规则 C01",
+        "product": {
+          "sku": "BAG-001",
+          "name": "洪彬斌的练习布袋",
+          "material": "棉布",
+          "moq": 100
+        },
+        "quantity": 1000,
+        "currency": "USD",
+        "unit_price": "1.05",
+        "goods_total": "1050.00",
+        "payment_terms": "模拟拟议条款，50% 预付款，50% 发货前支付，待双方确认",
+        "payment_status": "provided",
+        "price_scope": "货品金额，不含运费、税费、定制费",
+        "unconfirmed": [
+          "目的地",
+          "运输条件与运费",
+          "发货及到货时间",
+          "报价有效期",
+          "付款条件是否双方确认"
+        ],
+        "dialogue": {
+          "user_message": "数量改成1000个，付款条件不变。",
+          "feedback": [
+            {
+              "字段": "采购数量",
+              "上一版": "500",
+              "新版": "1000"
+            },
+            {
+              "字段": "货品单价",
+              "上一版": "1.20",
+              "新版": "1.05"
+            },
+            {
+              "字段": "货品金额",
+              "上一版": "600.00",
+              "新版": "1050.00"
+            }
+          ]
+        },
+        "platform_request": {
+          "scene": "alibaba_rfq",
+          "requested_material": "涤纶",
+          "data_kind": "synthetic_user_input"
+        }
+      },
+      "draft": {
+        "english_reply": "Simulated draft — for practice only, not a sent message.\n\nDear Customer,\n\nThank you for your message. For the requested quantity of 1,000 pieces of SKU BAG-001 (cotton bag), the unit price is USD 1.05 and the goods amount is USD 1,050.00. This amount covers goods only; it does not include freight, taxes, or customization fees.\n\nPlease note a material difference: your RFQ states polyester, while this item is made of cotton (material field: 棉布). This quote is for the selected cotton item only, and it does not change your stated requirement. Would you consider this item as an alternative, or would you prefer us to look at options matching polyester?\n\nProposed payment terms (for discussion, subject to confirmation by both parties): 50% advance and 50% before shipment. This is a proposal only and does not indicate agreement by either party.\n\nCould you please provide the destination, your expected arrival date, and your shipping preference? The seller also needs to separately calculate freight and verify the achievable shipping and arrival dates, and will propose a quote validity period. The above items remain to be confirmed.\n\nBest regards,\n[Name]\n\nSimulated draft.",
+        "chinese_checklist": "【模拟数据核对清单——仅用于练习，非真实交易、未发送、未接入平台】\n\n一、资料来源\n- 商品与本次修订：planning/fixtures/products.json（模拟）；SKU BAG-001，名称“洪彬斌的练习布袋”，材质字段“棉布”，MOQ 100。\n- 数量与价格：数量 1000，单价 USD 1.05，货品金额 USD 1050.00（程序计算，原样使用，未重算）。\n- 价格范围：仅货品金额，不含运费、税费、定制费。\n- 付款条件：用户填写的拟议条款（模拟），50% 预付款 + 50% 发货前支付，待双方确认；算术检查为本地自定义检查（status=consistent），不证明任何一方已同意。\n- RFQ 场景：alibaba_rfq；买家 requested_material=涤纶，商品 material=棉布；平台预检 status=mismatch（仅比对材质字段，未改写真伪需求）。\n- 平台规则参考：公开页面注明 2016-10-01 生效的旧版，不作为最新版或平台处理结果的证明；未提交报价、未审核合规。\n\n二、向买家补问\n- 目的地。\n- 期望到货日期。\n- 运输偏好。\n- 是否考虑替代商品（当前报价仅针对棉布款；买家需求为涤纶，需说明差异）。\n\n三、卖方待核实（不得由买家单方决定，亦不得编造数值）\n- 按目的地与运输偏好另行核算运费。\n- 核实可发货时间与预计到货时间。\n- 提出报价有效期。\n\n四、双方待协商/确认\n- 付款条件（50%/50%）是否经双方确认，目前仅为拟议。\n- 材质差异处理方式：仅提供棉布款报价，或另行寻找涤纶替代方案（需先与买家确认）。\n\n五、修改记录\n- 数量 500→1000；单价 1.20→1.05；货品金额 600.00→1050.00。\n- 以上均按资料原样保留，未自行改价或改数。"
+      },
+      "check_report": {
+        "rule_id": "C02",
+        "rule_version": "1",
+        "rule_name": "两笔付款比例算术一致性",
+        "checked_at": "2026-10-29T12:44:13+00:00",
+        "checked_by": "local_python_decimal",
+        "input_payment_terms": "模拟拟议条款，50% 预付款，50% 发货前支付，待双方确认",
+        "status": "consistent",
+        "status_label": "算术一致，仍需双方确认",
+        "message": "两笔付款比例合计为 100%，算术一致；条款仍需双方确认。",
+        "advance_percent": "50",
+        "before_shipment_percent": "50",
+        "total_percent": "100",
+        "expected_total_percent": "100",
+        "source": "docs/payment-ratio-practice.md",
+        "basis": "项目模拟练习设定：两笔付款覆盖全部款项；每项大于0且不超过100，合计100%。",
+        "limitation": "自定义算术检查，不是平台规定或法律审查，不证明双方已同意。未支持的句式须人工核对。"
+      },
+      "wording_report": {
+        "rule_id": "C03",
+        "rule_version": "1",
+        "rule_name": "付款条件确认状态表达检查",
+        "category": "合同条款表达（与 C02 同类，不计作第二类别）",
+        "basis": "本应用只有付款条件填写状态，没有双方接受条款的证据字段；因此英文中的已同意、已接受、已确认表述需要人工复核。",
+        "reference_title": "UNCITRAL CISG Article 18 (2004 Digest)",
+        "reference_url": "https://digitallibrary.un.org/record/535327/files/A_CN.9_SER.C_DIGEST_CISG_18-EN.pdf",
+        "reference_note": "第18条区分接受要约的意思表示/行为与单纯沉默。仅作背景参考；本地短语规则为项目自定义，不判断公约适用、合同成立或法律效力。",
+        "verified_on": "2026-10-29",
+        "source": "local_lab/rules/payment-wording.json",
+        "limitation": "只筛查部分英文付款表述，可能漏检或误报；未命中不等于条款正确或合规。否定、疑问、条件句等仍需人工阅读。不会自动改写或发送原稿。",
+        "suggestion": "The proposed payment terms remain subject to confirmation by both parties.",
+        "suggestion_zh": "拟议付款条件仍待双方确认。替换前请人工核对原句中的比例等细节，必要时保留。",
+        "checked_at": "2026-10-29T12:44:18+00:00",
+        "checked_by": "local_english_phrase_rules",
+        "input_english_reply": "Simulated draft — for practice only, not a sent message.\n\nDear Customer,\n\nThank you for your message. For the requested quantity of 1,000 pieces of SKU BAG-001 (cotton bag), the unit price is USD 1.05 and the goods amount is USD 1,050.00. This amount covers goods only; it does not include freight, taxes, or customization fees.\n\nPlease note a material difference: your RFQ states polyester, while this item is made of cotton (material field: 棉布). This quote is for the selected cotton item only, and it does not change your stated requirement. Would you consider this item as an alternative, or would you prefer us to look at options matching polyester?\n\nProposed payment terms (for discussion, subject to confirmation by both parties): 50% advance and 50% before shipment. This is a proposal only and does not indicate agreement by either party.\n\nCould you please provide the destination, your expected arrival date, and your shipping preference? The seller also needs to separately calculate freight and verify the achievable shipping and arrival dates, and will propose a quote validity period. The above items remain to be confirmed.\n\nBest regards,\n[Name]\n\nSimulated draft.",
+        "input_payment_terms": "模拟拟议条款，50% 预付款，50% 发货前支付，待双方确认",
+        "agreement_evidence": "not_recorded_by_application",
+        "status": "manual",
+        "status_label": "未发现明确肯定表述，仍需人工审核",
+        "findings": []
+      },
+      "platform_report": {
+        "rule_id": "P01",
+        "rule_version": "1",
+        "rule_name": "RFQ 商品材质匹配预检",
+        "category": "平台规则参考预检",
+        "reference_title": "阿里巴巴国际站采购直达公开规则：二、关联规则第5项",
+        "reference_url": "https://activity.alibaba.com/rfq/service_term.html",
+        "reference_version": "公开页面注明2016-10-01生效；不作为2026最新版证明",
+        "reviewed_on": "2026-10-29",
+        "current_rule_url": "https://rulechannel.alibaba.com/icbu?type=detail&ruleId=2039&cId=1276",
+        "freshness": "已读取公开旧版；当前规则中心仅取得页面框架，最新正文待人工核对。",
+        "basis": "公开RFQ规则将报价产品不符列为可能被拒绝匹配的情况。本项目将材质对照作为产品匹配的一项预检。",
+        "implementation": "本地自定义检测：仅归一明确的棉布/涤纶材质名称；两者不同则提示差异，相同只说明材质字段相符，其他描述需人工核对。平台未规定此算法。",
+        "source": "local_lab/rules/rfq-material.json",
+        "limitation": "仅适用于选择的阿里国际站RFQ模拟场景；未接入平台、未提交报价。只检查一个材质字段，不检查全部规格或平台资质，不预测平台审核结果。普通邮件场景不套用此平台规则。",
+        "simulation_notice": "商品与买家要求均为练习数据；买家要求由用户填写，未从真实RFQ抓取或由AI提取。",
+        "checked_at": "2026-10-29T12:44:13+00:00",
+        "checked_by": "local_material_comparison",
+        "scene": "alibaba_rfq",
+        "input_requested_material": "涤纶",
+        "input_product": {
+          "sku": "BAG-001",
+          "name": "洪彬斌的练习布袋",
+          "material": "棉布"
+        },
+        "normalized_requested": "polyester",
+        "normalized_offered": "cotton",
+        "status": "mismatch",
+        "status_label": "材质不一致：报价商品与买家要求存在差异",
+        "suggestion": "选择符合要求的商品；如拟提供替代品，先向买家说明差异并确认，不能改写真实需求来消除提醒。"
+      }
+    },
+    {
+      "version": 3,
+      "created_at": "2026-10-29T18:21:17+00:00",
+      "context": {
+        "data_kind": "synthetic",
+        "source": "planning/fixtures/products.json; 自定义完整性规则 C01",
+        "product": {
+          "sku": "BAG-001",
+          "name": "洪彬斌的练习布袋",
+          "material": "棉布",
+          "moq": 100
+        },
+        "quantity": 1000,
+        "currency": "USD",
+        "unit_price": "1.05",
+        "goods_total": "1050.00",
+        "payment_terms": "拟议条款，30%预付款，70%发货前支付，待双方确认",
+        "payment_status": "provided",
+        "price_scope": "货品金额，不含运费、税费、定制费",
+        "unconfirmed": [
+          "目的地",
+          "运输条件与运费",
+          "发货及到货时间",
+          "报价有效期",
+          "付款条件是否双方确认"
+        ],
+        "dialogue": {
+          "user_message": "付款条件改为：拟议条款，30%预付款，70%发货前支付，待双方确认。数量保持1000个。",
+          "feedback": [
+            {
+              "字段": "付款条件",
+              "上一版": "模拟拟议条款，50% 预付款，50% 发货前支付，待双方确认",
+              "新版": "拟议条款，30%预付款，70%发货前支付，待双方确认"
+            }
+          ]
+        },
+        "platform_request": {
+          "scene": "alibaba_rfq",
+          "requested_material": "涤纶",
+          "data_kind": "synthetic_user_input"
+        }
+      },
+      "draft": {
+        "english_reply": "Simulated draft – for practice only. Thank you for your interest in SKU BAG-001 (cotton bag). For 1,000 pcs at USD 1.05 each, the goods amount is USD 1,050.00. This amount covers the goods only and excludes freight, taxes, and customization fees. Proposed payment terms: 30% advance and 70% before shipment, subject to confirmation by both parties. Please note a material difference: your RFQ specifies polyester, while the selected product is made of cotton. This quote is for the selected cotton product only; would you consider this alternative? To proceed, please confirm the destination, expected arrival date, and shipping preference. The seller will separately calculate freight, verify dispatch and arrival timing, and provide a quotation validity period.",
+        "chinese_checklist": "【模拟数据，仅用于练习】\n一、商品与金额（程序计算，原样采用）\n- SKU：BAG-001；商品名：洪彬斌的练习布袋；资料材质：棉布；MOQ：100。\n- 数量：1000；币种：USD；单价：1.05；货品金额：1050.00。\n- 价格范围：仅为货品金额，不含运费、税费、定制费；不可称为包运费到货价。\n- 付款拟议条款：30%预付款，70%发货前支付，待双方确认。算术检查显示两笔合计100%、一致，但仍需双方确认，且该检查不是平台规定或法律审查。\n二、平台RFQ材质预检（仅适用于阿里国际站RFQ模拟场景）\n- 买家RFQ填写要求材质：涤纶；所选商品material：棉布；预检结果：mismatch（材质不一致）。\n- 回复中已说明材质差异，并明确本报价仅针对所选棉布商品，询问是否考虑替代品。\n- 该预检只比较一个材质字段，不代表全部需求满足，也不代表平台审核通过；公开规则为旧版参考，未接入平台、未提交报价。\n三、向买家补问\n- 目的地。\n- 期望到货日期。\n- 运输偏好。\n- 是否考虑材质替代品（涤纶与棉布差异已说明）。\n四、卖方待核实（不能要求买家单方决定）\n- 运费需另行核算。\n- 可发货/到货时间待核实。\n- 报价有效期待卖方提出。\n五、双方待协商\n- 付款条件（30%预付款、70%发货前支付）是否双方确认。\n- 运输条件与费用。\n六、资料来源\n- planning/fixtures/products.json；自定义完整性规则C01、C02；platform_report（P01 RFQ材质匹配预检）；revision（支付条款由50/50改为30/70）。\n- 所有商品、数量、价格、付款条款及平台场景均为模拟数据，未审核合规，未发送任何消息。"
+      },
+      "check_report": {
+        "rule_id": "C02",
+        "rule_version": "1",
+        "rule_name": "两笔付款比例算术一致性",
+        "checked_at": "2026-10-29T18:21:13+00:00",
+        "checked_by": "local_python_decimal",
+        "input_payment_terms": "拟议条款，30%预付款，70%发货前支付，待双方确认",
+        "status": "consistent",
+        "status_label": "算术一致，仍需双方确认",
+        "message": "两笔付款比例合计为 100%，算术一致；条款仍需双方确认。",
+        "advance_percent": "30",
+        "before_shipment_percent": "70",
+        "total_percent": "100",
+        "expected_total_percent": "100",
+        "source": "docs/payment-ratio-practice.md",
+        "basis": "项目模拟练习设定：两笔付款覆盖全部款项；每项大于0且不超过100，合计100%。",
+        "limitation": "自定义算术检查，不是平台规定或法律审查，不证明双方已同意。未支持的句式须人工核对。"
+      },
+      "wording_report": {
+        "rule_id": "C03",
+        "rule_version": "1",
+        "rule_name": "付款条件确认状态表达检查",
+        "category": "合同条款表达（与 C02 同类，不计作第二类别）",
+        "basis": "本应用只有付款条件填写状态，没有双方接受条款的证据字段；因此英文中的已同意、已接受、已确认表述需要人工复核。",
+        "reference_title": "UNCITRAL CISG Article 18 (2004 Digest)",
+        "reference_url": "https://digitallibrary.un.org/record/535327/files/A_CN.9_SER.C_DIGEST_CISG_18-EN.pdf",
+        "reference_note": "第18条区分接受要约的意思表示/行为与单纯沉默。仅作背景参考；本地短语规则为项目自定义，不判断公约适用、合同成立或法律效力。",
+        "verified_on": "2026-10-29",
+        "source": "local_lab/rules/payment-wording.json",
+        "limitation": "只筛查部分英文付款表述，可能漏检或误报；未命中不等于条款正确或合规。否定、疑问、条件句等仍需人工阅读。不会自动改写或发送原稿。",
+        "suggestion": "The proposed payment terms remain subject to confirmation by both parties.",
+        "suggestion_zh": "拟议付款条件仍待双方确认。替换前请人工核对原句中的比例等细节，必要时保留。",
+        "checked_at": "2026-10-29T18:21:17+00:00",
+        "checked_by": "local_english_phrase_rules",
+        "input_english_reply": "Simulated draft – for practice only. Thank you for your interest in SKU BAG-001 (cotton bag). For 1,000 pcs at USD 1.05 each, the goods amount is USD 1,050.00. This amount covers the goods only and excludes freight, taxes, and customization fees. Proposed payment terms: 30% advance and 70% before shipment, subject to confirmation by both parties. Please note a material difference: your RFQ specifies polyester, while the selected product is made of cotton. This quote is for the selected cotton product only; would you consider this alternative? To proceed, please confirm the destination, expected arrival date, and shipping preference. The seller will separately calculate freight, verify dispatch and arrival timing, and provide a quotation validity period.",
+        "input_payment_terms": "拟议条款，30%预付款，70%发货前支付，待双方确认",
+        "agreement_evidence": "not_recorded_by_application",
+        "status": "manual",
+        "status_label": "未发现明确肯定表述，仍需人工审核",
+        "findings": []
+      },
+      "platform_report": {
+        "rule_id": "P01",
+        "rule_version": "1",
+        "rule_name": "RFQ 商品材质匹配预检",
+        "category": "平台规则参考预检",
+        "reference_title": "阿里巴巴国际站采购直达公开规则：二、关联规则第5项",
+        "reference_url": "https://activity.alibaba.com/rfq/service_term.html",
+        "reference_version": "公开页面注明2016-10-01生效；不作为2026最新版证明",
+        "reviewed_on": "2026-10-29",
+        "current_rule_url": "https://rulechannel.alibaba.com/icbu?type=detail&ruleId=2039&cId=1276",
+        "freshness": "已读取公开旧版；当前规则中心仅取得页面框架，最新正文待人工核对。",
+        "basis": "公开RFQ规则将报价产品不符列为可能被拒绝匹配的情况。本项目将材质对照作为产品匹配的一项预检。",
+        "implementation": "本地自定义检测：仅归一明确的棉布/涤纶材质名称；两者不同则提示差异，相同只说明材质字段相符，其他描述需人工核对。平台未规定此算法。",
+        "source": "local_lab/rules/rfq-material.json",
+        "limitation": "仅适用于选择的阿里国际站RFQ模拟场景；未接入平台、未提交报价。只检查一个材质字段，不检查全部规格或平台资质，不预测平台审核结果。普通邮件场景不套用此平台规则。",
+        "simulation_notice": "商品与买家要求均为练习数据；买家要求由用户填写，未从真实RFQ抓取或由AI提取。",
+        "checked_at": "2026-10-29T18:21:13+00:00",
+        "checked_by": "local_material_comparison",
+        "scene": "alibaba_rfq",
+        "input_requested_material": "涤纶",
+        "input_product": {
+          "sku": "BAG-001",
+          "name": "洪彬斌的练习布袋",
+          "material": "棉布"
+        },
+        "normalized_requested": "polyester",
+        "normalized_offered": "cotton",
+        "status": "mismatch",
+        "status_label": "材质不一致：报价商品与买家要求存在差异",
+        "suggestion": "选择符合要求的商品；如拟提供替代品，先向买家说明差异并确认，不能改写真实需求来消除提醒。"
+      }
+    }
+  ]
+}

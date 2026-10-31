@@ -1,0 +1,15 @@
+{
+  "rule_id": "C03",
+  "rule_version": "1",
+  "rule_name": "付款条件确认状态表达检查",
+  "category": "合同条款表达（与 C02 同类，不计作第二类别）",
+  "basis": "本应用只有付款条件填写状态，没有双方接受条款的证据字段；因此英文中的已同意、已接受、已确认表述需要人工复核。",
+  "reference_title": "UNCITRAL CISG Article 18 (2004 Digest)",
+  "reference_url": "https://digitallibrary.un.org/record/535327/files/A_CN.9_SER.C_DIGEST_CISG_18-EN.pdf",
+  "reference_note": "第18条区分接受要约的意思表示/行为与单纯沉默。仅作背景参考；本地短语规则为项目自定义，不判断公约适用、合同成立或法律效力。",
+  "verified_on": "2026-10-29",
+  "source": "local_lab/rules/payment-wording.json",
+  "limitation": "只筛查部分英文付款表述，可能漏检或误报；未命中不等于条款正确或合规。否定、疑问、条件句等仍需人工阅读。不会自动改写或发送原稿。",
+  "suggestion": "The proposed payment terms remain subject to confirmation by both parties.",
+  "suggestion_zh": "拟议付款条件仍待双方确认。替换前请人工核对原句中的比例等细节，必要时保留。"
+}

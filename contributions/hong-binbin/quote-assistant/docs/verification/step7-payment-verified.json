@@ -1,0 +1,69 @@
+﻿{
+  "notice": "模拟业务资料与 AI 草稿；未经人工业务审核，未发送给客户。",
+  "versions": [
+    {
+      "version": 1,
+      "created_at": "2026-10-28T12:01:07+00:00",
+      "context": {
+        "data_kind": "synthetic",
+        "source": "planning/fixtures/products.json; 自定义完整性规则 C01",
+        "product": {
+          "sku": "BAG-001",
+          "name": "洪彬斌的练习布袋",
+          "material": "棉布",
+          "moq": 100
+        },
+        "quantity": 500,
+        "currency": "USD",
+        "unit_price": "1.20",
+        "goods_total": "600.00",
+        "payment_terms": "",
+        "payment_status": "missing",
+        "price_scope": "货品金额，不含运费、税费、定制费",
+        "unconfirmed": [
+          "目的地",
+          "运输条件与运费",
+          "发货及到货时间",
+          "报价有效期",
+          "付款条件是否双方确认"
+        ]
+      },
+      "draft": {
+        "english_reply": "Simulated draft: Thank you for your inquiry regarding BAG-001 (cotton bag, MOQ 100). For quantity 500, the goods amount is USD 600.00 (unit price USD 1.20). Please note this is for the goods only and does not include shipping, taxes, or customization fees. To proceed, we still need confirmation on: destination, shipping terms and freight cost, dispatch and arrival timing, quotation validity period, and payment terms (not yet provided or agreed by both parties). This draft has not been reviewed for compliance or sent.",
+        "chinese_checklist": "【模拟数据】采购/跟单核对清单\n1. 资料来源：planning/fixtures/products.json；自定义完整性规则 C01（模拟练习数据）。\n2. 商品：BAG-001 洪彬斌的练习布袋；材质：棉布；MOQ：100。\n3. 数量：500；币种：USD；单价：1.20；货品金额：600.00 USD（程序计算结果，原样使用，未重算或改价）。\n4. 金额范围：仅为货品金额，不含运费、税费、定制费；不得视为含运费到货价。\n5. 付款条件：缺失（payment_status=missing），需询问并确认；不得声称双方已同意。\n6. 仍需确认：目的地；运输条件与运费；发货及到货时间；报价有效期；付款条件是否双方确认。\n7. 其他：未编造认证、库存、交期、运输费用、客户身份或付款承诺；未声称已审核合规或已发送消息。"
+      }
+    },
+    {
+      "version": 2,
+      "created_at": "2026-10-28T12:04:41+00:00",
+      "context": {
+        "data_kind": "synthetic",
+        "source": "planning/fixtures/products.json; 自定义完整性规则 C01",
+        "product": {
+          "sku": "BAG-001",
+          "name": "洪彬斌的练习布袋",
+          "material": "棉布",
+          "moq": 100
+        },
+        "quantity": 500,
+        "currency": "USD",
+        "unit_price": "1.20",
+        "goods_total": "600.00",
+        "payment_terms": "模拟拟议条款，50% 预付款，50% 发货前支付，待双方确认",
+        "payment_status": "provided",
+        "price_scope": "货品金额，不含运费、税费、定制费",
+        "unconfirmed": [
+          "目的地",
+          "运输条件与运费",
+          "发货及到货时间",
+          "报价有效期",
+          "付款条件是否双方确认"
+        ]
+      },
+      "draft": {
+        "english_reply": "Simulated draft — Email quotation revision (v2; previous version v1 had no payment terms provided)\n\nDear Customer,\n\nThank you for your interest. Please find below the revised simulated quotation for product BAG-001 (cotton practice bag, MOQ 100):\n\n- Quantity: 500\n- Unit price: USD 1.20\n- Goods total: USD 600.00 (goods amount only; this does not include shipping, taxes, or customization fees, and is not a delivered or freight-inclusive price)\n- Proposed payment terms (for discussion, not yet agreed by either party): 50% advance payment, 50% before shipment. This was not stated in the previous version and remains subject to confirmation by both parties.\n\nInformation still to be confirmed: destination, shipping conditions and freight cost, dispatch and arrival timing, quotation validity period, and whether both parties agree to the payment terms.\n\nThis is a simulated draft; no compliance review has been performed and no message has been sent.\n\nBest regards,\n[Your name]",
+        "chinese_checklist": "【模拟数据，仅供练习】\n\n1. 资料与来源\n- 数据性质：synthetic（模拟数据）\n- 来源：planning/fixtures/products.json；自定义完整性规则 C01；本次为邮件报价修订（workflow: 邮件报价修订，版本 v1 → v2）\n- 商品：BAG-001 洪彬斌的练习布袋，棉布，MOQ 100\n- 数量 500；币种 USD；单价 1.20；货品金额 600.00（由程序计算，原样使用，未重算改价）\n\n2. 版本变更（v1 → v2）\n- 付款条件：上一版未填写（missing）→ 新版“模拟拟议条款，50% 预付款，50% 发货前支付，待双方确认”（provided）\n- 注意：该付款条件仅为用户填写的拟议条件，不能视为买卖双方已同意\n\n3. 金额范围\n- 报价范围：货品金额，不含运费、税费、定制费\n- 不得称其为包运费价或到货价\n\n4. 仍需确认的条件（均未确认，须保留）\n- 目的地\n- 运输条件与运费\n- 发货及到货时间\n- 报价有效期\n- 付款条件是否经双方确认\n\n5. 合规与操作提示\n- 未编造认证、库存、交期、运输费用、客户身份、付款承诺\n- 未声称已审核合规，未声称消息已发送\n- 英文回复为 Simulated draft，发送前需人工复核并补齐上述待确认信息"
+      }
+    }
+  ]
+}
