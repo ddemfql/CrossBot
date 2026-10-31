@@ -22,6 +22,11 @@ class SimpleRoleTests(unittest.TestCase):
     def test_business_user_can_perform_every_business_operation(self):
         self.assertEqual(ROLES, {"admin", "sales"})
         for action in PERMISSIONS:
+            if action == "template_manage":
+                with self.assertRaises(CrossBotError):
+                    require(None, actor("business-user", "sales"), action)
+                require(None, actor("administrator", "admin"), action)
+                continue
             with self.subTest(action=action):
                 require(None, actor("business-user", "sales"), action)
         for denied in (Actor("anonymous", ["sales"]),

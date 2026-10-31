@@ -18,7 +18,8 @@ class StrictReviewUITests(unittest.TestCase):
     def create(self, complete=False):
         from case_workflow.service import CaseService
         from validation.rules import DeterministicRules
-        workspace = CaseService(self.repo, DeterministicRules()).create(self.actor, TradeData())
+        workspace = CaseService(self.repo, DeterministicRules()).create(self.actor, TradeData(),
+            required_types=[D.COMMERCIAL_INVOICE, D.PACKING_LIST, D.PROFORMA_INVOICE])
         if complete:
             FormService(self.repo).save(workspace.case.case_id, self.actor, D.PROFORMA_INVOICE,
                 complete_values(D.PROFORMA_INVOICE), [complete_row(D.PROFORMA_INVOICE)],
@@ -31,8 +32,8 @@ class StrictReviewUITests(unittest.TestCase):
         self.assertEqual([tab.label for tab in app.tabs], ["文件分类与查看", "生成与导出"])
         self.assertTrue(any("审核结果" in item.value for item in app.markdown))
         widget(app.checkbox, "我已人工核对当前资料，确认按现有内容生成").check().run()
-        self.assertTrue(widget(app.button, "生成 Excel").disabled)
-        widget(app.button, "准备待人工核对的 Excel 预览").click().run()
+        self.assertTrue(widget(app.button, "确认并生成").disabled)
+        widget(app.button, "预览文件").click().run()
         self.assertFalse(app.exception, [item.message for item in app.exception])
         self.assertFalse(self.repo.get(case_id).artifacts)
         self.assertFalse(self.repo.get(case_id).approvals)
@@ -42,17 +43,17 @@ class StrictReviewUITests(unittest.TestCase):
         app = self.app()
         widget(app.selectbox, "需要生成的文件").select(D.PROFORMA_INVOICE).run()
         self.assertFalse(app.exception, [item.message for item in app.exception])
-        self.assertTrue(widget(app.button, "生成 Excel").disabled)
+        self.assertTrue(widget(app.button, "确认并生成").disabled)
         widget(app.checkbox, "我已人工核对当前资料，确认按现有内容生成").check().run()
-        self.assertFalse(widget(app.button, "生成 Excel").disabled)
-        widget(app.button, "生成 Excel").click().run()
+        self.assertFalse(widget(app.button, "确认并生成").disabled)
+        widget(app.button, "确认并生成").click().run()
         self.assertFalse(app.exception, [item.message for item in app.exception])
         result = self.repo.get(case_id)
         self.assertEqual(len(result.artifacts), 1)
         self.assertFalse(result.documents)
         self.assertFalse(result.approvals)
         self.assertNotEqual(result.case.status, CaseStatus.PASSED)
-        self.assertTrue(widget(app.button, "生成 Excel").disabled)
+        self.assertTrue(widget(app.button, "确认并生成").disabled)
 
 
 if __name__ == "__main__":

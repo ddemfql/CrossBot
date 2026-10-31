@@ -12,6 +12,8 @@ from documents.simple_workbench import render_workspace
 from storage.blobs import LocalBlobStore
 from storage.identity import SQLiteIdentityStore
 from storage.sqlite import SQLiteWorkspaceRepository
+from storage.preferences import SQLiteUserDefaultsStore
+from case_workflow.preferences import UserDefaultsService
 from validation.rules import DeterministicRules
 
 DATA_DIR = Path(os.environ.get("CROSSBOT_W3_DATA", Path.home() / ".crossbot" / "w3"))
@@ -19,7 +21,9 @@ DATA_DIR.mkdir(parents=True, exist_ok=True)
 repository = SQLiteWorkspaceRepository(DATA_DIR / "workspace.sqlite3")
 identity = SQLiteIdentityStore(DATA_DIR / "workspace.sqlite3")
 blobs = LocalBlobStore(DATA_DIR / "files")
-cases = CaseService(repository, DeterministicRules(), identity=identity)
+defaults_store = SQLiteUserDefaultsStore(DATA_DIR / "workspace.sqlite3")
+user_defaults = UserDefaultsService(repository, defaults_store)
+cases = CaseService(repository, DeterministicRules(), identity=identity, defaults_store=defaults_store)
 documents = DocumentService(repository, blobs)
 ROLE_LABELS = {"sales": "业务员", "admin": "管理员"}
 
@@ -28,7 +32,7 @@ def _run(action, success):
     try:
         result = action()
         if result is not None and hasattr(result, "case"):
-            st.session_state.w3_case_id = result.case.case_id
+            st.session_state.w3_pending_case_id = result.case.case_id
         st.session_state.w3_notice = success
         st.rerun()
     except CrossBotError as exc:
@@ -91,6 +95,23 @@ def _session_actor():
     return actor
 
 
+def _creation_tools(actor):
+    with st.expander("新建交易 / 导入资料"):
+        with st.form("new_trade"):
+            order = st.text_input("订单号（可稍后补充）")
+            buyer = st.text_input("客户（可稍后补充）")
+            submitted = st.form_submit_button("新建交易")
+        if submitted:
+            _run(lambda: cases.create(actor, TradeData(order_no=order, buyer=buyer, currency="")), "交易已创建。")
+        with st.form("import_trade_archive"):
+            archive = st.file_uploader("导入已有资料 ZIP", type=["zip"])
+            imported = st.form_submit_button("导入资料")
+        if imported and archive:
+            from case_workflow.importer import ArchiveImporter
+            _run(lambda: ArchiveImporter(repository, blobs).import_zip(
+                archive.getvalue(), archive.name, actor), "资料已导入，请核对分类。")
+
+
 def render():
     actor = _session_actor()
     if not isinstance(actor, Actor) or not actor.authenticated:
@@ -105,26 +126,20 @@ def render():
         st.write(f"{actor.user_id} · {' / '.join(ROLE_LABELS.get(r, '业务员') for r in actor.roles)}")
         if st.button("退出登录", key="w3_logout"):
             st.session_state.pop("w3_actor", None)
+            from documents.drafts import NAMESPACE, EPOCHS
+            for key in list(st.session_state):
+                if key in {NAMESPACE, EPOCHS} or str(key).startswith("w3-draft-widget-"):
+                    st.session_state.pop(key, None)
             st.rerun()
-    _accounts(actor)
-    with st.expander("新建交易 / 导入资料"):
-        with st.form("new_trade"):
-            order = st.text_input("订单号（可稍后补充）")
-            buyer = st.text_input("客户（可稍后补充）")
-            submitted = st.form_submit_button("新建交易")
-        if submitted:
-            _run(lambda: cases.create(actor, TradeData(order_no=order, buyer=buyer)), "交易已创建。")
-        with st.form("import_trade_archive"):
-            archive = st.file_uploader("导入已有资料 ZIP", type=["zip"])
-            imported = st.form_submit_button("导入资料")
-        if imported and archive:
-            from case_workflow.importer import ArchiveImporter
-            _run(lambda: ArchiveImporter(repository, blobs).import_zip(
-                archive.getvalue(), archive.name, actor), "资料已导入，请核对分类。")
     workspaces = cases.list(actor)
     if not workspaces:
         st.info("新建一笔交易或导入 ZIP 开始。")
+        _creation_tools(actor)
+        _accounts(actor)
         return
+    pending_case = st.session_state.pop("w3_pending_case_id", None)
+    if pending_case in {w.case.case_id for w in workspaces}:
+        st.session_state.w3_case_id = pending_case
     requested_case = st.query_params.get("case")
     if (requested_case and requested_case != st.session_state.get("w3_requested_case")
             and requested_case in {w.case.case_id for w in workspaces}):
@@ -135,4 +150,8 @@ def render():
     selected = st.selectbox("选择交易", [w.case.case_id for w in workspaces],
         format_func=lambda key: next(f"{w.trade.order_no or w.case.case_number} · {w.trade.buyer or '客户待补'}"
             for w in workspaces if w.case.case_id == key), key="w3_case_id")
-    render_workspace(cases.get(selected, actor), actor, cases, documents, repository, blobs)
+    render_workspace(cases.get(selected, actor), actor, cases, documents, repository, blobs,
+                     defaults_service=user_defaults)
+    with st.container(key="w3-secondary-account"):
+        _creation_tools(actor)
+        _accounts(actor)

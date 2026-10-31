@@ -160,6 +160,11 @@ class SellerFormTests(unittest.TestCase):
         self.assertIn("&lt;script&gt;", text)
 
     def test_original_invoice_includes_confirmed_bank_and_invoice_data_as_literal_text(self):
+        from documents.forms import form_fields, form_row_fields
+        form = get_form(self.repo.get(self.case_id), D.COMMERCIAL_INVOICE)
+        self.forms.configure_fields(self.case_id, self.actor, D.COMMERCIAL_INVOICE,
+            fields=[*form_fields(form), "bank_account"], row_fields=list(form_row_fields(form)),
+            reason="Explicitly include optional bank account in the invoice")
         self.save(kind=D.COMMERCIAL_INVOICE, values={"document_no": "SYN-CI-1",
             "document_date": "2026-10-31", "bank_account": "=SYNTHETIC()",
             "invoice_no": "+SYN-INV", "invoice_date": "2026-10-30"}, rows=[])

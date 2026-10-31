@@ -152,7 +152,7 @@ class StrictReviewIntegrationTests(unittest.TestCase):
 
     def test_raw_counterpart_conflict_keeps_current_version_units_and_normalized_evidence(self):
         from core.models import DocumentStatus, ExtractedField, FieldValueStatus, utc_now
-        self.save()
+        self.save(D.COMMERCIAL_INVOICE)
         source_book = load_workbook(BytesIO(harness.synthetic_workbook(quantity="9")))
         source_book.active.delete_rows(6)
         source_content = BytesIO()
@@ -172,7 +172,7 @@ class StrictReviewIntegrationTests(unittest.TestCase):
             for name, value, cell in (("product_code", "SYN-A", "A5"), ("unit", "pcs", "E5"),
                                       ("quantity", "9", "C5"))]
         self.repo.save(workspace, expected_revision=workspace.revision)
-        report = self.service().assess(self.case_id, self.actor, D.PROFORMA_INVOICE, human_confirmed=True)
+        report = self.service().assess(self.case_id, self.actor, D.COMMERCIAL_INVOICE, human_confirmed=True)
         conflicts = [check for check in report.checks if check.status is S.FAIL
                      and check.right_document_id == document.document_id and check.right_field == "quantity"]
         self.assertTrue(conflicts)
@@ -188,7 +188,7 @@ class StrictReviewIntegrationTests(unittest.TestCase):
 
     def test_raw_extra_product_rows_cannot_be_ignored_by_matching_first_scalar(self):
         from core.models import DocumentStatus, ExtractedField, FieldValueStatus, SourceTable, utc_now
-        self.save()
+        self.save(D.COMMERCIAL_INVOICE)
         source_table = SourceTable("Source", [
             ["Product Code", "Description", "Quantity", "Unit Price", "Unit"],
             ["SYN-A", "Synthetic product", "4", "2.50", "pcs"],
@@ -212,7 +212,7 @@ class StrictReviewIntegrationTests(unittest.TestCase):
             for name, value, cell in (("product_code", "SYN-A", "A2"), ("unit", "pcs", "E2"),
                                       ("quantity", "4", "C2"))]
         self.repo.save(workspace, expected_revision=workspace.revision)
-        report = self.service().assess(self.case_id, self.actor, D.PROFORMA_INVOICE, human_confirmed=True)
+        report = self.service().assess(self.case_id, self.actor, D.COMMERCIAL_INVOICE, human_confirmed=True)
         self.assertFalse(report.ready, "A matching first raw row must not hide another unmatched product")
         self.assertTrue(any(c.required and c.status is S.PENDING_REVIEW for c in report.checks))
 

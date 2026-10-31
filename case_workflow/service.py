@@ -57,6 +57,8 @@ def validate_trade_lines(trade: TradeData) -> None:
 
 def validate_draft_lines(trade: TradeData) -> None:
     """Allow missing draft data, but reject malformed supplied numbers."""
+    from documents.input_validation import validate_input_text
+    validate_input_text(trade)
     for line in trade.line_items:
         for field, label, positive in (("quantity", "数量", True),
                 ("unit_price", "单价", False), ("gross_weight_kg", "毛重", False),
@@ -70,6 +72,24 @@ def validate_draft_lines(trade: TradeData) -> None:
             raise ValidationError("毛重不能小于净重。")
         if isinstance(line.packages, bool) or not isinstance(line.packages, int) or line.packages < 0:
             raise ValidationError("箱数必须是非负整数。")
+
+
+    for adjustment in trade.adjustments:
+        if str(adjustment.amount).strip():
+            _decimal(adjustment.amount, "费用或调整金额")
+        if not isinstance(adjustment.included_in_invoice_price, bool):
+            raise ValidationError("费用是否已含在单价中的标记无效。")
+        if adjustment.currency and (len(adjustment.currency) != 3
+                or not adjustment.currency.isascii() or not adjustment.currency.isalpha()
+                or adjustment.currency != adjustment.currency.upper()):
+            raise ValidationError("费用币种需使用三位大写代码。")
+    for package in trade.packages:
+        for name in ("quantity", "gross_weight_kg", "net_weight_kg"):
+            if str(getattr(package, name)).strip():
+                _decimal(getattr(package, name), "分箱数量或重量")
+        if package.gross_weight_kg and package.net_weight_kg and (
+                _decimal(package.gross_weight_kg, "分箱毛重") < _decimal(package.net_weight_kg, "分箱净重")):
+            raise ValidationError("分箱毛重不能小于净重。")
 
 
 def validate_trade(trade: TradeData) -> None:
@@ -129,9 +149,10 @@ def sync_check_status(workspace: Workspace) -> None:
 
 
 class CaseService:
-    def __init__(self, repository, rules, identity=None):
+    def __init__(self, repository, rules, identity=None, defaults_store=None):
         self.repository, self.rules = repository, rules
         self.identity = identity
+        self.defaults_store = defaults_store
 
     def _load(self, case_id: str, actor: Actor, action: str) -> Workspace:
         workspace = self.repository.get(case_id)
@@ -176,10 +197,28 @@ class CaseService:
         policies = deepcopy(policies or [])
         base = list(required_types) if required_types is not None else [
             DocumentType.COMMERCIAL_INVOICE, DocumentType.PACKING_LIST]
+        defaults = self.defaults_store.get(actor.user_id) if self.defaults_store is not None else None
+        if defaults is not None:
+            from .preferences import validate_defaults
+            validate_defaults(defaults)
+            if required_types is None:
+                base = list(dict.fromkeys([*defaults.source_types, *defaults.delivery_types]))
         workspace = Workspace(case=case, trade=trade,
                               base_required_document_types=list(dict.fromkeys(DocumentType(t) for t in base)),
                               requirement_policies=policies,
                               required_document_types=requirements(trade, base, policies))
+        if defaults is not None:
+            from .preferences import apply_document_choices
+            if required_types is None:
+                workspace.required_source_types = list(defaults.source_types)
+                workspace.required_delivery_types = list(defaults.delivery_types)
+            apply_document_choices(workspace, defaults,
+                kinds=set(DocumentType(kind) for kind in base) if required_types is not None else None)
+        from documents.forms import get_form
+        from documents.catalog import SELLER_TYPES
+        for kind in workspace.required_document_types:
+            if kind in SELLER_TYPES and not any(form.document_type is kind for form in workspace.document_forms):
+                workspace.document_forms.append(get_form(workspace, kind))
         workspace.tasks.append(WorkItem(title="补充并确认订单资料", role="sales", assignee_id=actor.user_id))
         audit(workspace, actor, "case_created", "case", case.case_id,
               after={"trade": to_dict(trade), "required_types": to_dict(workspace.required_document_types)})
@@ -192,12 +231,17 @@ class CaseService:
         require(None, actor, "view")
         return [self._visible(workspace, actor) for workspace in self.repository.list()]
 
-    def update_trade(self, case_id: str, actor: Actor, trade: TradeData, reason: str) -> Workspace:
+    def update_trade(self, case_id: str, actor: Actor, trade: TradeData, reason: str,
+                     expected_revision=None) -> Workspace:
         workspace = self._load(case_id, actor, "update_trade")
+        if expected_revision is not None and workspace.revision != expected_revision:
+            raise CrossBotError(ErrorCode.CONFLICT, "资料已被修改，请刷新后重新填写。")
         reason = _reason(reason)
         if not isinstance(trade, TradeData):
             raise ValidationError("订单资料格式不正确。")
         trade = deepcopy(trade)
+        from documents.input_validation import validate_input_text
+        validate_input_text(trade)
         validate_draft_lines(trade)
         before = to_dict(workspace.trade)
         if workspace.payments:
@@ -213,6 +257,8 @@ class CaseService:
         # Policies are retained and re-evaluated when the destination or terms change.
         workspace.required_document_types = requirements(
             trade, workspace.base_required_document_types, workspace.requirement_policies)
+        for document in workspace.documents:
+            document.required = document.document_type in workspace.required_document_types
         invalidate(workspace, actor, reason)
         workspace.case.status = CaseStatus.PENDING_REVIEW
         audit(workspace, actor, "trade_updated", "trade", case_id,
@@ -230,6 +276,10 @@ class CaseService:
             raise ValidationError("请选择有效的文件类型。") from exc
         before = list(workspace.required_document_types)
         workspace.base_required_document_types = selected
+        # Legacy callers replace the whole checklist, so discard prior purpose
+        # selections rather than silently retaining stale explicit groups.
+        workspace.required_source_types = None
+        workspace.required_delivery_types = None
         workspace.required_document_types = requirements(
             workspace.trade, selected, workspace.requirement_policies)
         for document in workspace.documents:
@@ -237,6 +287,45 @@ class CaseService:
         invalidate(workspace, actor, reason)
         audit(workspace, actor, "required_documents_updated", "case", case_id,
               before=to_dict(before), after=to_dict(workspace.required_document_types), reason=reason)
+        return self._save(workspace)
+
+    def set_document_checklist(self, case_id: str, actor: Actor, source_types,
+                               delivery_types, reason: str = "调整资料与交付文件清单",
+                               expected_revision=None) -> Workspace:
+        """Select input and output purposes without requiring uploaded originals."""
+        from documents.catalog import SELLER_TYPES
+
+        workspace = self._load(case_id, actor, "update_trade")
+        if expected_revision is not None and workspace.revision != expected_revision:
+            raise CrossBotError(ErrorCode.CONFLICT, "资料清单已被修改，请刷新后重新选择。")
+        reason = _reason(reason)
+
+        def selected(values):
+            if not isinstance(values, (list, tuple)):
+                raise ValidationError("文件清单须为文件类型列表。")
+            try:
+                return list(dict.fromkeys(DocumentType(kind) for kind in values))
+            except (ValueError, TypeError) as exc:
+                raise ValidationError("请选择有效的文件类型。") from exc
+
+        sources, deliveries = selected(source_types), selected(delivery_types)
+        if any(kind not in SELLER_TYPES for kind in deliveries):
+            raise ValidationError("交付制作清单只能选择我方可制作的文件；外部签发文件请列为需要提供的资料。")
+        before = {"source_types": to_dict(workspace.required_source_types),
+                  "delivery_types": to_dict(workspace.required_delivery_types),
+                  "required_types": to_dict(workspace.required_document_types)}
+        workspace.required_source_types = sources
+        workspace.required_delivery_types = deliveries
+        workspace.base_required_document_types = list(dict.fromkeys([*sources, *deliveries]))
+        workspace.required_document_types = requirements(workspace.trade,
+            workspace.base_required_document_types, workspace.requirement_policies)
+        for document in workspace.documents:
+            document.required = document.document_type in workspace.required_document_types
+        invalidate(workspace, actor, reason)
+        audit(workspace, actor, "document_checklist_updated", "case", case_id,
+              before=before, after={"source_types": to_dict(sources),
+                  "delivery_types": to_dict(deliveries),
+                  "required_types": to_dict(workspace.required_document_types)}, reason=reason)
         return self._save(workspace)
 
     def confirm_trade(self, case_id: str, actor: Actor, reason: str) -> Workspace:

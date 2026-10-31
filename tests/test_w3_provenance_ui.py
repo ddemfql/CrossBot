@@ -82,7 +82,7 @@ class ProvenanceIntegrationTests(unittest.TestCase):
         origins = self.origins()
         # An existing create audit records the order value; it cannot reveal
         # whether USD was explicitly chosen or left at the initial UI default.
-        self.assertEqual(origin(origins, "currency").origin_kind, "trade")
+        self.assertEqual(origin(origins, "currency").origin_kind, "default")
         workspace = self.repo.get(self.case_id)
         workspace.audit = []
         self.repo.save(workspace, expected_revision=workspace.revision)
@@ -129,7 +129,8 @@ class ProvenanceUITests(unittest.TestCase):
         from documents.service import DocumentService
         from documents.workbench import collect_document
         from validation.rules import DeterministicRules
-        workspace = CaseService(self.repo, DeterministicRules()).create(self.actor, TradeData())
+        workspace = CaseService(self.repo, DeterministicRules()).create(self.actor, TradeData(),
+            required_types=[D.PROFORMA_INVOICE, D.COMMERCIAL_INVOICE, D.PACKING_LIST])
         documents = DocumentService(self.repo, self.blobs)
         workspace = documents.upload(workspace.case.case_id, self.actor, "synthetic-visible-source.xlsx",
             integration_harness.synthetic_workbook(), D.PROFORMA_INVOICE)
@@ -153,7 +154,9 @@ class ProvenanceUITests(unittest.TestCase):
         self.assertEqual(first_quantity["来源类型"], "来源文件")
         self.assertIn("C5", first_quantity["表格/位置"])
         form = get_form(self.repo.get(workspace.case.case_id), D.PROFORMA_INVOICE)
-        editor_key = f"simple-form-rows-{workspace.case.case_id}-{D.PROFORMA_INVOICE.value}-{form.revision}"
+        from documents.drafts import DraftStore
+        editor_key = DraftStore(app.session_state).widget_key(workspace.case.case_id,
+            self.actor.user_id + ":full-file", D.PROFORMA_INVOICE.value, "rows")
         app.session_state[editor_key] = {"edited_rows": {0: {"quantity": "9"}},
                                          "added_rows": [], "deleted_rows": []}
         ui_harness.widget(app.button, "保存补充内容").click().run()

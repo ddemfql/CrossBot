@@ -44,18 +44,18 @@ class QualityInputsTests(unittest.TestCase):
     save = strict_harness.StrictReviewIntegrationTests.save
 
     def prepare(self):
-        self.save()
+        self.save(D.COMMERCIAL_INVOICE)
         workspace, document_id = add_raw_source(self.repo, self.documents, self.case_id, self.actor)
-        return workspace, document_id, pending_source_fields(workspace, D.PROFORMA_INVOICE)
+        return workspace, document_id, pending_source_fields(workspace, D.COMMERCIAL_INVOICE)
 
     def confirm(self, fields, digest, actor=None, ack=True):
-        return confirm_source_fields(self.repo, self.case_id, actor or self.actor, D.PROFORMA_INVOICE,
+        return confirm_source_fields(self.repo, self.case_id, actor or self.actor, D.COMMERCIAL_INVOICE,
             fields, expected_review_digest=digest, human_confirmed=ack)
 
     def test_explicit_current_source_review_unlocks_checks_without_changing_machine_values(self):
         workspace, document_id, fields = self.prepare()
         self.assertEqual({field.field_name for field in fields}, {"product_code", "quantity", "unit"})
-        before = self.service().assess(self.case_id, self.actor, D.PROFORMA_INVOICE, human_confirmed=True)
+        before = self.service().assess(self.case_id, self.actor, D.COMMERCIAL_INVOICE, human_confirmed=True)
         self.assertFalse(before.ready)
         result = self.confirm(fields, before.input_digest)
         current = next(doc for doc in result.documents if doc.document_id == document_id).versions[-1]
@@ -70,25 +70,25 @@ class QualityInputsTests(unittest.TestCase):
         self.assertEqual(event.after["reviewed_input_digest"], before.input_digest)
         self.assertTrue(all(change["before"]["status"] == "candidate"
                             and change["after"]["status"] == "confirmed" for change in event.after["fields"]))
-        self.assertTrue(self.service().assess(self.case_id, self.actor, D.PROFORMA_INVOICE,
+        self.assertTrue(self.service().assess(self.case_id, self.actor, D.COMMERCIAL_INVOICE,
                                              human_confirmed=True).ready)
 
     def test_human_corrected_conflicting_value_preserves_machine_candidate_and_stays_blocked(self):
         workspace, document_id, fields = self.prepare()
         fields = [SourceFieldSelection(item.document_id, item.version_id, item.field_name,
             "9" if item.field_name == "quantity" else item.value) for item in fields]
-        result = self.confirm(fields, review_digest(workspace, D.PROFORMA_INVOICE))
+        result = self.confirm(fields, review_digest(workspace, D.COMMERCIAL_INVOICE))
         quantity = next(field for doc in result.documents if doc.document_id == document_id
                         for field in doc.versions[-1].fields if field.name == "quantity")
         self.assertEqual((quantity.value, quantity.confirmed_value), ("4", "9"))
-        self.assertFalse(self.service().assess(self.case_id, self.actor, D.PROFORMA_INVOICE,
+        self.assertFalse(self.service().assess(self.case_id, self.actor, D.COMMERCIAL_INVOICE,
                                               human_confirmed=True).ready)
         with self.assertRaises(CrossBotError):
-            self.service().generate(self.case_id, self.actor, D.PROFORMA_INVOICE, human_confirmed=True)
+            self.service().generate(self.case_id, self.actor, D.COMMERCIAL_INVOICE, human_confirmed=True)
 
     def test_invalid_ack_actor_digest_or_selections_leave_every_field_unchanged(self):
         workspace, _, fields = self.prepare()
-        digest = review_digest(workspace, D.PROFORMA_INVOICE)
+        digest = review_digest(workspace, D.COMMERCIAL_INVOICE)
         invalid_fields = [[], [*fields, fields[0]],
             [fields[0], SourceFieldSelection(fields[1].document_id, "old-version", "quantity", "4")],
             [fields[0], SourceFieldSelection(fields[1].document_id, fields[1].version_id, "unrelated-field", "x")],
@@ -112,22 +112,22 @@ class QualityInputsTests(unittest.TestCase):
 
     def test_confirmed_values_can_be_corrected_again_but_previous_versions_are_rejected(self):
         workspace, document_id, fields = self.prepare()
-        digest = review_digest(workspace, D.PROFORMA_INVOICE)
+        digest = review_digest(workspace, D.COMMERCIAL_INVOICE)
         self.confirm(fields, digest)
         current = self.repo.get(self.case_id)
         correction = [SourceFieldSelection(item.document_id, item.version_id, item.field_name,
             "9" if item.field_name == "quantity" else item.value) for item in fields]
-        current = self.confirm(correction, review_digest(current, D.PROFORMA_INVOICE))
+        current = self.confirm(correction, review_digest(current, D.COMMERCIAL_INVOICE))
         quantity = next(field for doc in current.documents if doc.document_id == document_id
                         for field in doc.versions[-1].fields if field.name == "quantity")
         self.assertEqual((quantity.value, quantity.confirmed_value), ("4", "9"))
-        self.assertFalse(self.service().assess(self.case_id, self.actor, D.PROFORMA_INVOICE,
+        self.assertFalse(self.service().assess(self.case_id, self.actor, D.COMMERCIAL_INVOICE,
                                               human_confirmed=True).ready)
         current = self.documents.upload(self.case_id, self.actor, "new-source.txt", b"Synthetic revised source",
                                         D.PACKING_LIST, document_id=document_id)
         before = to_dict(current)
         with self.assertRaises(CrossBotError):
-            self.confirm(fields, review_digest(current, D.PROFORMA_INVOICE))
+            self.confirm(fields, review_digest(current, D.COMMERCIAL_INVOICE))
         self.assertEqual(to_dict(self.repo.get(self.case_id)), before)
 
 
@@ -143,12 +143,12 @@ class QualityInputUITests(unittest.TestCase):
         from documents.service import DocumentService
         from validation.rules import DeterministicRules
         case_id = CaseService(self.repo, DeterministicRules()).create(self.actor, TradeData()).case.case_id
-        FormService(self.repo).save(case_id, self.actor, D.PROFORMA_INVOICE,
-            strict_harness.complete_values(D.PROFORMA_INVOICE),
-            [strict_harness.complete_row(D.PROFORMA_INVOICE)], "Synthetic manual PI")
+        FormService(self.repo).save(case_id, self.actor, D.COMMERCIAL_INVOICE,
+            strict_harness.complete_values(D.COMMERCIAL_INVOICE),
+            [strict_harness.complete_row(D.COMMERCIAL_INVOICE)], "Synthetic manual PI")
         add_raw_source(self.repo, DocumentService(self.repo, self.blobs), case_id, self.actor)
         app = self.app()
-        ui_harness.widget(app.selectbox, "需要生成的文件").select(D.PROFORMA_INVOICE).run()
+        ui_harness.widget(app.selectbox, "需要生成的文件").select(D.COMMERCIAL_INVOICE).run()
         self.assertFalse(app.exception, [item.message for item in app.exception])
         self.assertEqual([tab.label for tab in app.tabs], ["文件分类与查看", "生成与导出"])
         self.assertTrue(ui_harness.widget(app.button, "确认外部字段并重新审核").disabled)
@@ -160,7 +160,7 @@ class QualityInputUITests(unittest.TestCase):
         self.assertTrue(all(field.status is F.CONFIRMED for doc in result.documents
                             for field in doc.versions[-1].fields))
         self.assertFalse(result.approvals)
-        self.assertTrue(ui_harness.widget(app.button, "生成 Excel").disabled)
+        self.assertTrue(ui_harness.widget(app.button, "确认并生成").disabled)
 
 
 if __name__ == "__main__":

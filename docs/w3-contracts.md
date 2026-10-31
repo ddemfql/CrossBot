@@ -6,7 +6,19 @@
 
 `documents.simple_workbench` 展示本单所需或已存在的文件类别、缺失提示、文件版本和所选文件导出。`CaseService.set_required_documents` 保存本单基础清单，继续合并适用的 RequirementPolicy。草稿允许缺失字段，不自动填造业务事实。
 
-`SimpleExportService.generate(case_id, actor, document_type, human_confirmed=True)` 使用既有 WorkspaceRepository/BlobStore/GeneratedArtifact 契约，生成无需用户模板的简单 XLSX。明确的真人确认是生成条件，缺失和冲突作为检查提示保存，不要求旧流程中的表单逐字段确认或批准。确认保存在审计中并绑定产物和输入快照；生成不会将 Case 改成 PASSED，不生成外部主体签发的文书。修改资料使旧产物失效，重新生成追加独立版本。内部布局版本/哈希沿用产物模板溯源字段，不表示用户必须配置模板。当前不支持自定义模板上传或直接生成 PDF。
+`SimpleExportService.generate(case_id, actor, document_type, human_confirmed=True, output_format="xlsx")` 使用既有 WorkspaceRepository/BlobStore/GeneratedArtifact 契约，支持 XLSX 与标准排版 PDF。当前文件必需数据齐备、适用确定性规则通过及明确真人确认共同决定正式生成；未完成检查仍可下载待核对预览。确认绑定产物、输入摘要、来源、规则及模板。生成不会将 Case 改成 PASSED，不生成外部主体签发的文书。修改资料使旧产物失效，重新生成追加独立版本。`TemplateService` 支持受限 XLSX 占位符模板上传、版本化和选择；不要求必须上传模板。
+
+### 资料需求与文件选项
+
+- 公共 `DataRequirement` 表达目标文件、字段/明细行、当前值、是否必需、来源和待补状态。`documents.requirements.data_requirements(workspace, kind)` 为库存、审核和导出共用的只读入口。
+- `Workspace.required_source_types`、`required_delivery_types` 保存用户清单；`None` 兼容旧快照按类型分组，空列表表示明确未选择。`CaseService.set_document_checklist(..., expected_revision=None)` 保存两类清单并保留适用条件规则。
+- `ManualDataRecord` 提供独立记录 ID、类型、名称、值、明细、修订及录入审计；同类多份 PO 不合并。`FormSourceReference.record_id` 绑定指定记录修订，空值兼容旧表单来源。
+- `DocumentForm.included_fields`、`included_row_fields`、`included_context_fields` 分别选择表头、明细列与补充资料，`None` 保留目录默认。`FormService.configure_fields(..., expected_revision=None, context_fields=None)` 调整可选项，保留核心必需字段和适用条件要求；关闭项保存原值供再次启用，但不进入该输出。保存和取值通过 `form_fields`、`form_row_fields`、`form_context_fields` 统一。
+- `RequirementInputService.upload(case_id, actor, target_type, field_name, row_number, filename, content, source_type=None, expected_revision=None)` 保存真实原件和 `SourceRequirementLink`，精确绑定资料项与来源版本。`collect_document(..., prefill=False)` 允许只采集；`PrefillService.fill_requirement(...)` 仅尝试填写该项，不能唯一识别则保持待补，不改写无关内容或人工清空。
+- `ReviewedSourceRow` 和 `SourceRowSelection` 用于完整原件商品行的明确人工核对，保留原值、修正值、位置、来源版本及核对人。核对不可删除原件行、重复身份或忽略额外商品。
+- `DocumentTemplate` 保留模板类型、版本、哈希、文件及上传记录；`Workspace.selected_template_ids` 绑定每类文件当前模板。当前支持表头占位符和单条明细重复行，不接受公式、宏、外链或图表。PDF 不仿照自定义 Excel 排版。
+
+新增契约均使用既有追加快照与 BlobStore，不新增私有持久化接口；`TradeData/TradeLine.supplied_fields` 区分明确提供字段与创建时的初始值。规则升级、选项修改、来源改版和模板选择变化使旧确认失效。历史下载保留，当前有效交付依据现行规则和输入摘要判断。
 
 以下为早期完整流程的模型和兼容服务说明；与上述简化界面不一致时，以上述当前契约为准。
 
@@ -83,3 +95,37 @@ documents.lifecycle 按七个阶段展示留存资料，不把文件存在当作
 review.assistance.apply_transcription 为受权限控制的辅助抄录入口，要求原件、位置及依据，对已确认字段和表单禁止覆盖；保留机器原值及虚拟建议，连续重复不增加版本，后续修正允许回到历史值。该入口不代替人工确认。原件复核待办与岗位办理待办分别保存；外部资料按类型进入销售、单证、物流或财务队列，再由管理员/有权限人员指派到已有账户。系统不推断哪个现实人员已实际接收。
 
 ArchiveImporter 对相同ZIP哈希幂等，拒绝越界、符号链接、加密或超限条目，保留同内容不同路径的文件记录。目录中的业务状态只进入ImportContext未核验声明，CaseStatus与TradeMilestone仍独立。CLI导入使用现有管理员账号，并预先备份SQLite。
+
+
+## 精简工作台与个人默认（2026-10-31）
+
+`UserWorkbenchDefaults`/`UserDocumentDefaults` 保存认证用户的文件清单、输出字段选择及独立的必需输入选择；不包含交易业务值。`core.ports.UserDefaultsStore` 由 `storage.preferences.SQLiteUserDefaultsStore` 实现，按用户追加不可变版本并比较期望偏好版本。`UserDefaultsService` 仅操作本人配置，新建 Case 记录默认用户、版本和配置快照，旧单及共享单不会因切换账号自动变化；明确应用默认保留资料并使受影响产物重新核验。
+
+`DocumentForm.required_input_fields/required_input_row_fields/required_input_context_fields` 独立于 included_* 输出选择。`input_*` 帮助函数提供录入、完整性及审核输入，`effective_*` 仅提供输出内容。必需但不打印的资料仍可人工维护且保留来源；强制业务条件不被个人选项绕过。输入配置及默认快照参与审核摘要。
+
+`SimpleExportService.preview/generate` 支持 audience=customer/internal；服务兼容默认 internal，工作台默认 customer。客户版保留选定业务内容，内部来源、规则和审计由内部版及系统保存；用途写入产物溯源。模板上传需 template_manage 权限，仅管理员具备，业务员可选择已有版式并独立执行全部业务核对和生成。
+
+
+## 审核问题直接修改（2026-10-31）
+
+`CrossCheckResult.edit_targets` 使用公共 `ReviewEditTarget` / `ReviewEditArea` 定位实际输入所有者，包含文档类型、字段、行号及可选原件 ID/版本/表索引、人工资料记录 ID。默认空列表兼容历史快照；定位由规则输入构造，不解析中文问题或来源显示字符串。当前规则版本为 `w3-export-review-7`。只有人工确认尚未完成的一致项不会伪装成内容冲突。
+
+`ReviewEditingService.save` 在保存前校验认证权限、当前工作区修订、审核摘要及当前问题允许的精确目标，复用 FormService、CaseService 和 ManualInputService 修订指定输入。表单隐藏值、其他字段、继承明细和人工记录身份保留；局部人工核实只归属所选字段。原件修改通过既有 confirm_source_fields/confirm_source_rows 保存独立核对值，原始内容与机器候选保持不变；每份原件商品行仍需完整核对。修改后重新评估并失效旧确认及产物，不批准 Case 或自动生成。
+
+界面将日常选择交易、缺项、交付状态及两个操作页签前置，审核区可直接选择问题和修改位置。清单设置统一使用“需生成的内容”下方折叠的“调整资料与交付清单”入口。完整编辑、版式、来源、历史与打包默认折叠；新建/导入和账号管理在已有交易时后移，无交易时仍直接提供创建入口。快捷下载只提供当前选中文件类型、格式、用途的有效产物；历史下载需明确选择。
+
+
+## 缺项直接录入
+
+`RequirementInputService.manual_target` 从当前 canonical data_requirements 和有效录入字段解析 ReviewEditTarget；支持必需输入及已启用可选输入，拒绝未启用字段、无效行与外部签发目标。`fill` 校验认证权限、工作区修订及审核输入摘要，复用 ReviewEditingService 的修改引擎，只修改所选表头/明细格/整表或订单补充资料。它不依赖该值已被列成审核错误，因此可先填尚空的可选项；审核修改入口原有“当前不通过规则目标”限制继续保留。两种入口共享人工来源、修订及产物失效行为，不自动批准或生成，不新增原件。
+
+
+## 审核与工作台统一收尾（2026-10-31）
+
+审核规则版本更新为 `w3-export-review-8`：除必需项缺失外，已选用且非空的可选输入若来源待核实也阻止正式生成；双方均空且并非适用必需项的可选比对跳过，任一方有值或明确要求的项目继续核对。保持精确商品身份及明确单位，不进行模糊配对。
+
+单项表单修改的保存审计记录精确修改范围及未变单元格的原来源，避免继承明细物化后给其他默认/未知值补造人工依据。订单中的 USD/pcs/零值没有明确 supplied_fields 标记时继续作为未核实默认值；有依据的真实零值使用明确标记。预填仅读取当前原件版本、表索引、行号及机器原值完全匹配且唯一的 ReviewedSourceRow，候选和原表保留，修正值注明实际核对人及时间。撤销、改版或原值变动不会沿用旧核对。
+
+`documents.drafts.DraftStore` 只管理当前会话内的填写暂存，无数据库自动保存。范围包含账号、交易、编辑器及明确目标，记录原始版本、原值及当前业务摘要。默认使用严格修订检查；只有服务端计算的输入摘要与原始摘要相同、目标原值也相同时，才能忽略下载审计等版本噪声。业务变化后保留暂存但禁止旧值覆盖；明确放弃旋转控件键，退出登录清理全部暂存。页面可查看与放弃已关闭字段的暂存，避免无法解除生成阻挡。
+
+当前交付状态与快捷下载复用 current_artifacts；历史/旧规则产物明确提示重新核对。当前缺项图、生成选择和交付清单只展示已选目标，历史产物不隐式恢复已移除目标；历史下载独立保留。付款通知等无明细文件仅在确实启用明细时要求商品身份。编号/日期日常编辑统一展示一组，历史别名差异仍由审核控制。

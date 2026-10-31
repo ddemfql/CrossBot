@@ -14,7 +14,7 @@ from review.policy import PERMISSIONS, audit, invalidate, require
 
 
 def collect_document(repository, blobs, case_id: str, document_id: str, actor: Actor,
-                     target_type=None, *, ocr_images=False):
+                     target_type=None, *, ocr_images=False, prefill=True):
     """Collect source structure without replacing confirmed values or originals."""
     from .intake import collect_source
     workspace = repository.get(case_id)
@@ -54,9 +54,10 @@ def collect_document(repository, blobs, case_id: str, document_id: str, actor: A
         changed = True
     from .catalog import FORM_FIELDS
     from .prefill import prefill_form, refresh_prefills
-    changed = refresh_prefills(workspace) or changed
+    if prefill:
+        changed = refresh_prefills(workspace) or changed
     target = DocumentType(target_type) if target_type is not None else document.document_type
-    if target in FORM_FIELDS:
+    if prefill and target in FORM_FIELDS:
         existing = next((form for form in workspace.document_forms if form.document_type is target), None)
         ids = list(existing.source_document_ids) if existing else []
         changed = prefill_form(workspace, target, [*ids, document_id]) or changed

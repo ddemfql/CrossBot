@@ -24,26 +24,119 @@ TRADE_ROW_TYPES = frozenset({DocumentType.PROFORMA_INVOICE,
 def get_form(workspace, kind) -> DocumentForm:
     kind = DocumentType(kind)
     existing = next((form for form in workspace.document_forms if form.document_type is kind), None)
-    return deepcopy(existing) if existing else DocumentForm(document_type=kind, revision=0)
+    if existing:
+        return deepcopy(existing)
+    from .catalog import DEFAULT_FIELDS, DEFAULT_ROW_FIELDS, DEFAULT_CONTEXT_FIELDS
+    return DocumentForm(document_type=kind, revision=0,
+        included_fields=deepcopy(DEFAULT_FIELDS.get(kind)),
+        included_row_fields=deepcopy(DEFAULT_ROW_FIELDS.get(kind)),
+        included_context_fields=deepcopy(DEFAULT_CONTEXT_FIELDS.get(kind)))
 
 
-def effective_values(trade, form):
-    values = {name: str(getattr(trade, name, "") or "") for name in FORM_FIELDS[form.document_type]}
+def _required_fields(kind):
+    names = set(REQUIRED_FIELDS.get(kind, ()))
+    aliases = {DocumentType.PROFORMA_INVOICE: ("invoice_no", "invoice_date"),
+        DocumentType.COMMERCIAL_INVOICE: ("invoice_no", "invoice_date"),
+        DocumentType.COMBINED_INVOICE_PACKING_LIST: ("invoice_no", "invoice_date"),
+        DocumentType.PACKING_LIST: ("packing_list_no", "packing_date"),
+        DocumentType.SALES_CONTRACT: ("contract_no",)}
+    names.update(aliases.get(kind, ()))
+    if kind in {DocumentType.PROFORMA_INVOICE, DocumentType.COMMERCIAL_INVOICE,
+                DocumentType.COMBINED_INVOICE_PACKING_LIST}:
+        names.add("currency")
+    return names
+
+
+def form_fields(form):
+    catalog = FORM_FIELDS[form.document_type]
+    selected = set(catalog if form.included_fields is None else form.included_fields)
+    selected.update(_required_fields(form.document_type))
+    return {name: label for name, label in catalog.items() if name in selected}
+
+
+def form_row_fields(form):
+    catalog = ROW_FIELDS[form.document_type]
+    selected = set(catalog if form.included_row_fields is None else form.included_row_fields)
+    from .catalog import ROW_REQUIRED_TYPES
+    if form.document_type in ROW_REQUIRED_TYPES or selected or form.rows:
+        selected.update(REQUIRED_ROW_FIELDS.get(form.document_type, ()))
+        if "product_code" in catalog:
+            selected.add("product_code")
+    return {name: label for name, label in catalog.items() if name in selected}
+
+
+def form_context_fields(form, workspace=None):
+    from .simple_export import TRADE_EXTRA_FIELDS
+    allowed = set(TRADE_EXTRA_FIELDS) | {"adjustments", "packages", "line_items"}
+    selected = allowed if form.included_context_fields is None else allowed & set(form.included_context_fields)
+    return selected
+
+
+def _mandatory_context_fields(form, workspace=None):
+    selected = set()
+    if workspace is not None:
+        from .requirements import US_TRADE_FIELDS, US_DESTINATIONS, INVOICES
+        destination = str(form.values.get("destination_country") or workspace.trade.destination_country or "").strip().casefold()
+        if form.document_type in INVOICES and destination in US_DESTINATIONS:
+            selected |= US_TRADE_FIELDS | {"line_items"}
+            if workspace.trade.packages or workspace.trade.transport_mode or any(
+                    str(row.get("packages", "")).strip() not in {"", "0"} for row in effective_rows(workspace.trade, form)):
+                selected.add("packages")
+            if workspace.trade.adjustments:
+                selected.add("adjustments")
+    return selected
+
+
+def input_form_fields(form):
+    selected = set(form_fields(form)) | set(form.required_input_fields)
+    return {name: label for name, label in FORM_FIELDS[form.document_type].items() if name in selected}
+
+
+def input_form_row_fields(form):
+    selected = set(form_row_fields(form)) | set(form.required_input_row_fields)
+    return {name: label for name, label in ROW_FIELDS[form.document_type].items() if name in selected}
+
+
+def input_context_fields(form, workspace=None):
+    return (form_context_fields(form, workspace) | set(form.required_input_context_fields)
+            | _mandatory_context_fields(form, workspace))
+
+
+def _values_for(trade, form, allowed):
+    values = {name: str(getattr(trade, name, "") or "") for name in allowed}
     values.update({name: value for name, value in form.values.items()
-                   if value or name in form.manual_fields})
+                   if name in allowed and (value or name in form.manual_fields)})
     return values
 
 
-def effective_rows(trade, form):
+def effective_values(trade, form):
+    return _values_for(trade, form, form_fields(form))
+
+
+def input_values(trade, form):
+    return _values_for(trade, form, input_form_fields(form))
+
+
+def _rows_for(trade, form, allowed):
     """Use actual form rows, including deliberate emptiness, before trade rows."""
     if form.rows or form.rows_manually_edited:
-        return deepcopy(form.rows)
-    allowed = ROW_FIELDS.get(form.document_type, {})
+        return [{name: value for name, value in row.items() if name in allowed} for row in form.rows]
+    from .catalog import ROW_REQUIRED_TYPES
+    if form.document_type not in ROW_REQUIRED_TYPES:
+        return []
     if not {"description", "quantity"} <= allowed.keys():
         return []
     return [{name: "" if getattr(line, name, "") is None else str(getattr(line, name, ""))
              for name in allowed}
             for line in trade.line_items]
+
+
+def effective_rows(trade, form):
+    return _rows_for(trade, form, form_row_fields(form))
+
+
+def input_rows(trade, form):
+    return _rows_for(trade, form, input_form_row_fields(form))
 
 
 def missing_form_fields(trade, form):
@@ -176,8 +269,64 @@ class FormService:
     def __init__(self, repository):
         self.repository = repository
 
+    def configure_fields(self, case_id, actor, kind, fields, row_fields, reason,
+                         expected_revision=None, context_fields=None, required_input_fields=None,
+                         required_input_row_fields=None, required_input_context_fields=None):
+        workspace = self.repository.get(case_id)
+        require(workspace, actor, "manual_field")
+        if expected_revision is not None and workspace.revision != expected_revision:
+            raise CrossBotError(ErrorCode.CONFLICT, "资料已被修改，请刷新后调整。")
+        try:
+            kind = DocumentType(kind)
+        except (ValueError, TypeError) as exc:
+            raise ValidationError("请选择有效的交付文件类型。") from exc
+        if kind not in FORM_FIELDS:
+            raise ValidationError("此文件类型尚不支持调整字段。")
+        if not isinstance(reason, str) or not reason.strip() or len(reason) > 2000:
+            raise ValidationError("请填写不超过 2000 字的调整说明。")
+        from .input_validation import validate_input_text
+        validate_input_text(reason)
+        for selected, allowed in ((fields, FORM_FIELDS[kind]), (row_fields, ROW_FIELDS[kind])):
+            if not isinstance(selected, (list, tuple)) or any(name not in allowed for name in selected):
+                raise ValidationError("请选择此文件支持的字段。")
+        form = get_form(workspace, kind)
+        before = to_dict(form)
+        form.included_fields, form.included_row_fields = list(dict.fromkeys(fields)), list(dict.fromkeys(row_fields))
+        form.included_fields = list(form_fields(form))
+        form.included_row_fields = list(form_row_fields(form))
+        if context_fields is not None:
+            from .simple_export import TRADE_EXTRA_FIELDS
+            if not isinstance(context_fields, (list, tuple)) or any(name not in set(TRADE_EXTRA_FIELDS) |
+                    {"adjustments", "packages", "line_items"} for name in context_fields):
+                raise ValidationError("请选择支持的业务补充资料。")
+            form.included_context_fields = list(dict.fromkeys(context_fields))
+        from .simple_export import TRADE_EXTRA_FIELDS
+        for attribute, selected, allowed in (
+                ("required_input_fields", required_input_fields, FORM_FIELDS[kind]),
+                ("required_input_row_fields", required_input_row_fields, ROW_FIELDS[kind]),
+                ("required_input_context_fields", required_input_context_fields,
+                 set(TRADE_EXTRA_FIELDS) | {"adjustments", "packages", "line_items"})):
+            if selected is not None:
+                if not isinstance(selected, (list, tuple)) or any(name not in allowed for name in selected):
+                    raise ValidationError("请选择此文件支持的必需输入资料。")
+                setattr(form, attribute, list(dict.fromkeys(selected)))
+        if to_dict(form) == before:
+            return workspace
+        form.revision += 1
+        form.confirmed_by = form.confirmed_at = None
+        invalidate(workspace, actor, reason.strip())
+        workspace.document_forms = [item for item in workspace.document_forms if item.document_type is not kind]
+        workspace.document_forms.append(form)
+        workspace.case.status = CaseStatus.PENDING_REVIEW
+        audit(workspace, actor, "document_fields_configured", "document_form", kind.value,
+            before=before, after=to_dict(form), reason=reason.strip())
+        self.repository.save(workspace, expected_revision=workspace.revision)
+        return workspace
+
     def save(self, case_id, actor, kind, values, rows, reason, confirm=False,
-             manual_fields=None, rows_manually_edited=None):
+             manual_fields=None, rows_manually_edited=None, *,
+             manually_provided=None, source_form_references=None, expected_workspace_revision=None,
+             preserve_inherited_rows=False):
         workspace = self.repository.get(case_id)
         try:
             require(workspace, actor, "manual_field")
@@ -185,6 +334,8 @@ class FormService:
             if exc.code is ErrorCode.FORBIDDEN:
                 self.repository.save(workspace, expected_revision=workspace.revision)
             raise
+        if expected_workspace_revision is not None and workspace.revision != expected_workspace_revision:
+            raise CrossBotError(ErrorCode.CONFLICT, "资料已被修改，请刷新后重新填写。")
         try:
             kind = DocumentType(kind)
         except (ValueError, TypeError) as exc:
@@ -193,6 +344,8 @@ class FormService:
             raise ValidationError("该类型暂无结构化记录字段。")
         if not isinstance(reason, str) or not reason.strip() or len(reason) > 2000:
             raise ValidationError("保存表单必须填写不超过 2000 字的依据。")
+        from .input_validation import validate_input_text
+        validate_input_text(reason)
         if not isinstance(confirm, bool):
             raise ValidationError("确认标记须为布尔值。")
         if not isinstance(values, dict) or set(values) - set(FORM_FIELDS[kind]):
@@ -205,11 +358,40 @@ class FormService:
                 raise ValidationError("明细包含不支持的字段。")
             if any(not isinstance(value, str) or len(value) > 4000 for value in mapping.values()):
                 raise ValidationError("表单值须为不超过 4000 字的文本。")
+            from .input_validation import validate_input_text
+            validate_input_text(mapping)
             return {name: value.strip() for name, value in mapping.items()}
 
         cleaned = clean(values, FORM_FIELDS[kind])
         cleaned_rows = [clean(row, ROW_FIELDS[kind]) for row in rows]
         previous = get_form(workspace, kind)
+        cleaned = {**{name: value for name, value in previous.values.items() if name not in form_fields(previous)}, **cleaned}
+        visible_rows = [{name: value for name, value in row.items() if name in input_form_row_fields(previous)} for row in cleaned_rows]
+        identity_names = [name for name in ("product_code", "parameter", "check_item", "requirement")
+                          if name in form_row_fields(previous)]
+        for row in cleaned_rows:
+            matches = [old for old in previous.rows if identity_names and all(row.get(name) and row.get(name) == old.get(name)
+                for name in identity_names)]
+            if len(matches) == 1:
+                row.update({name: value for name, value in matches[0].items()
+                            if name not in form_row_fields(previous) and name not in row})
+        if not isinstance(preserve_inherited_rows, bool):
+            raise ValidationError("明细继承标记无效。")
+        inherited_rows_preserved = (preserve_inherited_rows and not cleaned_rows
+            and not previous.rows and not previous.rows_manually_edited)
+        if manually_provided is not None and not isinstance(manually_provided, bool):
+            raise ValidationError("资料提供标记须为布尔值。")
+        from core.models import FormSourceReference
+        if source_form_references is not None and (not isinstance(source_form_references, list)
+                or any(not isinstance(ref, FormSourceReference) for ref in source_form_references)):
+            raise ValidationError("填写资料来源记录无效。")
+        for ref in source_form_references or []:
+            from .manual_inputs import has_manual_data, manual_source
+            source = manual_source(workspace, ref.document_type, ref.record_id)
+            if (source is None or (not ref.record_id and ref.document_type is kind)
+                    or source.revision != ref.revision or not has_manual_data(source)
+                    or getattr(source, "source_form_references", [])):
+                raise ValidationError("填写资料来源已失效，请刷新后核对。")
         if (manual_fields is not None and (not isinstance(manual_fields, (list, tuple))
                 or any(name not in FORM_FIELDS[kind] for name in manual_fields))):
             raise ValidationError("人工字段标记无效。")
@@ -230,8 +412,18 @@ class FormService:
             auto_rows=previous.auto_rows,
             manual_fields=sorted(protected),
             rows_manually_edited=(previous.rows_manually_edited
-                or cleaned_rows != effective_rows(workspace.trade, previous)
-                or bool(rows_manually_edited)))
+                or (not inherited_rows_preserved and visible_rows != input_rows(workspace.trade, previous))
+                or bool(rows_manually_edited)),
+            manually_provided=(previous.manually_provided if manually_provided is None else manually_provided)
+                and bool(any(cleaned.values()) or any(any(row.values()) for row in cleaned_rows)),
+            source_form_references=deepcopy(previous.source_form_references
+                if source_form_references is None else source_form_references),
+            included_fields=deepcopy(previous.included_fields),
+            included_row_fields=deepcopy(previous.included_row_fields),
+            included_context_fields=deepcopy(previous.included_context_fields),
+            required_input_fields=deepcopy(previous.required_input_fields),
+            required_input_row_fields=deepcopy(previous.required_input_row_fields),
+            required_input_context_fields=deepcopy(previous.required_input_context_fields))
         invalidate(workspace, actor, reason.strip())
         workspace.document_forms = [item for item in workspace.document_forms if item.document_type is not kind]
         workspace.document_forms.append(form)

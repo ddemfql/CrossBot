@@ -76,19 +76,30 @@ ROW_FIELDS[D.INSPECTION_RECORD] = {"check_item": "检查项目", "requirement": 
 ROW_FIELDS[D.COMPLIANCE_DRAFT] = {"requirement": "已核实要求", "evidence": "真实证据", "status": "人工核实情况"}
 ROW_FIELDS[D.STATEMENT_OF_ACCOUNT] = {"date": "日期", "reference": "发票/收款参考", "debit": "应收", "credit": "实收", "balance": "余额"}
 
-# Required means evidence needed for a usable draft, never a legal sufficiency claim.
-REQUIRED_FIELDS = {kind: ("document_no", "document_date", "order_no", "seller", "buyer") for kind in SELLER_TYPES}
-REQUIRED_FIELDS[D.COMPLIANCE_DRAFT] += ("product_name", "market", "evidence_reference", "declaration_text", "responsible_person")
-REQUIRED_FIELDS[D.INSPECTION_RECORD] += ("inspection_date", "inspector", "observed_result", "evidence_reference")
-REQUIRED_FIELDS[D.PAYMENT_NOTICE] += ("currency", "amount_due", "due_date", "bank_account")
-REQUIRED_FIELDS[D.ISF_WORKSHEET] += ("importer", "importer_record_no", "manufacturer", "container_stuffing_location", "consolidator")
-REQUIRED_FIELDS[D.PRODUCT_SPEC] += ("product_name",)
-REQUIRED_FIELDS[D.PACKAGING_ARTWORK] += ("product_name", "label_text")
-REQUIRED_FIELDS[D.PRODUCTION_ORDER] += ("factory", "delivery_date", "quality_requirements")
-REQUIRED_FIELDS[D.BOOKING_REQUEST] += ("forwarder", "port_of_loading", "port_of_discharge", "cargo_ready_date")
-REQUIRED_FIELDS[D.SHIPPING_INSTRUCTION] += ("shipper", "consignee", "port_of_loading", "port_of_discharge")
-REQUIRED_FIELDS[D.CUSTOMS_WORKSHEET] += ("broker", "invoice_no", "currency")
-REQUIRED_FIELDS[D.STATEMENT_OF_ACCOUNT] += ("period_start", "period_end", "currency", "closing_balance")
+# Practical per-document minimums for our drafts, not a legal sufficiency claim.
+REQUIRED_FIELDS = {
+    D.QUOTATION: ("document_no", "document_date", "seller", "buyer", "currency"),
+    D.PROFORMA_INVOICE: ("document_no", "document_date", "order_no", "seller", "buyer", "currency"),
+    D.SALES_CONTRACT: ("document_no", "document_date", "seller", "buyer", "currency"),
+    D.ORDER_CONFIRMATION: ("document_no", "document_date", "order_no", "seller", "buyer"),
+    D.PRODUCT_SPEC: ("product_name",),
+    D.PACKAGING_ARTWORK: ("product_name", "label_text"),
+    D.PRODUCTION_ORDER: ("document_no", "order_no", "factory", "delivery_date", "quality_requirements"),
+    D.INSPECTION_RECORD: ("inspection_date", "inspector", "observed_result", "evidence_reference"),
+    D.COMMERCIAL_INVOICE: ("document_no", "document_date", "order_no", "seller", "buyer", "currency"),
+    D.PACKING_LIST: ("document_no", "document_date", "order_no", "seller", "buyer"),
+    D.COMBINED_INVOICE_PACKING_LIST: ("document_no", "document_date", "order_no", "seller", "buyer", "currency"),
+    D.BOOKING_REQUEST: ("forwarder", "port_of_loading", "port_of_discharge", "cargo_ready_date", "cargo_description"),
+    D.SHIPPING_INSTRUCTION: ("shipper", "consignee", "port_of_loading", "port_of_discharge", "cargo_description"),
+    D.CUSTOMS_WORKSHEET: ("broker", "invoice_no", "currency"),
+    D.PAYMENT_NOTICE: ("document_no", "document_date", "seller", "buyer", "currency", "amount_due", "due_date", "bank_account"),
+    D.STATEMENT_OF_ACCOUNT: ("seller", "buyer", "period_start", "period_end", "currency", "opening_balance", "closing_balance"),
+    D.COMPLIANCE_DRAFT: ("product_name", "market", "evidence_reference", "declaration_text", "responsible_person"),
+    D.ISF_WORKSHEET: ("importer", "importer_record_no", "manufacturer", "container_stuffing_location", "consolidator"),
+}
+ROW_REQUIRED_TYPES = frozenset({D.QUOTATION, D.PROFORMA_INVOICE, D.SALES_CONTRACT,
+    D.ORDER_CONFIRMATION, D.PRODUCTION_ORDER, D.COMMERCIAL_INVOICE, D.PACKING_LIST,
+    D.COMBINED_INVOICE_PACKING_LIST, D.CUSTOMS_WORKSHEET, D.STATEMENT_OF_ACCOUNT})
 REQUIRED_ROW_FIELDS = {kind: ("description", "quantity", "unit") for kind in SELLER_TYPES}
 for _kind in (D.QUOTATION, D.PROFORMA_INVOICE, D.SALES_CONTRACT, D.ORDER_CONFIRMATION,
               D.COMMERCIAL_INVOICE, D.COMBINED_INVOICE_PACKING_LIST):
@@ -97,6 +108,55 @@ REQUIRED_ROW_FIELDS[D.PRODUCT_SPEC] = ("parameter", "value")
 REQUIRED_ROW_FIELDS[D.INSPECTION_RECORD] = ("check_item", "actual", "result")
 REQUIRED_ROW_FIELDS[D.COMPLIANCE_DRAFT] = ("requirement", "evidence", "status")
 REQUIRED_ROW_FIELDS[D.STATEMENT_OF_ACCOUNT] = ("date", "reference", "balance")
+REQUIRED_ROW_FIELDS[D.PAYMENT_NOTICE] = ()
+REQUIRED_ROW_FIELDS[D.ISF_WORKSHEET] = ("description",)
+for _packing_kind in (D.PACKING_LIST, D.COMBINED_INVOICE_PACKING_LIST):
+    REQUIRED_ROW_FIELDS[_packing_kind] += ("packages", "gross_weight_kg", "net_weight_kg")
+
+# New documents start with a small, useful schema. Full catalogs above remain
+# available for explicit customization and for restoring historical snapshots.
+DEFAULT_FIELDS = {
+    D.QUOTATION: ["document_no", "document_date", "seller", "buyer", "currency", "valid_until", "incoterm", "lead_time", "payment_terms"],
+    D.PROFORMA_INVOICE: ["invoice_no", "invoice_date", "order_no", "seller", "buyer", "currency", "incoterm", "payment_terms", "destination_country"],
+    D.SALES_CONTRACT: ["contract_no", "document_date", "seller", "buyer", "currency", "incoterm", "payment_terms", "delivery_terms", "quality_terms"],
+    D.ORDER_CONFIRMATION: ["document_no", "document_date", "order_no", "seller", "buyer", "buyer_po_no", "delivery_date", "payment_terms"],
+    D.PRODUCT_SPEC: ["product_name", "model", "material", "dimensions", "technical_requirements", "reference_standard"],
+    D.PACKAGING_ARTWORK: ["product_name", "packaging_material", "label_language", "label_text", "artwork_reference"],
+    D.PRODUCTION_ORDER: ["document_no", "order_no", "factory", "delivery_date", "quality_requirements", "packaging_requirements"],
+    D.INSPECTION_RECORD: ["inspection_date", "inspector", "location", "sampling_plan", "observed_result", "evidence_reference"],
+    D.COMMERCIAL_INVOICE: ["invoice_no", "invoice_date", "order_no", "seller", "buyer", "currency", "incoterm", "payment_terms", "destination_country"],
+    D.PACKING_LIST: ["packing_list_no", "packing_date", "order_no", "seller", "buyer", "shipper", "consignee", "destination_country"],
+    D.COMBINED_INVOICE_PACKING_LIST: ["invoice_no", "invoice_date", "order_no", "seller", "buyer", "currency", "shipper", "consignee", "destination_country"],
+    D.BOOKING_REQUEST: ["forwarder", "shipper", "consignee", "port_of_loading", "port_of_discharge", "cargo_ready_date", "container_type", "cargo_description", "volume_cbm"],
+    D.SHIPPING_INSTRUCTION: ["shipper", "consignee", "notify_party", "port_of_loading", "port_of_discharge", "booking_reference", "freight_terms", "cargo_description"],
+    D.CUSTOMS_WORKSHEET: ["broker", "invoice_no", "currency", "shipper", "consignee", "destination_country", "declaration_notes"],
+    D.PAYMENT_NOTICE: ["document_no", "document_date", "seller", "buyer", "currency", "invoice_no", "amount_due", "due_date", "bank_name", "beneficiary", "bank_account", "swift", "payment_reference"],
+    D.STATEMENT_OF_ACCOUNT: ["seller", "buyer", "currency", "period_start", "period_end", "opening_balance", "closing_balance"],
+    D.COMPLIANCE_DRAFT: ["product_name", "market", "manufacturer", "applicable_requirements", "evidence_reference", "declaration_text", "responsible_person"],
+    D.ISF_WORKSHEET: ["importer", "importer_record_no", "manufacturer", "seller", "seller_address", "buyer", "buyer_address", "container_stuffing_location", "consolidator", "bill_reference", "country_of_origin"],
+}
+DEFAULT_ROW_FIELDS = {
+    D.QUOTATION: ["product_code", "description", "quantity", "unit", "unit_price", "amount"],
+    D.PROFORMA_INVOICE: ["product_code", "description", "quantity", "unit", "unit_price", "amount"],
+    D.SALES_CONTRACT: ["product_code", "description", "quantity", "unit", "unit_price", "amount"],
+    D.ORDER_CONFIRMATION: ["product_code", "description", "quantity", "unit", "unit_price", "amount"],
+    D.PRODUCT_SPEC: ["parameter", "value", "unit", "basis"],
+    D.PACKAGING_ARTWORK: [],
+    D.PRODUCTION_ORDER: ["product_code", "description", "quantity", "unit"],
+    D.INSPECTION_RECORD: ["check_item", "requirement", "actual", "result", "evidence"],
+    D.COMMERCIAL_INVOICE: ["product_code", "description", "quantity", "unit", "unit_price", "amount"],
+    D.PACKING_LIST: ["product_code", "description", "quantity", "unit", "packages", "gross_weight_kg", "net_weight_kg", "marks_and_numbers", "package_contents"],
+    D.COMBINED_INVOICE_PACKING_LIST: list(ROW_FIELDS[D.COMBINED_INVOICE_PACKING_LIST]),
+    D.BOOKING_REQUEST: [], D.SHIPPING_INSTRUCTION: [],
+    D.CUSTOMS_WORKSHEET: ["product_code", "description", "quantity", "unit", "unit_price", "amount", "hs_code", "country_of_origin"],
+    D.PAYMENT_NOTICE: [],
+    D.STATEMENT_OF_ACCOUNT: list(ROW_FIELDS[D.STATEMENT_OF_ACCOUNT]),
+    D.COMPLIANCE_DRAFT: [],
+    D.ISF_WORKSHEET: ["product_code", "description", "hs_code", "country_of_origin"],
+}
+DEFAULT_CONTEXT_FIELDS = {kind: [] for kind in SELLER_TYPES}
+DEFAULT_CONTEXT_FIELDS[D.PACKING_LIST] = ["packages"]
+DEFAULT_CONTEXT_FIELDS[D.COMBINED_INVOICE_PACKING_LIST] = ["packages"]
 
 # These are human annotations of supplied records, never issuer document templates.
 for _kind in EXTERNAL_TYPES:
@@ -110,6 +170,10 @@ for _kind in EXTERNAL_TYPES:
 FORM_FIELDS[D.PURCHASE_CONTRACT].update({"supplier": "供应商", "buyer": "采购方",
     "contract_no": "采购合同号", "currency": "原件币种", "total_amount": "原件合同金额",
     "payment_terms": "原件付款条件", "delivery_date": "原件交付日期"})
+# Customer order data may be supplied directly by a human without inventing a
+# buyer-issued original. These fields are data records, not an issuer template.
+FORM_FIELDS[D.PURCHASE_ORDER].update({**_PAYMENT, **_SHIPPING})
+ROW_FIELDS[D.PURCHASE_ORDER] = {**_PRODUCT_ROWS, **_PACKING_ROWS}
 FORM_FIELDS[D.FORWARDER_RECEIPT].update({"vessel": "原件船名", "voyage": "原件航次",
     "container_no": "原件集装箱号", "seal_no": "原件封条号", "volume_cbm": "原件体积 m³",
     "packages": "原件件数", "gross_weight_kg": "原件毛重 kg",

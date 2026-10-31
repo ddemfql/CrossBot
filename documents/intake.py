@@ -301,6 +301,14 @@ def classify_source(path: str) -> tuple[Type, str, str]:
     name = PurePosixPath(normalized).name.casefold()
     full = normalized.casefold()
     compact = re.sub(r"[^a-z0-9\u3400-\u9fff]+", "", name)
+    # Explicit PO aliases tolerate punctuation/underscores while keeping word
+    # boundaries ("report" and "portfolio" are not purchase orders).
+    def po_hint(value):
+        return bool(re.search(r"(?:^|[^a-z])(?:po|p[.\s_-]+o)(?:[^a-z]|$)", value)
+            or re.search(r"purchase[\s_-]+order", value)
+            or any(token in value for token in ("采购订单", "客户订单", "买方订单")))
+
+    parent_po = any(po_hint(part.casefold()) for part in PurePosixPath(normalized).parts[:-1])
     external_template = any(token in full for token in ("客户提供", "买方提供", "客户模板", "外部模板", "blank template"))
     kind, responsibility = Type.OTHER, "external"
     if any(token in full for token in ("出货照片", "出货相片", "出货图片", "验货照片", "验货相片", "验货图片",
@@ -310,7 +318,7 @@ def classify_source(path: str) -> tuple[Type, str, str]:
           or re.search(r"(?:^|[^a-z])aw(?:[^a-z]|$)", name)):
         kind, responsibility = Type.PACKAGING_ARTWORK, "seller"
     elif (any(token in full for token in ("工厂", "生产", "factory", "production"))
-          and (re.search(r"(?:^|[^a-z])po(?:[^a-z]|$)", name) or "订单" in name or "order" in name)):
+          and (po_hint(name) or "订单" in name or "order" in name)):
         kind, responsibility = Type.PRODUCTION_ORDER, "seller"
     elif "isf" in name:
         official_receipt = any(token in name for token in ("回执", "receipt", "accepted", "confirmation"))
@@ -355,12 +363,18 @@ def classify_source(path: str) -> tuple[Type, str, str]:
                 kind, responsibility = Type.PRODUCT_SPEC, "seller"
             elif re.search(r"(?:^|[^a-z])pi(?:[^a-z]|$)", name):
                 kind, responsibility = Type.PROFORMA_INVOICE, "seller"
-            elif re.search(r"(?:^|[^a-z])po(?:[^a-z]|$)", name):
+            elif po_hint(name):
                 kind, responsibility = Type.PURCHASE_ORDER, "external"
             elif re.search(r"(?:^|[^a-z])ci(?:[^a-z]|$)", name):
                 kind, responsibility = Type.COMMERCIAL_INVOICE, "seller"
             elif re.search(r"(?:^|[^a-z])pl(?:[^a-z]|$)", name):
                 kind, responsibility = Type.PACKING_LIST, "seller"
+    # Only use a directory hint after an unclassified filename; a real invoice,
+    # artwork, photograph or other explicit document name keeps its own kind.
+    if kind is Type.OTHER and parent_po:
+        factory = any(token in full for token in ("工厂", "生产", "factory", "production"))
+        kind, responsibility = ((Type.PRODUCTION_ORDER, "seller") if factory
+                                else (Type.PURCHASE_ORDER, "external"))
     if external_template:
         responsibility = "external"
     note = "按文件名及路径形成分类候选，来源责任须人工确认；不验证签发或提交事实。"

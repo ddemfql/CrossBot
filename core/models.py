@@ -191,6 +191,25 @@ class ReviewTask:
     decisions: list[ReviewDecision] = field(default_factory=list)
     created_at: datetime = field(default_factory=utc_now)
 
+class ReviewEditArea(str, Enum):
+    FORM = "form"
+    TRADE = "trade"
+    SOURCE = "source"
+    MANUAL_SOURCE = "manual_source"
+    SOURCE_LINKS = "source_links"
+
+@dataclass(slots=True)
+class ReviewEditTarget:
+    """Structured location to correct an input; never an approval instruction."""
+    area: ReviewEditArea
+    document_type: DocumentType | None = None
+    field_name: str = ""
+    row_number: int | None = None
+    document_id: str = ""
+    version_id: str = ""
+    record_id: str = ""
+    table_index: int | None = None
+
 @dataclass(slots=True)
 class CrossCheckResult:
     result_id: str = field(default_factory=lambda: new_id("check"))
@@ -218,6 +237,7 @@ class CrossCheckResult:
     scope: str = ""
     item_key: str = ""
     required: bool = True
+    edit_targets: list[ReviewEditTarget] = field(default_factory=list)
 
 @dataclass(slots=True)
 class SourceFieldSelection:
@@ -326,6 +346,7 @@ class TradeLine:
     grade_quality: str = ""
     marks_and_numbers: str = ""
     package_contents: str = ""
+    supplied_fields: list[str] = field(default_factory=list)
 
 @dataclass(slots=True)
 class TradeAdjustment:
@@ -375,6 +396,7 @@ class TradeData:
     revision: int = 1
     confirmed_by: str | None = None
     confirmed_at: datetime | None = None
+    supplied_fields: list[str] = field(default_factory=list)
 
 @dataclass(slots=True)
 class RequirementPolicy:
@@ -479,6 +501,76 @@ class FormRowCandidate:
     cell_references: dict[str, str] = field(default_factory=dict)
 
 @dataclass(slots=True)
+class FormSourceReference:
+    """Exact manually supplied form revision used by another form."""
+    document_type: DocumentType
+    revision: int
+    record_id: str = ""
+
+@dataclass(slots=True)
+class ManualDataRecord:
+    document_type: DocumentType
+    title: str = ""
+    record_id: str = field(default_factory=lambda: new_id("input"))
+    values: dict[str, str] = field(default_factory=dict)
+    rows: list[dict[str, str]] = field(default_factory=list)
+    revision: int = 1
+    recorded_by: str = ""
+    recorded_at: datetime = field(default_factory=utc_now)
+
+@dataclass(slots=True)
+class SourceRowSelection:
+    document_id: str
+    version_id: str
+    table_index: int
+    row_number: int
+    values: dict[str, str]
+
+@dataclass(slots=True)
+class ReviewedSourceRow:
+    document_id: str
+    version_id: str
+    table_index: int
+    row_number: int
+    original_values: dict[str, str] = field(default_factory=dict)
+    values: dict[str, str] = field(default_factory=dict)
+    location: str = ""
+    confirmed_by: str = ""
+    confirmed_at: datetime = field(default_factory=utc_now)
+
+@dataclass(slots=True)
+class DataRequirement:
+    """One effective input slot used or required by a particular deliverable."""
+    document_type: DocumentType
+    field_name: str
+    label: str
+    required: bool = True
+    row_number: int | None = None
+    value: str = ""
+    status: str = "missing"
+    origin: FormValueOrigin | None = None
+    message: str = ""
+
+@dataclass(slots=True)
+class SourceRequirementLink:
+    document_id: str
+    version_id: str
+    document_type: DocumentType
+    field_name: str
+    row_number: int | None = None
+
+@dataclass(slots=True)
+class DocumentTemplate:
+    document_type: DocumentType
+    filename: str
+    sha256: str
+    storage_path: str
+    template_id: str = field(default_factory=lambda: new_id("template"))
+    version_number: int = 1
+    uploaded_by: str = ""
+    uploaded_at: datetime = field(default_factory=utc_now)
+
+@dataclass(slots=True)
 class DocumentForm:
     document_type: DocumentType
     values: dict[str, str] = field(default_factory=dict)
@@ -493,6 +585,35 @@ class DocumentForm:
     auto_rows: list[dict[str, str]] = field(default_factory=list)
     manual_fields: list[str] = field(default_factory=list)
     rows_manually_edited: bool = False
+    manually_provided: bool = False
+    source_form_references: list[FormSourceReference] = field(default_factory=list)
+    # None retains the catalog defaults; explicit lists choose optional content.
+    included_fields: list[str] | None = None
+    included_row_fields: list[str] | None = None
+    included_context_fields: list[str] | None = None
+    required_input_fields: list[str] = field(default_factory=list)
+    required_input_row_fields: list[str] = field(default_factory=list)
+    required_input_context_fields: list[str] = field(default_factory=list)
+
+@dataclass(slots=True)
+class UserDocumentDefaults:
+    document_type: DocumentType
+    included_fields: list[str] | None = None
+    included_row_fields: list[str] | None = None
+    included_context_fields: list[str] | None = None
+    required_input_fields: list[str] = field(default_factory=list)
+    required_input_row_fields: list[str] = field(default_factory=list)
+    required_input_context_fields: list[str] = field(default_factory=list)
+
+@dataclass(slots=True)
+class UserWorkbenchDefaults:
+    user_id: str
+    source_types: list[DocumentType] = field(default_factory=list)
+    delivery_types: list[DocumentType] = field(default_factory=lambda: [
+        DocumentType.COMMERCIAL_INVOICE, DocumentType.PACKING_LIST])
+    documents: list[UserDocumentDefaults] = field(default_factory=list)
+    revision: int = 0
+    updated_at: datetime = field(default_factory=utc_now)
 
 @dataclass(slots=True)
 class ImportContext:
@@ -539,6 +660,16 @@ class Workspace:
     document_forms: list[DocumentForm] = field(default_factory=list)
     import_context: ImportContext | None = None
     assistance_records: list[AssistanceRecord] = field(default_factory=list)
+    # None preserves legacy type-based grouping; [] is an explicit empty group.
+    required_source_types: list[DocumentType] | None = None
+    required_delivery_types: list[DocumentType] | None = None
+    manual_data_records: list[ManualDataRecord] = field(default_factory=list)
+    reviewed_source_rows: list[ReviewedSourceRow] = field(default_factory=list)
+    document_templates: list[DocumentTemplate] = field(default_factory=list)
+    selected_template_ids: dict[str, str] = field(default_factory=dict)
+    source_requirement_links: list[SourceRequirementLink] = field(default_factory=list)
+    defaults_user_id: str = ""
+    defaults_revision: int = 0
 
 def to_dict(value: Any) -> Any:
     if isinstance(value, Enum):

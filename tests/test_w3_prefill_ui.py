@@ -23,7 +23,8 @@ class PrefillUITests(unittest.TestCase):
     def test_selected_source_prefills_visible_editable_form_then_exports_latest_edits(self):
         from case_workflow.service import CaseService
         from validation.rules import DeterministicRules
-        workspace = CaseService(self.repo, DeterministicRules()).create(self.actor, TradeData())
+        workspace = CaseService(self.repo, DeterministicRules()).create(self.actor, TradeData(),
+            required_types=[D.PROFORMA_INVOICE, D.COMMERCIAL_INVOICE, D.PACKING_LIST])
         documents = DocumentService(self.repo, self.blobs)
         workspace = documents.upload(workspace.case.case_id, self.actor, "synthetic-po.xlsx",
             synthetic_workbook(), D.PURCHASE_ORDER)
@@ -38,7 +39,9 @@ class PrefillUITests(unittest.TestCase):
         stored = get_form(self.repo.get(workspace.case.case_id), D.PROFORMA_INVOICE)
         self.assertIsNone(stored.confirmed_by)
         self.assertEqual(len(stored.rows), 2)
-        editor_key = f"simple-form-rows-{workspace.case.case_id}-{D.PROFORMA_INVOICE.value}-{stored.revision}"
+        from documents.drafts import DraftStore
+        editor_key = DraftStore(app.session_state).widget_key(workspace.case.case_id,
+            self.actor.user_id + ":full-file", D.PROFORMA_INVOICE.value, "rows")
         # AppTest exposes the data editor's public session-state delta protocol.
         app.session_state[editor_key] = {"edited_rows": {0: {"quantity": "9"}},
                                          "added_rows": [], "deleted_rows": []}
@@ -50,8 +53,8 @@ class PrefillUITests(unittest.TestCase):
         self.assertEqual(stored.rows[0]["quantity"], "9")
         self.assertEqual(widget(app.text_input, "买方").value, "Synthetic UI edited buyer")
         widget(app.checkbox, "我已人工核对当前资料，确认按现有内容生成").check().run()
-        self.assertTrue(widget(app.button, "生成 Excel").disabled)
-        widget(app.button, "准备待人工核对的 Excel 预览").click().run()
+        self.assertTrue(widget(app.button, "确认并生成").disabled)
+        widget(app.button, "预览文件").click().run()
         self.assertFalse(app.exception, [item.message for item in app.exception])
         result = self.repo.get(workspace.case.case_id)
         self.assertFalse(result.approvals)
@@ -73,15 +76,16 @@ class PrefillUITests(unittest.TestCase):
         from validation.rules import DeterministicRules
         service = CaseService(self.repo, DeterministicRules())
         workspace = service.create(self.actor, TradeData(buyer="Synthetic manual buyer",
-            line_items=[TradeLine("SYN-M", "Synthetic manual item", "2", "7", "pcs")]))
+            line_items=[TradeLine("SYN-M", "Synthetic manual item", "2", "7", "pcs")]),
+            required_types=[D.PROFORMA_INVOICE, D.COMMERCIAL_INVOICE, D.PACKING_LIST])
         app = self.app()
         widget(app.selectbox, "需要生成的文件").select(D.PROFORMA_INVOICE).run()
         self.assertFalse(app.exception, [item.message for item in app.exception])
         self.assertEqual(widget(app.text_input, "买方").value, "Synthetic manual buyer")
         self.assertTrue(any("Synthetic manual item" in str(item.value) for item in app.dataframe))
         widget(app.checkbox, "我已人工核对当前资料，确认按现有内容生成").check().run()
-        self.assertTrue(widget(app.button, "生成 Excel").disabled)
-        widget(app.button, "准备待人工核对的 Excel 预览").click().run()
+        self.assertTrue(widget(app.button, "确认并生成").disabled)
+        widget(app.button, "预览文件").click().run()
         self.assertFalse(app.exception, [item.message for item in app.exception])
         result = self.repo.get(workspace.case.case_id)
         self.assertFalse(result.documents)
@@ -94,7 +98,9 @@ class PrefillUITests(unittest.TestCase):
         workspace = CaseService(self.repo, DeterministicRules()).create(self.actor,
             TradeData(line_items=[TradeLine("SYN-CLEAR", "Synthetic row to clear", "2", "3")]))
         app = self.app()
-        editor_key = f"simple-form-rows-{workspace.case.case_id}-{D.COMMERCIAL_INVOICE.value}-0"
+        from documents.drafts import DraftStore
+        editor_key = DraftStore(app.session_state).widget_key(workspace.case.case_id,
+            self.actor.user_id + ":full-file", D.COMMERCIAL_INVOICE.value, "rows")
         app.session_state[editor_key] = {"edited_rows": {}, "added_rows": [], "deleted_rows": [0]}
         widget(app.button, "保存补充内容").click().run()
         self.assertFalse(app.exception, [item.message for item in app.exception])

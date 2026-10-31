@@ -76,7 +76,7 @@ class ExportReviewTests(unittest.TestCase):
                 self.complete()
                 # Inject malformed input to exercise API boundary independently
                 # of the UI/form text validator.
-                self.ws.document_forms[0].rows[0]["quantity"] = value
+                next(form for form in self.ws.document_forms if form.document_type is T.COMMERCIAL_INVOICE).rows[0]["quantity"] = value
                 report = self.report()
                 self.assertFalse(report.ready)
                 self.assertTrue(any(item.rule_code == "NUMBER_VALID" and item.status.value == "fail"
@@ -119,7 +119,7 @@ class ExportReviewTests(unittest.TestCase):
                              "unit_price": "10", "amount": "19"}])
         self.assertTrue(any(item.rule_code == "LINE_AMOUNT" and item.status.value == "fail" for item in self.blockers()))
         self.complete(T.PACKING_LIST)
-        self.ws.document_forms[-1].rows[0]["packages"] = "1.5"
+        next(form for form in self.ws.document_forms if form.document_type is T.PACKING_LIST).rows[0]["packages"] = "1.5"
         self.assertFalse(self.report(T.PACKING_LIST).ready)
 
     def test_linked_copied_source_is_reviewed_in_form_without_promoting_raw_candidates(self):
@@ -159,7 +159,7 @@ class ExportReviewTests(unittest.TestCase):
 
     def test_unresolved_scalar_candidates_need_actual_manual_resolution_not_only_checkbox(self):
         self.complete()
-        form = self.ws.document_forms[0]
+        form = next(form for form in self.ws.document_forms if form.document_type is T.COMMERCIAL_INVOICE)
         form.manual_fields.remove("buyer")
         form.auto_values["buyer"] = "Synthetic Buyer"
         form.field_candidates["buyer"] = [FormFieldCandidate("Synthetic Buyer", "doc-a", "v1"),
@@ -172,7 +172,7 @@ class ExportReviewTests(unittest.TestCase):
         digest = review_digest(self.ws, T.COMMERCIAL_INVOICE)
         self.ws.audit.append(AuditEvent(action="file_downloaded", actor_id="reader"))
         self.assertEqual(review_digest(self.ws, T.COMMERCIAL_INVOICE), digest)
-        self.ws.document_forms[0].rows[0]["quantity"] = "3"
+        next(form for form in self.ws.document_forms if form.document_type is T.COMMERCIAL_INVOICE).rows[0]["quantity"] = "3"
         self.assertNotEqual(review_digest(self.ws, T.COMMERCIAL_INVOICE), digest)
         changed = review_digest(self.ws, T.COMMERCIAL_INVOICE)
         self.ws.case.customer_name = "Different case customer"

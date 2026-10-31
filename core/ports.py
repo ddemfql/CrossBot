@@ -2,7 +2,11 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
-from .models import Actor, CrossCheckResult, DocumentType, TradeData, Workspace
+from .models import Actor, CrossCheckResult, DocumentType, TradeData, Workspace, UserWorkbenchDefaults
+
+class UserDefaultsStore(Protocol):
+    def get(self, user_id: str) -> UserWorkbenchDefaults | None: ...
+    def save(self, defaults: UserWorkbenchDefaults, expected_revision: int) -> None: ...
 
 class WorkspaceRepository(Protocol):
     def get(self, case_id: str) -> Workspace: ...
