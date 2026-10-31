@@ -5,7 +5,7 @@ from unittest.mock import patch
 from streamlit.testing.v1 import AppTest
 from core.errors import CrossBotError, ErrorCode
 
-APP = Path(__file__).parents[1] / "app.py"
+APP = Path(__file__).parent / "fixtures" / "b_panels_app.py"
 
 
 class ProviderUI(unittest.TestCase):

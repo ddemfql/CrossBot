@@ -38,7 +38,7 @@ def validate_document(document: Document) -> None:
             raise ValidationError("文档版本号必须从 1 开始", details={"version_id": version.version_id})
 
 
-def validate_case_documents(case: Case, documents: list[Document]) -> None:
+def validate_case_documents(case: Case, documents: list[Document], *, require_confirmed=True) -> None:
     if not documents:
         raise ValidationError("Case 至少需要一个文档", details={"code": ErrorCode.REVIEW_REQUIRED.value})
     by_type = {document.document_type for document in documents}
@@ -46,6 +46,10 @@ def validate_case_documents(case: Case, documents: list[Document]) -> None:
     if missing_types:
         raise ValidationError("Case 缺少必需单据", details={"document_types": missing_types})
     for document in documents:
+        if document.case_id != case.case_id:
+            raise ValidationError("文档不属于当前 Case")
+        if not document.required and document.document_type not in case.required_document_types:
+            continue
         validate_document(document)
         if document.status != DocumentStatus.PARSED:
             raise ValidationError("所有文档必须完成解析", details={"document_id": document.document_id})
@@ -54,7 +58,9 @@ def validate_case_documents(case: Case, documents: list[Document]) -> None:
         current_versions = [version for version in document.versions if version.version_id == document.current_version_id]
         if len(current_versions) != 1:
             raise ValidationError("文档当前版本无效", details={"document_id": document.document_id})
-        if any(field.status != FieldValueStatus.CONFIRMED for field in current_versions[0].fields):
+        if require_confirmed and not current_versions[0].fields:
+            raise ValidationError("当前版本未提取到字段，不能放行")
+        if require_confirmed and any(field.status != FieldValueStatus.CONFIRMED for field in current_versions[0].fields):
             raise ValidationError("仍有文档字段未完成人工确认", details={"document_id": document.document_id})
 
 
@@ -66,12 +72,14 @@ def validate_case_transition(case: Case, target: CaseStatus, *, documents: list[
     tasks = review_tasks or []
     results = checks or []
     if target in {CaseStatus.PENDING_REVIEW, CaseStatus.PASSED, CaseStatus.CLOSED}:
-        validate_case_documents(case, docs)
+        validate_case_documents(case, docs, require_confirmed=target in {CaseStatus.PASSED, CaseStatus.CLOSED})
     if target in {CaseStatus.PASSED, CaseStatus.CLOSED}:
-        if not tasks:
+        if not tasks or not any(task.required for task in tasks):
             raise ValidationError("Case 至少需要一个人工复核任务", details={"code": ErrorCode.REVIEW_REQUIRED.value})
         if not results:
             raise ValidationError("Case 至少需要一项交叉比对结果", details={"code": ErrorCode.CROSS_CHECK_FAILED.value})
+        if any(task.case_id != case.case_id for task in tasks) or any(result.case_id != case.case_id for result in results):
+            raise ValidationError("复核或比对结果不属于当前 Case")
         if any(task.required and task.status != ReviewStatus.APPROVED for task in tasks):
             raise ValidationError("仍有必需的人工复核任务未通过", details={"code": ErrorCode.REVIEW_REQUIRED.value})
         if any(result.status != CrossCheckStatus.PASS for result in results):

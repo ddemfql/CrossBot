@@ -82,6 +82,9 @@ def retrieve_context(product_text: str, *, platforms=(), country=None, as_of=Non
 
 
 def citation_notes(context):
+    if context.get("kind") == "published":
+        from knowledge.published import published_notes
+        return published_notes(context)
     result = list(context["notes"])
     for record in context["entries"]:
         scope = {k: record[k] for k in ("applicable_product_skus", "applicable_platforms", "applicable_countries")}

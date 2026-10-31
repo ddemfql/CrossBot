@@ -92,7 +92,7 @@ class ExportTests(unittest.TestCase):
     def test_existing_live_like_session_can_add_downloads_without_new_generation(self):
         # Tests a prepared session, never the user's live browser session or real key.
         state = saved_records()
-        page = AppTest.from_file(str(Path(__file__).parents[1] / "app.py"), default_timeout=15)
+        page = AppTest.from_file(str(Path(__file__).parent / "fixtures" / "b_panels_app.py"), default_timeout=15)
         page.session_state["sales_conversation"] = state["sales_conversation"]
         page.session_state["listing_request"] = state["listing_request"]
         page.session_state["listing_results"] = state["listing_results"]

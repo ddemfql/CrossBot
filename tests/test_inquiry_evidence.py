@@ -70,7 +70,7 @@ class InquiryEvidenceTests(unittest.TestCase):
         self.assertIn("不要输出字符索引", prompt)
 
     def test_real_mode_ui_accepts_quote_only_and_preserves_previous_candidates_on_failure(self):
-        app = Path(__file__).parents[1] / "app.py"
+        app = Path(__file__).parent / "fixtures" / "b_panels_app.py"
         client = Mock(provider="real", model="test-double")
         client.complete.return_value = '{"fields":[{"name":"customer_country","value":"Germany"}]}'
         with patch("providers.settings_ui.render_provider_settings", return_value=(AppConfig(mock_mode=False), True)), \

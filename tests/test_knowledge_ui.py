@@ -3,7 +3,7 @@ import unittest
 
 from streamlit.testing.v1 import AppTest
 
-APP = Path(__file__).parents[1] / "app.py"
+APP = Path(__file__).parent / "fixtures" / "b_panels_app.py"
 
 
 class KnowledgeUI(unittest.TestCase):

@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 from .models import RiskItem, new_id, to_dict
+from .v3 import RequestContext
 
 @dataclass(slots=True)
 class SalesRequest:
@@ -12,6 +13,7 @@ class SalesRequest:
     customer_country: str | None = None
     requested_quantity: int | None = None
     correlation_id: str = field(default_factory=lambda: new_id("sales"))
+    context: RequestContext | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return to_dict(self)
@@ -23,6 +25,7 @@ class ListingRequest:
     target_country: str | None = None
     target_language: str = "English"
     correlation_id: str = field(default_factory=lambda: new_id("listing"))
+    context: RequestContext | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return to_dict(self)
@@ -35,6 +38,7 @@ class GenerationResponse:
     correlation_id: str | None = None
     provider: str | None = None
     model: str | None = None
+    context: RequestContext | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return to_dict(self)
@@ -48,3 +52,13 @@ class WorkflowErrorResponse:
 
     def to_dict(self) -> dict[str, Any]:
         return to_dict(self)
+
+
+@dataclass(slots=True)
+class WorkflowConversation:
+    """One persisted W1/W2 conversation per Case, with optimistic locking."""
+
+    case_id: str
+    workflow: str
+    messages: list[dict[str, Any]] = field(default_factory=list)
+    revision: int = 0

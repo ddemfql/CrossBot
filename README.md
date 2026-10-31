@@ -1,53 +1,55 @@
-# CrossBot · AI+出海协作原型
+# CrossBot · V3 Case外贸工作台
 
-当前分支 `feature/w1-w2-platform` 是洪彬斌负责的B阶段实现，基于公共契约分支。提供W1询盘回复/两轮修订和W2按平台生成，并接入带来源的模拟知识资料。使用AI辅助开发，用户逐步运行验收。
+洪彬斌负责的B分支feature/w1-w2-platform已同步A公共基线2ce533b（契约3.0.0、数据库schema 2），在A登录/Case服务上接入B已有W1/W2、候选、客户模拟、知识和历史功能。未将B合入main/A。
 
-## 按 V3.0 继续更新
+## 当前入口与能力
 
-用户新规划已原样保存到[规划 V3](docs/plans/project-direction-v3.md)。新增[德国台灯固定案例](docs/demo_case/b_workflow_demo.md)、W1意图/候选识别、独立模拟客户和W1/W2生成后词项/数值风险检查。每次识别、模拟客户或回复在真实模式下单独调用API；默认模拟，无自动调用。8条模拟知识不等于正式知识发布。当前101项离线测试通过。用户已确认V3第1—14项流程验收通过，英文三版/双平台及德文原始导出已独立核对归档。正文审阅另发现德文称呼混用中文及W1夹内部审查段，已新增有限风险提示并提供待人工确认的整理稿，见[本轮验收记录](docs/verification/v3-acceptance-20261031/README.md)。
+- app.py先登录、按服务端当前角色核权，再选获分配的Case。模型前authorize_request，保存前save_result重新核权/核对上下文；没有未登录模型入口，也不导入旧main.py。
+- W1结构化字段、首版/两轮、失败保留；W2严格按所选平台整批保存。候选用原文精确定位、保留CANDIDATE；客户模拟origin=simulation，不能直接当业务最终稿。
+- 生成稿、原请求与产品/附件版本引用持久保存到GenerationArtifact；修订反馈/父版本索引使用WorkflowConversation。新浏览器会话登录后，可在同一Case历史查看，模型Key仍需本机填写。
+- 人工稿另存origin=manual、引用原稿，原稿不覆盖；独立复核，不能自审/批准模拟客户。A保存的旧风险不清除；B实时重检结果另列，不伪称已更新旧记录。
+- 正式知识只通过KnowledgeService读取发布版本；产品、知识、词项可草稿→独立审核→管理员发布，并保留归档/回滚历史。原8条JSON仅保留模拟/纯函数回归，未自动导入或发布。
+- 产品选择支持当前发布版本及当前Case已引用的已发布历史版本；原始资料快照摘要不受归档状态变化影响。发布流程不等于产品/法规事实已被外部验证。
+- 附件页读取C的AttachmentContent和定位信息；只允许当前Case的ready版本进入模型，raw/candidate不当confirmed。没有另造OCR/PDF/XLSX解析器或任意路径读取。
+- 搜索通过SearchService核权/审计/保存；服务器实际搜索adapter尚未配置时明确报不可用。独立点击演示查询另存DEMO、无虚构网页URL，不静默伪装成外部背调。
+- 当前Case JSON/TXT下载只读服务返回的业务稿/来源，包含origin/review状态。JSON另带当前岗位有权读取的对话索引；不导出账号库、会话token或API配置。
 
-W1/W2可点击“载入德国台灯演示资料”，只改表单、不删除旧历史或创建持久Case。候选结果使用core.ExtractedField；模型引用原文，由代码计算位置，找不到或无法区分的引用拒绝整批，不自动确认。兼容旧索引但不依赖模型计数字符，见[定位修复](docs/b-inquiry-evidence-fix.md)。W2现在显示风险提示，原“Compact design”样例可被设计推断规则标记；原始证据保持不变。
+## 启动与首次使用
 
-账号核权、Case关联、附件服务、搜索来源与知识版本发布尚需A/C的公共接口，详见[接口需求与未完成项](docs/b-v3-contract-requests.md)。已同步A最新案例文档943fc47并保留原件，B适配读取其JSON。当前不声称已完成整个V3工作台。
-
-## 本阶段实际行为
-
-- W1使用core.SalesRequest独立传递字段，保留换行和特殊字符。首次生成与修订有明确状态，失败不追加错误草稿。
-- W2使用ListingRequest，只生成所选平台；空选阻止提交，缺失/多余平台或非法JSON不保存。
-- 模拟/真实模式显式切换，默认模拟。真实调用通过统一HTTPS客户端，错误分类、超时、截断/空输出保护，无自动重试或静默模拟降级。
-- knowledge为8条自建模拟资料，按完整演示SKU、平台、国家和日期过滤，显示来源、版本、适用条件。不是向量RAG，也不是官方平台政策或真实供应商证明。
-- 已有业务结果可导出JSON、W1/W2 TXT，保留版本/修改要求/来源/模型和引用，不导出模型设置或密钥。历史仅当前会话，无通用导入或自动持久化。
-
-原main.py、utils、prompts、knowledge_base只保留迁移参考，当前页面不再导入其旧工作流。其他成员的W3/交叉比对功能由团队在各自分支推进；本阶段不宣称全项目或全量合规验收完成。
-
-## 启动
-
-建议Python 3.12，已在Windows/Python3.12.14及现有依赖环境验证；全新电脑安装尚未实测。
+Python3.12及当前环境验证。项目根执行（独立安装环境按requirements.txt安装）：
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
-.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1 --server.port 8502 --server.headless true --browser.gatherUsageStats false
+.\.venv\Scripts\python.exe -B -m streamlit run app.py --server.address 127.0.0.1 --server.port 8502 --server.headless true --browser.gatherUsageStats false
 ```
 
-打开 http://127.0.0.1:8502/ ，默认模拟，可不填Key验证流程。切真实后在侧栏填写对应服务HTTPS地址、模型和密码框Key并确认发送资料/费用，用户点击生成才请求。默认提供DeepSeek官方地址/模型；其他兼容服务需要自行验证。不加载.env，也不把密钥放入聊天、源码或测试数据。
+在本机外层项目已有环境时，先进入team/CrossBot-B，使用../../.venv/Scripts/python.exe执行上述streamlit命令。
 
-W1示例产品 `DEMO-LAMP-001`，W2示例产品 `DEMO-CUP-001`。这两个标识和参数都是模拟设定，命中不证明用户描述真实或一致。每次真实调用可能产生费用，手动重试也可能收费。
+打开http://127.0.0.1:8502/。首次创建管理员，密码至少12位，无公开通用密码。默认无用户、不会自动建立共享账号；助手只在临时数据库测试账号。已有账号则正常登录。
 
-## 测试与交接
+管理员可导入台灯演示Case并创建/分配成员账号。角色不是权限并集，只使用当前激活角色；未授权角色灰显。客服/运营需分配Case；管理员可跨Case。复核员可审核知识但不可发布，任何提交人不能自审，管理员也不例外。
+
+默认模型模拟，不收费；真实模式在本机填写HTTPS服务/模型/Key并勾选确认，点击才调用。Key只在本机会话，登录凭证与模型设置不进入业务request/context或导出。当前实际搜索服务及Key另待选型配置，不用模型编造搜索结果。
+
+旧会话下载资料仍在docs/verification；不会把旧导出静默转换成V3已批准稿。已有SQLite由A迁移保留Case/对话，数据库留在忽略的data目录，不能上传或分发。
+
+## 验证与交接
 
 ```powershell
 .\.venv\Scripts\python.exe -B -m unittest discover -s tests -v
 ```
 
-首批阶段69项离线测试通过，模型请求使用替身。用户另外完成W1首次/两轮真实修订及W2 Amazon真实生成，原样导出核对见[演示证据](docs/verification/live-20261031/README.md)。发现W2额外使用“Compact design”，没有尺寸依据，已标注人工删除或重写建议，原件未修改。
+完整145项离线回归通过，另对最终Case历史产品选择执行12项接入回归；模型/搜索用替身，账号与数据库均在临时目录。本轮未做真实模型调用或生产账号创建。新登录/Case/权限UI尚待用户本机验收，不能用旧14项验收替代新接入验收。
 
-[阶段交接](docs/b-stage-handoff.md)｜[AI开发约束](AI开发约束.md)｜[目录与协作](docs/directory-structure.md)｜[公共接口](core/README.md)｜[模型配置](docs/b-model-client.md)｜[下载说明](docs/b-business-export.md)。各步历史文档按当时状态保留，以当前README/阶段交接为准。
+[本轮接入交接](docs/b-v3-integration.md)｜[A服务说明](docs/B_V3接入说明.md)｜[公共契约](docs/contracts.md)｜[AI约束](AI开发约束.md)｜[旧英德证据及整理稿](docs/verification/v3-acceptance-20261031/README.md)。
 
-## 已知边界
+旧面板回归入口为tests/fixtures/b_panels_app.py，仅供组件测试；产品入口固定为app.py，不能将测试面板部署为无鉴权服务。旧main.py/utils/prompts/knowledge_base只作迁移参考。
 
-所有输出需人工核对，有限词项/数值检查和模拟检索不能保证模型没有额外推断，不代表平台审批、合同确认或法律审查。W1提供本地/模型候选识别，保留原文位置且始终待确认，不自动填回结构化quantity。无流式UI事件、知识外部更新、任意历史恢复或自动持久化；W2尚无多轮修订。
+## 仍需团队完成
 
-本阶段使用Streamlit界面和Python标准库urllib；core公共契约未变。requirements.txt原有OpenAI SDK/python-dotenv依赖未删除，当前W1/W2不使用它们。旧contributions目录的组件清单仅对应旧个人原型环境，不冒充当前团队完整依赖清单。许可证以各组件上游为准，尚未为团队自有源码新增许可证。
+实际搜索adapter配置、C的上传/OCR/PDF/XLSX解析与下载、D的完整规则/W3全链继续联调。当前regex词项只保存时验语法，生成时提示需D/人工复核，不在UI线程执行任意正则。同步模型请求有超时/输出限制，不是流式实现。
 
-阶段性提交不创建最终hackathon-final标签，不将B直接合入main/A。最终集成与交付由团队统一确认。
+人工稿的新增重检风险当前实时计算，A edit保留旧风险，尚无新风险写回参数；AI修订父版本/反馈存在受权对话索引，A单条Artifact尚无反馈字段。详见接入交接中的契约建议，不直接修改A共享模型。
+
+本轮没有新增依赖，没有真实法规/客户成效证明，不创建hackathon-final标签，不自动合并或向客户发送消息。模型仍可能混用语言或添加内部备注，有限风险提示不能替代人工审阅。
