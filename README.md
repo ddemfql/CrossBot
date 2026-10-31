@@ -1,34 +1,45 @@
-# 🤖 CrossBot: 外贸智能业务员与合规助手
-> **黑客松参赛作品** | 赛道二：AI+出海 | Tag: `hackathon-final`
+# CrossBot · AI+出海协作原型
 
-CrossBot 专为跨境出海场景设计，打通“理解 → 生成 → 校验 → 反馈”全链路闭环。不仅能生成多语言/多平台内容，更能通过本地知识库（RAG）与规则引擎强制拦截合规风险，拒绝模型幻觉。
+当前分支 `feature/w1-w2-platform` 是洪彬斌负责的B阶段实现，基于公共契约分支。提供W1询盘回复/两轮修订和W2按平台生成，并接入带来源的模拟知识资料。使用AI辅助开发，用户逐步运行验收。
 
-## 🎯 赛题得分点映射
+## 本阶段实际行为
 
-*   **双相关工作流**：`W1 询盘极速转化`（客服场景） + `W2 多平台Listing生成`（运营场景）。
-*   **多语言/多角色/多平台**：支持中→英/德翻译；一键生成 Amazon（严谨）与 TikTok（网感）双风格文案。
-*   **双重合规校验**：本地规则引擎拦截“违禁词” + RAG匹配目标国“CE/FDA”认证要求。
-*   **多种反馈方式**：流式打字机输出 + UI 红色风险标红 + 明确修改建议。
-*   **多轮对话式迭代**：支持在 Chat UI 中持续输入修改意见，实时重写文案并重新合规审计。
+- W1使用core.SalesRequest独立传递字段，保留换行和特殊字符。首次生成与修订有明确状态，失败不追加错误草稿。
+- W2使用ListingRequest，只生成所选平台；空选阻止提交，缺失/多余平台或非法JSON不保存。
+- 模拟/真实模式显式切换，默认模拟。真实调用通过统一HTTPS客户端，错误分类、超时、截断/空输出保护，无自动重试或静默模拟降级。
+- knowledge为7条自建模拟资料，按完整演示SKU、平台、国家和日期过滤，显示来源、版本、适用条件。不是向量RAG，也不是官方平台政策或真实供应商证明。
+- 已有业务结果可导出JSON、W1/W2 TXT，保留版本/修改要求/来源/模型和引用，不导出模型设置或密钥。历史仅当前会话，无通用导入或自动持久化。
 
-## ✨ 核心创新：双引擎闭环
-传统的 AI 助手只管“说”，我们的底座兼顾“审”。
-输入业务需求 -> RAG注入防幻觉 -> 大模型流式生成 -> 本地规则引擎合规拦截 -> 反馈风险。
+原main.py、utils、prompts、knowledge_base只保留迁移参考，当前页面不再导入其旧工作流。其他成员的W3/交叉比对功能由团队在各自分支推进；本阶段不宣称全项目或全量合规验收完成。
 
-## 🚀 快速启动
+## 启动
 
-安装依赖：
-`pip install -r requirements.txt`
+建议Python 3.12，已在Windows/Python3.12.14及现有依赖环境验证；全新电脑安装尚未实测。
 
-配置密钥（如果不配置，将自动进入 Mock 演示模式）：
-`cp .env.example .env`
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m streamlit run app.py --server.address 127.0.0.1 --server.port 8502 --server.headless true --browser.gatherUsageStats false
+```
 
-启动体验：
-`streamlit run app.py`
+打开 http://127.0.0.1:8502/ ，默认模拟，可不填Key验证流程。切真实后在侧栏填写对应服务HTTPS地址、模型和密码框Key并确认发送资料/费用，用户点击生成才请求。默认提供DeepSeek官方地址/模型；其他兼容服务需要自行验证。不加载.env，也不把密钥放入聊天、源码或测试数据。
 
-## 📦 交付物声明
-- [x] 完整可运行代码工程 (已打 `hackathon-final` Tag)
-- [x] `README.md` 项目说明书
-- [x] 第三方组件声明（Streamlit, OpenAI SDK, python-dotenv）
+W1示例产品 `DEMO-LAMP-001`，W2示例产品 `DEMO-CUP-001`。这两个标识和参数都是模拟设定，命中不证明用户描述真实或一致。每次真实调用可能产生费用，手动重试也可能收费。
 
-*Built for Intercity Hack 2026.*
+## 测试与交接
+
+```powershell
+.\.venv\Scripts\python.exe -B -m unittest discover -s tests -v
+```
+
+本阶段69项离线测试通过，模型请求使用替身。用户另外完成W1首次/两轮真实修订及W2 Amazon真实生成，原样导出核对见[演示证据](docs/verification/live-20261031/README.md)。发现W2额外使用“Compact design”，没有尺寸依据，已标注人工删除或重写建议，原件未修改。
+
+[阶段交接](docs/b-stage-handoff.md)｜[AI开发约束](AI开发约束.md)｜[目录与协作](docs/directory-structure.md)｜[公共接口](core/README.md)｜[模型配置](docs/b-model-client.md)｜[下载说明](docs/b-business-export.md)。各步历史文档按当时状态保留，以当前README/阶段交接为准。
+
+## 已知边界
+
+所有输出需人工核对，有限声明词筛查和模拟检索不能保证模型没有额外推断，不代表平台审批、合同确认或法律审查。W1数量可由询盘文字理解，但尚未自动填回结构化quantity。无流式UI事件、知识外部更新、任意历史恢复或自动持久化；W2尚无多轮修订。
+
+本阶段使用Streamlit界面和Python标准库urllib；core公共契约未变。requirements.txt原有OpenAI SDK/python-dotenv依赖未删除，当前W1/W2不使用它们。旧contributions目录的组件清单仅对应旧个人原型环境，不冒充当前团队完整依赖清单。许可证以各组件上游为准，尚未为团队自有源码新增许可证。
+
+阶段性提交不创建最终hackathon-final标签，不合并其他分支。最终交付由团队统一确认。
