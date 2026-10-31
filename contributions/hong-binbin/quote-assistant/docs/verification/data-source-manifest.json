@@ -1,0 +1,54 @@
+{
+  "checked_on": "2026-10-30",
+  "purpose": "Local evidence snapshot, not proof of external source validity",
+  "files": [
+    {
+      "path": "planning/fixtures/products.json",
+      "sha256": "d4ed5781bac77300b22651da90bb51fc99eaaf45e64cdf9f982096502c318cfe"
+    },
+    {
+      "path": "planning/fixtures/cases.json",
+      "sha256": "a0d82a8cb78e954a3eb977a1e7f81d144e2849d35a1a984fe297049b04e99231"
+    },
+    {
+      "path": "local_lab/rules/payment-wording.json",
+      "sha256": "68bfee1e6d0ef36b392c8cead22e131c356ea213c730f82e215d0dce22bb3c36"
+    },
+    {
+      "path": "local_lab/rules/rfq-material.json",
+      "sha256": "c5f550cae8dc2154b719549382ea2848f8270c5c949c32162bf63027092fa259"
+    },
+    {
+      "path": "local_lab/business_checks.py",
+      "sha256": "840a242fab719f90745b169244135728015a85f5adfeda22ab2c0e3f996c878f"
+    },
+    {
+      "path": "local_lab/payment_ratio.py",
+      "sha256": "72a759ffb313b81e42b6f20a1d23b2c08d6f2f641f8c10cb03f52f1b6c8f1521"
+    },
+    {
+      "path": "local_lab/check_report.py",
+      "sha256": "fce130966ac577525203abcf22f75bf3cc9345dcc157794a26debcea2ab05ee4"
+    },
+    {
+      "path": "local_lab/rfq_check.py",
+      "sha256": "103bcf997fd10707c406f36e0b6bad24ea2339afb3037f7dfbc09890f0ab4c84"
+    },
+    {
+      "path": "local_lab/payment_wording.py",
+      "sha256": "aa0c67a573e9c4038a819a6785b3ba4035321f31a0d1962eaa10fb720d075b3d"
+    },
+    {
+      "path": "docs/verification/demo-two-rounds-history.json",
+      "sha256": "8613ade8325c777eaf673429165d32b80d94d5c0c9479a9d4e8299d6892c408f"
+    },
+    {
+      "path": "docs/competition-brief.md",
+      "sha256": "9beb10311b5b5ac3830a3acb3a3232af334be4e46b899748a4b52f4ac4f73586"
+    },
+    {
+      "path": "docs/event-sources.md",
+      "sha256": "dcf1dd38383811689aa938aeafeaa1eb39d115908a3aa669be4da0368e6d8e03"
+    }
+  ]
+}
