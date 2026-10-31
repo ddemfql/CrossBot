@@ -1,0 +1,48 @@
+{
+  "date": "2026-10-31",
+  "w1_versions": 3,
+  "w1_revisions": 2,
+  "w2_platforms": [
+    "Amazon"
+  ],
+  "providers": [
+    "real"
+  ],
+  "models": [
+    "deepseek-flash"
+  ],
+  "original_bytes_preserved": true,
+  "json_business_digest_verified": true,
+  "txt_business_content_matches_json_ignoring_export_time": true,
+  "knowledge_snapshot_hashes_match_current_files": true,
+  "configuration_fields_found": false,
+  "credential_pattern_found": false,
+  "exported_at_utc": "2026-10-31T05:08:02.274359+00:00",
+  "files": [
+    {
+      "name": "crossbot-business-history.json",
+      "size": 13889,
+      "sha256": "8e9523af93a9825e48dd9d55e520de69928eb72198d3b0be849a926274e12cfc",
+      "source": "downloads/crossbot-business-history.json"
+    },
+    {
+      "name": "crossbot-w1-history.txt",
+      "size": 9798,
+      "sha256": "3a287cc81f3a11643566b506153b8dd637a78fb2abf6d71b87008b03c282ce40",
+      "source": "downloads/crossbot-w1-history.txt"
+    },
+    {
+      "name": "crossbot-w2-results.txt",
+      "size": 2782,
+      "sha256": "dd9ab8fb1a235db854cddeda75e90656ca89c17e266f44c01a06fabf9963a6e3",
+      "source": "downloads/crossbot-w2-results.txt"
+    }
+  ],
+  "limitations": [
+    "Export is saved business data, not original HTTP logs or proof of provider identity",
+    "Per-generation timestamps, request IDs and token usage were not recorded",
+    "W1 requested_quantity is null; quantity 500 originates in inquiry text",
+    "W2 Compact design is an inference without dimensions; flag for human removal/rewording before publication"
+  ],
+  "real_model_calls_by_assistant": 0
+}

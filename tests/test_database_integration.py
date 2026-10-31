@@ -7,10 +7,12 @@ from unittest.mock import patch
 
 from core.errors import CrossBotError
 from core.models import Case
+from core.identity import Role
 from core.schemas import WorkflowConversation
 from storage.bootstrap import DEMO_ID, import_demo_case
 from storage.sqlite_store import SQLiteStore
 from auth import AuthService
+from workflows.access import GenerationService
 
 
 class DatabaseIntegrationTests(unittest.TestCase):
@@ -80,44 +82,71 @@ class DatabaseIntegrationTests(unittest.TestCase):
 
         import_demo_case(self.store)
         auth = AuthService(self.store)
-        auth.bootstrap_admin("admin", "test-password-123")
-        token = auth.login("admin", "test-password-123")
+        auth.bootstrap_admin("merge-admin", "test-password-123")
+        token = auth.login("merge-admin", "test-password-123")
         app_path = Path(__file__).resolve().parents[1] / "app.py"
 
-        def generate(*args):
-            yield "Demo reply"
-            yield ("###RISKS###", ["Needs confirmation"])
-
         with patch("storage.bootstrap.open_store", return_value=self.store), \
-             patch("main.run_workflow_stream", side_effect=generate), \
-             patch("main.iterate_workflow_stream", side_effect=generate):
+             patch("workflows.sales_ui.MockChatClient.complete", return_value="Demo reply"):
             app = AppTest.from_file(str(app_path), default_timeout=20)
             app.session_state["session_token"] = token
             app.run()
             self.assertFalse(app.exception)
-            app.text_area[0].input("Hi\nNeed 500 lamps")
-            next(button for button in app.button if button.label == "生成商务回复").click().run()
+            app.text_area(key="sales_inquiry").set_value("Hi\nNeed 500 lamps")
+            app.button(key="sales_generate").click().run()
             self.assertFalse(app.exception)
-            self.assertEqual(len(self.store.get_conversation(DEMO_ID, "sales").messages), 2)
-            app.chat_input[0].set_value("Make it shorter").run()
+            stored = self.store.get_conversation(DEMO_ID, "sales")
+            self.assertEqual(stored.messages[0]["sales_conversation"]["turns"][0]["response"]["content"], "Demo reply")
+            app.text_area(key="sales_feedback").set_value("Make it shorter")
+            app.button(key="sales_revise").click().run()
             self.assertFalse(app.exception)
-            self.assertEqual(len(self.store.get_conversation(DEMO_ID, "sales").messages), 4)
+            stored = self.store.get_conversation(DEMO_ID, "sales")
+            self.assertEqual(len(stored.messages[0]["sales_conversation"]["turns"]), 2)
             reloaded = AppTest.from_file(str(app_path), default_timeout=20)
             reloaded.session_state["session_token"] = token
             reloaded.run()
             self.assertFalse(reloaded.exception)
-            self.assertEqual(len(reloaded.chat_message), 4)
+            self.assertEqual(len(reloaded.session_state["sales_conversation"].turns), 2)
+            self.assertEqual(reloaded.session_state["sales_conversation"].turns[-1].feedback, "Make it shorter")
             reloaded.radio[0].set_value("W2 多平台Listing生成").run()
             self.assertFalse(reloaded.exception)
-            self.assertEqual(len(reloaded.chat_message), 0)
+            self.assertTrue(reloaded.multiselect)
+            reloaded.radio[0].set_value("W1 询盘极速转化").run()
+            self.assertEqual(len(reloaded.session_state["sales_conversation"].turns), 2)
+
+    def test_web_listing_saves_only_selected_platform_under_case(self):
+        from streamlit.testing.v1 import AppTest
+        from core.schemas import GenerationResponse
+
+        import_demo_case(self.store)
+        auth = AuthService(self.store)
+        auth.bootstrap_admin("merge-admin", "test-password-123")
+        token = auth.login("merge-admin", "test-password-123")
+        app_path = Path(__file__).resolve().parents[1] / "app.py"
+
+        with patch("storage.bootstrap.open_store", return_value=self.store), \
+             patch("workflows.listing_ui.MockListingClient.complete", return_value='{"listings":{"Amazon":"Lamp listing"}}'):
+            app = AppTest.from_file(str(app_path), default_timeout=20)
+            app.session_state["session_token"] = token
+            app.run()
+            app.radio[0].set_value("W2 多平台Listing生成").run()
+            app.multiselect(key="listing_platforms").set_value(["Amazon"])
+            app.button(key="listing_generate").click().run()
+            self.assertFalse(app.exception)
+            stored = self.store.get_conversation(DEMO_ID, "listing")
+            self.assertEqual(stored.messages[0]["listing_request"]["platforms"], ["Amazon"])
+            artifacts = GenerationService(auth).list_for_case(token, DEMO_ID, workflow="listing")
+            self.assertEqual(len(artifacts), 1)
+            self.assertEqual(artifacts[0].content, "Lamp listing")
+            self.assertEqual(artifacts[0].context.case_id, DEMO_ID)
 
     def test_web_creates_case_and_imports_demo(self):
         from streamlit.testing.v1 import AppTest
 
         app_path = Path(__file__).resolve().parents[1] / "app.py"
         auth = AuthService(self.store)
-        auth.bootstrap_admin("admin", "test-password-123")
-        token = auth.login("admin", "test-password-123")
+        auth.bootstrap_admin("merge-admin", "test-password-123")
+        token = auth.login("merge-admin", "test-password-123")
         with patch("storage.bootstrap.open_store", return_value=self.store):
             app = AppTest.from_file(str(app_path), default_timeout=20)
             app.session_state["session_token"] = token
@@ -147,7 +176,9 @@ class DatabaseIntegrationTests(unittest.TestCase):
         app_path = Path(__file__).resolve().parents[1] / "app.py"
         import_demo_case(self.store)
         with patch("storage.bootstrap.open_store", return_value=self.store):
-            app = AppTest.from_file(str(app_path), default_timeout=20).run()
+            app = AppTest.from_file(str(app_path), default_timeout=20)
+            app.session_state["session_token"] = ""
+            app.run()
             self.assertFalse(app.exception)
             self.assertFalse(any(widget.label == "客户询盘" for widget in app.text_area))
             app.text_input[0].input("first-admin")
@@ -158,6 +189,28 @@ class DatabaseIntegrationTests(unittest.TestCase):
             next(button for button in app.button if button.label == "退出登录").click().run()
             self.assertFalse(app.exception)
             self.assertFalse(any(widget.label == "客户询盘" for widget in app.text_area))
+
+    def test_web_exposes_only_the_active_role_workflow(self):
+        from streamlit.testing.v1 import AppTest
+
+        import_demo_case(self.store)
+        auth = AuthService(self.store)
+        auth.bootstrap_admin("role-admin", "test-password-123")
+        admin_token = auth.login("role-admin", "test-password-123")
+        user = auth.create_user(admin_token, "role-cs", "test-password-123", "客服", [Role.CUSTOMER_SERVICE, Role.OPERATIONS])
+        token = auth.login("role-cs", "test-password-123")
+        auth.assign_case(admin_token, DEMO_ID, user.user_id)
+        app_path = Path(__file__).resolve().parents[1] / "app.py"
+        with patch("storage.bootstrap.open_store", return_value=self.store):
+            app = AppTest.from_file(str(app_path), default_timeout=20)
+            app.session_state["session_token"] = token
+            app.run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.radio[0].options, ["W1 询盘极速转化"])
+            self.assertTrue(app.button(key="role_product").disabled)
+            app.button(key="role_operations").click().run()
+            self.assertFalse(app.exception)
+            self.assertEqual(app.radio[0].options, ["W2 多平台Listing生成"])
 
 
 if __name__ == "__main__":

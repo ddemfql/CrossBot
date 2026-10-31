@@ -1,0 +1,112 @@
+{
+  "format": "crossbot-business-export",
+  "schema_version": 1,
+  "exported_at_utc": "2026-10-31T05:08:02.274359+00:00",
+  "notice": "仅保存已有业务输入、草稿和引用，不是原始HTTP日志/请求ID/用量；没有记录各版生成时间。知识资料仍为模拟，内容须人工核对。",
+  "business_sha256": "22c6aa47c3f062808c7e5da35ed6933b4768d22d1c5358b86f336ab7c12cc18d",
+  "w1": {
+    "request": {
+      "inquiry": "Need 500 USB lamps.\nPlease confirm specifications.",
+      "product_info": "DEMO-LAMP-001\nUSB台灯，ABS材质\n颜色：白色",
+      "target_language": "英文",
+      "customer_country": null,
+      "requested_quantity": null,
+      "correlation_id": "sales_ceace1469d4646289efef1961a5d853b"
+    },
+    "versions": [
+      {
+        "version": 1,
+        "kind": "initial",
+        "feedback": null,
+        "response": {
+          "content": "Subject: Re: Your USB Lamp Inquiry – Specification Confirmation Needed\n\nDear Customer,\n\nThank you for your inquiry regarding USB lamps.\n\nWe understand you are interested in approximately 500 units. Before we can proceed, we would like to confirm the product specifications with you. Based on the information currently available to us, the product is described as follows:\n\n- Model: DEMO-LAMP-001\n- Product: USB desk lamp\n- Material: ABS\n- Color: White\n\nPlease note that this information is for reference only and has not yet been fully verified with the factory. To ensure we meet your requirements, could you please confirm the following:\n\n1. Is the ABS material and white color acceptable for your needs?\n2. Do you have any specific requirements for size, power source (USB input), brightness, or other technical specifications?\n3. Are there any certification or compliance requirements for your market?\n4. What is your target destination country/region?\n5. Please confirm the order quantity of 500 units.\n\nIn addition, please be advised that we do not currently have confirmed information regarding certifications, pricing, or lead time for this product. These details will need to be verified with the factory and will be communicated to you once available.\n\nWe look forward to your confirmation so we can proceed with an accurate quotation.\n\nBest regards,\n[Your Name]\n[Your Company]\n\n---\n\n**Note:** This is a draft for internal review and does not constitute a confirmed offer. Specifications, certifications, prices, and lead times are subject to factory confirmation.",
+          "risks": [],
+          "pending_confirmations": [
+            "全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。",
+            "知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。",
+            "目标国资料未知、待确认：未找到适用条目。",
+            "模拟引用 DEMO-LAMP-001 | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [\"DEMO-LAMP-001\"], \"applicable_platforms\": [], \"applicable_countries\": []} | 模拟USB台灯：ABS材质、白色；仅为练习设定，非真实供应商资料。",
+            "模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [], \"applicable_platforms\": [], \"applicable_countries\": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。",
+            "知识文件SHA256：{\"products.json\": \"40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f\", \"platform_rules.json\": \"e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f\", \"compliance_rules.json\": \"5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a\"}",
+            "待人工核对业务事实；仅完成有限声明词筛查及模拟资料检索，不是完整合规校验。"
+          ],
+          "correlation_id": "sales_ceace1469d4646289efef1961a5d853b",
+          "provider": "real",
+          "model": "deepseek-flash"
+        }
+      },
+      {
+        "version": 2,
+        "kind": "revision",
+        "feedback": "请用更礼貌、简洁的英文回复，保留原有产品参数，不新增认证、价格或交期。",
+        "response": {
+          "content": "Subject: Re: Your USB Lamp Inquiry – Specification Confirmation Needed\n\nDear Customer,\n\nThank you for your inquiry about our USB lamps.\n\nBased on the information currently available, the product is described as follows:\n\n- Model: DEMO-LAMP-001\n- Product: USB desk lamp\n- Material: ABS\n- Color: White\n\nPlease note that these details are for reference only and have not yet been fully verified with the factory.\n\nTo proceed, could you please confirm:\n1. Whether the ABS material and white color meet your requirements.\n2. Any specific requirements for size, power source, brightness, or other technical specifications.\n3. Any certification or compliance requirements for your market.\n4. Your target destination country or region.\n5. The order quantity of 500 units.\n\nWe do not currently have confirmed information on certifications, pricing, or lead time. These will be verified with the factory and shared with you once available.\n\nWe look forward to your confirmation so we can provide an accurate quotation.\n\nBest regards,\n[Your Name]\n[Your Company]\n\n---\n\n**Note:** This is a draft for internal review and does not constitute a confirmed offer. Specifications, certifications, prices, and lead times are subject to factory confirmation.",
+          "risks": [],
+          "pending_confirmations": [
+            "全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。",
+            "知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。",
+            "目标国资料未知、待确认：未找到适用条目。",
+            "模拟引用 DEMO-LAMP-001 | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [\"DEMO-LAMP-001\"], \"applicable_platforms\": [], \"applicable_countries\": []} | 模拟USB台灯：ABS材质、白色；仅为练习设定，非真实供应商资料。",
+            "模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [], \"applicable_platforms\": [], \"applicable_countries\": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。",
+            "知识文件SHA256：{\"products.json\": \"40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f\", \"platform_rules.json\": \"e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f\", \"compliance_rules.json\": \"5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a\"}",
+            "待人工核对业务事实；仅完成有限声明词筛查及模拟资料检索，不是完整合规校验。"
+          ],
+          "correlation_id": "sales_ceace1469d4646289efef1961a5d853b",
+          "provider": "real",
+          "model": "deepseek-flash"
+        }
+      },
+      {
+        "version": 3,
+        "kind": "revision",
+        "feedback": "请继续使用英文，在回复末尾询问买家是否有包装要求。保持产品参数不变，不新增认证、价格或交期，也不要假定包装规格或费用已确认。",
+        "response": {
+          "content": "Subject: Re: Your USB Lamp Inquiry – Specification Confirmation Needed\n\nDear Customer,\n\nThank you for your inquiry and for specifying a quantity of 500 USB lamps.\n\nBased on the information currently available, the product is described as follows (reference only, pending factory verification):\n\n- Model: DEMO-LAMP-001\n- Product: USB desk lamp\n- Material: ABS\n- Color: White\n\nPlease note that these details have not yet been fully verified with the factory. Certifications, pricing, and lead time are not currently confirmed; we will check them with the factory and share them once available.\n\nTo proceed, could you please confirm:\n1. Whether the ABS material and white color meet your requirements.\n2. Any specific requirements for size, power source, brightness, or other technical specifications.\n3. Any certification or compliance requirements for your market.\n4. Your target destination country or region.\n5. The order quantity of 500 units (please confirm this is final).\n\nAlso, do you have any packaging requirements (for example, retail packaging or outer carton specifications)? Please share your requirements so we can check feasibility with the factory; packaging specifications and costs are not yet confirmed.\n\nWe look forward to your confirmation so we can prepare an accurate quotation.\n\nBest regards,\n[Your Name]\n[Your Company]\n\n---\n\n**Note:** This is a draft for internal review and does not constitute a confirmed offer. Specifications, certifications, prices, lead times, and packaging details are subject to factory confirmation.",
+          "risks": [],
+          "pending_confirmations": [
+            "全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。",
+            "知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。",
+            "目标国资料未知、待确认：未找到适用条目。",
+            "模拟引用 DEMO-LAMP-001 | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [\"DEMO-LAMP-001\"], \"applicable_platforms\": [], \"applicable_countries\": []} | 模拟USB台灯：ABS材质、白色；仅为练习设定，非真实供应商资料。",
+            "模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [], \"applicable_platforms\": [], \"applicable_countries\": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。",
+            "知识文件SHA256：{\"products.json\": \"40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f\", \"platform_rules.json\": \"e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f\", \"compliance_rules.json\": \"5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a\"}",
+            "待人工核对业务事实；仅完成有限声明词筛查及模拟资料检索，不是完整合规校验。"
+          ],
+          "correlation_id": "sales_ceace1469d4646289efef1961a5d853b",
+          "provider": "real",
+          "model": "deepseek-flash"
+        }
+      }
+    ]
+  },
+  "w2": {
+    "request": {
+      "product_description": "DEMO-CUP-001\n便携式咖啡杯，316不锈钢\n容量：350ml",
+      "platforms": [
+        "Amazon"
+      ],
+      "target_country": null,
+      "target_language": "英文",
+      "correlation_id": "listing_f0a10711169745a79f05b54b2b45239f"
+    },
+    "results": {
+      "Amazon": {
+        "content": "Title: DEMO-CUP-001 Portable Coffee Cup, 316 Stainless Steel, 350 ml\n\nBullet Points:\n- Portable coffee cup made of 316 stainless steel\n- Capacity: 350 ml\n- Compact design for carrying your coffee on the go\n- Product model: DEMO-CUP-001\n\nNote: Heat retention performance has not been verified. Certifications, price, and lead time are to be confirmed. Target market not specified; listing requirements to be confirmed.",
+        "risks": [],
+        "pending_confirmations": [
+          "全部命中仅为项目自建模拟参考，不证明真实产品相同、认证通过或官方规则有效。",
+          "知识库未提供认证、价格、交期依据；不得补写未知值，用户输入仍需核实。",
+          "目标国资料未知、待确认：未找到适用条目。",
+          "模拟引用 DEMO-CUP-001 | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [\"DEMO-CUP-001\"], \"applicable_platforms\": [], \"applicable_countries\": []} | 模拟咖啡杯：316不锈钢、350ml；保温时长未经验证。",
+          "模拟引用 STYLE-AMAZON | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [], \"applicable_platforms\": [\"Amazon\"], \"applicable_countries\": []} | 项目风格建议：按标题和产品要点组织，参数只引用已知资料；不代表官方规则。",
+          "模拟引用 MANUAL-FACTS | CrossBot项目自建模拟资料 | knowledge/README.md | 版本demo-1 | 生效未知 | 截止未知 | 适用{\"applicable_product_skus\": [], \"applicable_platforms\": [], \"applicable_countries\": []} | 项目内部核对提示：认证、价格、交期没有依据时明确待确认；此条不是法律或平台规则。",
+          "知识文件SHA256：{\"products.json\": \"40a1321252a659b5a4dfafda8f58252cf0364a331ba262a0f610abc6ca0f528f\", \"platform_rules.json\": \"e9f71e88128efd2fd1e434c784cd05363fe91e33e1bcc8188b243b8f6177a21f\", \"compliance_rules.json\": \"5cad666f7c039d72cdf67d76d08a54713cba23180f6b6ac041c21d141f11005a\"}",
+          "待人工核对事实及目标市场/平台最新要求；模拟检索和平台集合校验不代表合规通过。"
+        ],
+        "correlation_id": "listing_f0a10711169745a79f05b54b2b45239f",
+        "provider": "real",
+        "model": "deepseek-flash"
+      }
+    }
+  }
+}

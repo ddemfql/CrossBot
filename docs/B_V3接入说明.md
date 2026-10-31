@@ -303,7 +303,7 @@ ResourceVersion 记录 created_by、reviewed_by、published_at、archived_at 和
 不要更改 `.env`、分发数据库、提交 token 或密码、直接改 JSON 绕过审核、
 复制权限模型、使用原始 SQLiteStore 作为面向请求的业务 API。
 SQLiteStore 仍保留给内部初始化/迁移/测试；它不是安全边界，不能暴露给不可信调用者。
-当前 app.py 是 A 的最小登录/Case 演示入口，合并时以 B 的功能页为主逐项接入，不能整文件盲选覆盖。
+当前集成 app.py 已保留 A 登录/Case 权限，调用 B 的 W1/W2 页面；`workflows.persistence` 负责把 B 的 Streamlit 业务状态按 Case/工作流保存。W1/W2 首版与修订会同时保存结构化 GenerationArtifact 和页面会话快照；客户模拟作为 simulation 单独保存。
 
 ## 10. 验证与交接边界
 
