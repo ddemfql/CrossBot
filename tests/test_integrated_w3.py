@@ -140,9 +140,9 @@ class IntegratedW3Tests(unittest.TestCase):
             app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=25)
             app.session_state["session_token"] = self.token
             app.session_state["selected_case_id"] = self.case.case_id
+            app.session_state["workbench_environment"] = "真实工作区"
             app.run()
-            workflow = next(widget for widget in app.radio if widget.label == "工作流")
-            workflow.set_value("W3 交易单证工作台").run()
+            app.button(key="nav_documents").click().run()
             self.assertFalse(app.exception, [item.message for item in app.exception])
             self.assertFalse(any(widget.label == "账号" for widget in app.text_input))
             next(widget for widget in app.button if widget.label == "启用 W3 单证工作台").click().run()

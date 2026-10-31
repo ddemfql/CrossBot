@@ -11,7 +11,7 @@ ROLE_LABELS = {
 }
 
 
-def render_auth_panel(store):
+def render_auth_panel(store, *, show_controls=True):
     auth = AuthService(store)
     token = st.session_state.get("session_token")
     if not token:
@@ -36,7 +36,13 @@ def render_auth_panel(store):
         st.session_state.clear()
         st.error(str(error))
         st.stop()
-    with st.sidebar:
+    if show_controls:
+        render_user_controls(auth, token, principal)
+    return auth, token, principal
+
+
+def render_user_controls(auth, token, principal):
+    with st.sidebar.expander("当前账号与岗位", expanded=False):
         st.write(principal.display_name)
         st.caption(f"当前岗位：{ROLE_LABELS[principal.active_role]}")
         for role, label in ROLE_LABELS.items():
@@ -48,13 +54,12 @@ def render_auth_panel(store):
             auth.logout(token)
             st.session_state.clear()
             st.rerun()
-    return auth, token, principal
 
 
-def render_admin_panel(auth, token, principal):
+def render_admin_panel(auth, token, principal, *, sidebar=True):
     if principal.active_role != Role.ADMIN:
         return
-    with st.sidebar.expander("账号与分配"):
+    with (st.sidebar if sidebar else st).expander("账号与分配", expanded=not sidebar):
         with st.form("new_user"):
             username = st.text_input("新账号")
             name = st.text_input("显示名称")

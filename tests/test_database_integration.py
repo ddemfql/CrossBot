@@ -104,6 +104,7 @@ class DatabaseIntegrationTests(unittest.TestCase):
             app.run()
             self.assertFalse(app.exception)
             app.text_area(key="sales_inquiry").set_value("Hi\nNeed 500 lamps")
+            app.button(key="sales_next").click().run()
             app.button(key="sales_generate").click().run()
             self.assertFalse(app.exception)
             stored = self.store.get_conversation(DEMO_ID, "sales")
@@ -119,10 +120,10 @@ class DatabaseIntegrationTests(unittest.TestCase):
             self.assertFalse(reloaded.exception)
             self.assertEqual(len(reloaded.session_state["sales_conversation"].turns), 2)
             self.assertEqual(reloaded.session_state["sales_conversation"].turns[-1].feedback, "Make it shorter")
-            reloaded.radio[0].set_value("W2 多平台Listing生成").run()
+            reloaded.button(key="nav_listing").click().run()
             self.assertFalse(reloaded.exception)
             self.assertTrue(reloaded.multiselect)
-            reloaded.radio[0].set_value("W1 询盘极速转化").run()
+            reloaded.button(key="nav_sales").click().run()
             self.assertEqual(len(reloaded.session_state["sales_conversation"].turns), 2)
 
     def test_web_listing_saves_only_selected_platform_under_case(self):
@@ -140,8 +141,9 @@ class DatabaseIntegrationTests(unittest.TestCase):
             app = AppTest.from_file(str(app_path), default_timeout=20)
             app.session_state["session_token"] = token
             app.run()
-            app.radio[0].set_value("W2 多平台Listing生成").run()
+            app.button(key="nav_listing").click().run()
             app.multiselect(key="listing_platforms").set_value(["Amazon"])
+            app.button(key="listing_next").click().run()
             app.button(key="listing_generate").click().run()
             self.assertFalse(app.exception)
             stored = self.store.get_conversation(DEMO_ID, "listing")
@@ -163,6 +165,7 @@ class DatabaseIntegrationTests(unittest.TestCase):
             app.session_state["session_token"] = token
             app.run()
             self.assertFalse(app.exception)
+            app.button(key="nav_cases").click().run()
             inputs = {widget.label: widget for widget in app.text_input}
             inputs["Case 编号"].input("WEB-001")
             inputs["客户名称"].input("Web customer")
@@ -217,11 +220,15 @@ class DatabaseIntegrationTests(unittest.TestCase):
             app.session_state["session_token"] = token
             app.run()
             self.assertFalse(app.exception)
-            self.assertEqual(app.radio[0].options, ["W1 询盘极速转化", "W3 交易单证工作台"])
+            self.assertFalse(app.button(key="nav_sales").disabled)
+            self.assertTrue(app.button(key="nav_listing").disabled)
+            self.assertFalse(app.button(key="nav_documents").disabled)
             self.assertTrue(app.button(key="role_product").disabled)
             app.button(key="role_operations").click().run()
             self.assertFalse(app.exception)
-            self.assertEqual(app.radio[0].options, ["W2 多平台Listing生成", "W3 交易单证工作台"])
+            self.assertTrue(app.button(key="nav_sales").disabled)
+            self.assertFalse(app.button(key="nav_listing").disabled)
+            self.assertFalse(app.button(key="nav_documents").disabled)
 
 
 if __name__ == "__main__":

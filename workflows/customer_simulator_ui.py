@@ -14,7 +14,8 @@ def apply_customer_question(content):
 def render_customer_simulator(request, config, ready, *, generation_service=None, auth_token=None):
     with st.expander("模拟客户练习（独立生成，不是真实客户）"):
         st.caption("模拟模式使用固定中性问题模板；真实模式单独调用一次API并消耗额度。只生成问题，不自动改询盘或业务历史。")
-        topic = st.text_input("客户模拟主题", "询问产品规格、认证资料、包装和交期", key="customer_topic")
+        st.session_state.setdefault("customer_topic", "询问产品规格、认证资料、包装和交期")
+        topic = st.text_input("客户模拟主题", key="customer_topic")
         if st.button("生成模拟客户问题", key="customer_generate", disabled=not ready):
             candidate = SalesRequest(topic, request.product_info, request.target_language,
                                      request.customer_country, request.requested_quantity,

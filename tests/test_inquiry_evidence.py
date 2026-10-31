@@ -75,8 +75,15 @@ class InquiryEvidenceTests(unittest.TestCase):
         client.complete.return_value = '{"fields":[{"name":"customer_country","value":"Germany"}]}'
         with patch("providers.settings_ui.render_provider_settings", return_value=(AppConfig(mock_mode=False), True)), \
              patch("workflows.sales_ui.HttpChatClient", return_value=client):
-            page = AppTest.from_file(str(app), default_timeout=15).run()
-            page.button(key="sales_demo").click().run()
+            from workflows.demo_case import demo_sales_request
+            request = demo_sales_request()
+            page = AppTest.from_file(str(app), default_timeout=15)
+            page.session_state["sales_inquiry"] = request.inquiry
+            page.session_state["sales_product"] = request.product_info
+            page.session_state["sales_country"] = request.customer_country
+            page.session_state["sales_quantity"] = request.requested_quantity
+            page.run()
+            self.assertNotIn("sales_demo", [button.key for button in page.button])
             self.assertEqual(client.complete.call_count, 0)
             page.button(key="sales_extract").click().run()
             self.assertFalse(page.exception)

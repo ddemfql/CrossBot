@@ -295,12 +295,15 @@ class V3ServicesTests(unittest.TestCase):
         with patch("storage.bootstrap.open_store", return_value=self.store):
             app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=20)
             app.session_state["session_token"] = self.tokens[Role.CUSTOMER_SERVICE]
+            app.session_state["workbench_environment"] = "真实工作区"
             app.run()
             self.assertFalse(app.exception)
             for button in app.button:
                 if button.key in {"role_product", "role_operations", "role_admin", "role_reviewer"}:
                     self.assertTrue(button.disabled)
-            self.assertEqual(app.radio[0].options, ["W1 询盘极速转化", "W3 交易单证工作台"])
+            self.assertFalse(app.button(key="nav_sales").disabled)
+            self.assertTrue(app.button(key="nav_listing").disabled)
+            self.assertFalse(app.button(key="nav_documents").disabled)
             self.auth.revoke_case(self.admin_token, self.case.case_id, self.users[Role.CUSTOMER_SERVICE].user_id)
             app.run()
             self.assertFalse(app.exception)

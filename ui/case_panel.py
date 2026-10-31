@@ -17,47 +17,29 @@ STATUS_LABELS = {
 }
 
 
-def render_case_panel(store: SQLiteStore, auth, token, principal) -> Case | None:
+def render_case_panel(store: SQLiteStore, auth, token, principal, *, sidebar=True,
+                      show_actions=True, demo_mode=None, show_header=True) -> Case | None:
     access = CaseAccessService(auth)
-    with st.sidebar:
-        st.header("我的 Case")
-        if st.button("导入台灯演示案例", key="import_demo", disabled=principal.active_role != Role.ADMIN):
+    with (st.sidebar if sidebar else st).container():
+        if show_header:
+            st.header("我的 Case")
+        if show_actions and demo_mode is not False and st.button("导入台灯演示案例", key="import_demo", disabled=principal.active_role != Role.ADMIN):
             auth.require_permission(token, Permission.CASE_ASSIGN)
             import_demo_case(store)
             st.session_state["selected_case_id"] = DEMO_ID
             st.rerun()
-        if st.button("导入动物台灯固定演示案例", key="import_animal_lamp_demo", disabled=principal.active_role != Role.ADMIN):
+        if show_actions and demo_mode is not False and st.button("导入动物台灯固定演示案例", key="import_animal_lamp_demo", disabled=principal.active_role != Role.ADMIN):
             auth.require_permission(token, Permission.CASE_ASSIGN)
             case = import_animal_lamp_case(store)
             st.session_state["selected_case_id"] = case.case_id
             st.rerun()
-        with st.expander("新建 Case"):
-            with st.form("create_case"):
-                number = st.text_input("Case 编号")
-                customer = st.text_input("客户名称")
-                country = st.text_input("目的国")
-                order_no = st.text_input("订单号（选填）")
-                currency = st.text_input("币种（选填）")
-                total = st.text_input("总金额（选填）")
-                submitted = st.form_submit_button("保存 Case", disabled=principal.active_role not in {Role.ADMIN, Role.CUSTOMER_SERVICE, Role.DOCUMENT})
-            if submitted:
-                try:
-                    amount = Decimal(total.strip()) if total.strip() else None
-                    if amount is not None and (not amount.is_finite() or amount < 0):
-                        raise ValueError("总金额应为非负数字")
-                    case = Case(
-                        case_number=number.strip(), customer_name=customer.strip(),
-                        destination_country=country.strip(), order_no=order_no.strip() or None,
-                        currency=currency.strip().upper() or None, invoice_total=amount,
-                    )
-                    access.create_case(token, case)
-                    st.session_state["selected_case_id"] = case.case_id
-                    st.rerun()
-                except (CrossBotError, InvalidOperation, ValueError) as error:
-                    st.error(str(error))
+        if show_actions:
+            _render_create_case(access, token, principal, demo_mode)
         cases = access.list_cases(token)
+        if demo_mode is not None:
+            cases = [case for case in cases if bool(case.metadata.get("is_demo")) == demo_mode]
         if not cases:
-            st.info("暂无 Case")
+            st.info("暂无模拟 Case" if demo_mode else "暂无 Case")
             return None
         labels = {
             case.case_id: f"{case.case_number} · {case.customer_name}"
@@ -68,6 +50,34 @@ def render_case_panel(store: SQLiteStore, auth, token, principal) -> Case | None
             st.session_state["selected_case_id"] = options[0]
         selected = st.selectbox("当前 Case", options, format_func=labels.get, key="selected_case_id")
     return access.get_case(token, selected)
+
+
+def _render_create_case(access, token, principal, demo_mode):
+    with st.expander("新建 Case"):
+        with st.form("create_case"):
+            number = st.text_input("Case 编号")
+            customer = st.text_input("客户名称")
+            country = st.text_input("目的国")
+            order_no = st.text_input("订单号（选填）")
+            currency = st.text_input("币种（选填）")
+            total = st.text_input("总金额（选填）")
+            submitted = st.form_submit_button("保存 Case", disabled=principal.active_role not in {Role.ADMIN, Role.CUSTOMER_SERVICE, Role.DOCUMENT})
+        if submitted:
+            try:
+                amount = Decimal(total.strip()) if total.strip() else None
+                if amount is not None and (not amount.is_finite() or amount < 0):
+                    raise ValueError("总金额应为非负数字")
+                case = Case(
+                    case_number=number.strip(), customer_name=customer.strip(),
+                    destination_country=country.strip(), order_no=order_no.strip() or None,
+                    currency=currency.strip().upper() or None, invoice_total=amount,
+                    metadata={"is_demo": True} if demo_mode else {},
+                )
+                access.create_case(token, case)
+                st.session_state["selected_case_id"] = case.case_id
+                st.rerun()
+            except (CrossBotError, InvalidOperation, ValueError) as error:
+                st.error(str(error))
 
 
 def render_case_summary(store: SQLiteStore, case: Case, auth, token) -> None:
