@@ -2,8 +2,10 @@
 from __future__ import annotations
 from dataclasses import asdict, dataclass, field, is_dataclass
 from datetime import datetime, timezone
+from decimal import Decimal
 from enum import Enum
-from typing import Any, Mapping
+from typing import Any, Mapping, Union, get_args, get_origin, get_type_hints
+import types
 from uuid import uuid4
 
 def utc_now() -> datetime:
@@ -177,7 +179,7 @@ class Case:
     destination_country: str = ""
     incoterm: str | None = None
     currency: str | None = None
-    invoice_total: float | None = None
+    invoice_total: Decimal | None = None
     owner_id: str | None = None
     due_at: datetime | None = None
     status: CaseStatus = CaseStatus.DRAFT
@@ -192,10 +194,56 @@ def to_dict(value: Any) -> Any:
         return value.value
     if isinstance(value, datetime):
         return value.isoformat()
+    if isinstance(value, Decimal):
+        return str(value)
     if is_dataclass(value):
         return {key: to_dict(item) for key, item in asdict(value).items()}
     if isinstance(value, Mapping):
         return {str(key): to_dict(item) for key, item in value.items()}
     if isinstance(value, (list, tuple, set)):
         return [to_dict(item) for item in value]
+    return value
+
+
+def from_dict(model_type: type, payload: Mapping[str, Any]) -> Any:
+    """Restore a model and its nested enums, dates, and dataclasses."""
+    hints = get_type_hints(model_type)
+    values = {
+        name: _restore_value(hints.get(name, Any), value)
+        for name, value in payload.items()
+        if name in hints
+    }
+    return model_type(**values)
+
+
+def _restore_value(value_type: Any, value: Any) -> Any:
+    if value is None or value_type is Any:
+        return value
+    if value_type is datetime:
+        return datetime.fromisoformat(value)
+    if value_type is Decimal:
+        return Decimal(str(value))
+    if isinstance(value_type, type) and issubclass(value_type, Enum):
+        return value_type(value)
+    origin = get_origin(value_type)
+    args = get_args(value_type)
+    if origin in (Union, types.UnionType):
+        candidates = [candidate for candidate in args if candidate is not type(None)]
+        for candidate in candidates:
+            try:
+                return _restore_value(candidate, value)
+            except (TypeError, ValueError):
+                continue
+        return value
+    if origin is list:
+        item_type = args[0] if args else Any
+        return [_restore_value(item_type, item) for item in value]
+    if origin is dict:
+        key_type, item_type = args if len(args) == 2 else (Any, Any)
+        return {
+            _restore_value(key_type, key): _restore_value(item_type, item)
+            for key, item in value.items()
+        }
+    if isinstance(value_type, type) and is_dataclass(value_type):
+        return from_dict(value_type, value)
     return value
