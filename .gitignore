@@ -17,4 +17,10 @@ data/
 *.db-wal
 *.db-shm
 *.sqlite3
+.w3-data/
+/outputs/
+/tests/fixtures/real_transaction_*.json
+/scripts/build_real_w3_demo.py
+*.zip
+.idea/
 

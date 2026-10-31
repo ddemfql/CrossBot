@@ -19,7 +19,7 @@ from workflows.sales import generate_sales
 class KnowledgeTests(unittest.TestCase):
     def test_all_entries_have_provenance_and_never_look_official(self):
         records, hashes = load_entries()
-        self.assertEqual(len(records), 8)
+        self.assertEqual(len(records), 13)
         self.assertEqual(set(hashes), set(FILES))
         for record in records:
             self.assertEqual(record["data_kind"], "synthetic")
@@ -37,6 +37,20 @@ class KnowledgeTests(unittest.TestCase):
         citation = "\n".join(citation_notes(context))
         for text in ["DEMO-LAMP-001", "knowledge/README.md", "demo-1", "生效未知", "适用", "SHA256"]:
             self.assertIn(text, citation)
+
+    def test_animal_lamp_knowledge_is_exactly_scoped_and_marks_unknowns(self):
+        context = retrieve_context("DEMO-ANIMAL-LAMP-001", platforms=["Amazon"], country="Germany")
+        entries = {entry["id"]: entry for entry in context["entries"]}
+        product = entries["DEMO-ANIMAL-LAMP-001"]
+        self.assertEqual(product["facts"]["power_w"], 3)
+        self.assertEqual(product["facts"]["battery_capacity_mah"], 1200)
+        self.assertIsNone(product["facts"]["certifications"])
+        self.assertEqual(product["data_kind"], "synthetic")
+        self.assertFalse(product["source"]["official"])
+        self.assertIn("ANIMAL-LAMP-AMAZON", entries)
+        self.assertNotIn("ANIMAL-LAMP-TIKTOK", entries)
+        self.assertEqual(context["wording_rules"]["version"], "animal-lamp-demo-1")
+        self.assertIn("prohibited_terms.json", context["source_hashes"])
 
     def test_generic_partial_unknown_and_ambiguous_skus_do_not_establish_identity(self):
         for text in ["USB台灯 白色", "DEMO-LAMP-00", "DEMO-LAMP-001-OLD", "DEMO-UNKNOWN-123",
@@ -78,7 +92,7 @@ class KnowledgeTests(unittest.TestCase):
         self.assertNotEqual(retrieve_context("DEMO-LAMP-001")["entries"][0]["content"], "edited")
 
     def test_corrupt_or_missing_knowledge_blocks_client_not_unknown_fallback(self):
-        with TemporaryDirectory() as folder, patch("knowledge.retrieval.ROOT", Path(folder)):
+        with TemporaryDirectory() as folder, patch("knowledge.retrieval.ROOT", Path(folder)), patch("knowledge.wording_rules.RULE_FILE", Path(folder) / "prohibited_terms.json"):
             for content in [None, b'{broken', b'{"schema_version":1,"entries":[{}]}']:
                 if content is not None:
                     (Path(folder) / "products.json").write_bytes(content)
@@ -87,6 +101,13 @@ class KnowledgeTests(unittest.TestCase):
                     generate_sales(SalesRequest("q", "DEMO-LAMP-001", "en"), client)
                 self.assertEqual(caught.exception.code, ErrorCode.PARSE_FAILED)
                 client.complete.assert_not_called()
+
+    def test_missing_or_malformed_wording_rules_block_generation(self):
+        with TemporaryDirectory() as folder, patch("knowledge.wording_rules.RULE_FILE", Path(folder) / "prohibited_terms.json"):
+            client = Mock()
+            with self.assertRaises(CrossBotError):
+                generate_sales(SalesRequest("q", "DEMO-ANIMAL-LAMP-001", "en"), client)
+            client.complete.assert_not_called()
 
     def test_metadata_missing_invalid_date_or_official_claim_is_not_silently_used(self):
         original, _ = load_entries()

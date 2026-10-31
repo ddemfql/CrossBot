@@ -8,6 +8,23 @@ APP = Path(__file__).with_name("w1_w2_ui_harness.py")
 
 
 class V3UI(unittest.TestCase):
+    def test_animal_lamp_loader_fills_consistent_fixed_w1_fixture(self):
+        page = AppTest.from_file(str(APP), default_timeout=15).run()
+        page.button(key="sales_animal_lamp_demo").click().run()
+        self.assertFalse(page.exception)
+        self.assertIn("DEMO-ANIMAL-LAMP-001", page.text_area(key="sales_product").value)
+        self.assertIn("18.50 EUR", page.text_area(key="sales_product").value)
+        self.assertEqual(page.number_input(key="sales_quantity").value, 500)
+        self.assertEqual(page.text_input(key="sales_country").value, "Germany")
+
+    def test_animal_lamp_loader_fills_fixed_w2_fixture(self):
+        page = AppTest.from_file(str(APP), default_timeout=15).run()
+        page.radio[0].set_value("W2 多平台Listing生成").run()
+        page.button(key="listing_animal_lamp_demo").click().run()
+        self.assertFalse(page.exception)
+        self.assertIn("DEMO-ANIMAL-LAMP-001", page.text_area(key="listing_description").value)
+        self.assertEqual(page.multiselect(key="listing_platforms").value, ["Amazon", "TikTok"])
+
     def test_demo_load_only_changes_form_preserves_history_and_does_not_call_api(self):
         page = AppTest.from_file(str(APP), default_timeout=15).run()
         page.button(key="sales_generate").click().run()

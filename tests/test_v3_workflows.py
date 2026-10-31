@@ -15,6 +15,7 @@ from providers.customer_mock import MockCustomerClient
 from workflows.content_review import review_content
 from workflows.customer_simulator import simulate_customer
 from workflows.demo_case import FIXTURE, demo_case, demo_listing_request, demo_sales_request, load_fixture
+from workflows.animal_lamp_demo import FIXTURE as ANIMAL_FIXTURE, animal_lamp_case, animal_listing_request, animal_sales_request, load_animal_fixture
 from workflows.inquiry_analysis import analyze_inquiry, extract_inquiry_candidates
 from providers.inquiry_mock import MockInquiryClient
 from workflows.sales import build_sales_messages, generate_sales
@@ -61,6 +62,38 @@ class V3Workflows(unittest.TestCase):
         self.assertEqual(fixed["facts"]["color_temperature_modes"], 3)
         self.assertIsNone(fixed["facts"]["price"])
         self.assertEqual(retrieve_context("DEMO-LAMP-001 DEMO-DE-LAMP-001")["product_status"], "unknown")
+
+    def test_animal_lamp_fixture_is_consistent_and_separate_from_legacy_case(self):
+        data, product = load_animal_fixture()
+        case = animal_lamp_case()
+        sales = animal_sales_request()
+        listing = animal_listing_request()
+        self.assertEqual(case.case_id, "CASE-DE-ANIMAL-LAMP-001")
+        self.assertNotEqual(case.case_id, demo_case().case_id)
+        self.assertEqual(case.invoice_total, Decimal("9250.00"))
+        self.assertIn("20 pcs/箱", sales.product_info)
+        self.assertIn("25 business days", sales.product_info)
+        self.assertNotIn("18.50", listing.product_description)
+        self.assertEqual(listing.platforms, ["Amazon", "TikTok"])
+        self.assertEqual(data["trade"]["packages"] * product["facts"]["units_per_carton"], 500)
+        self.assertEqual(Decimal(product["facts"]["unit_net_weight_kg"]) * 20, Decimal("8"))
+
+    def test_inconsistent_animal_demo_arithmetic_refuses_to_load(self):
+        original = json.loads(ANIMAL_FIXTURE.read_text(encoding="utf-8"))
+        for path, value in [("invoice_total", "9250.01"), ("packages", 24), ("gross_weight_kg", "249")]:
+            with self.subTest(path=path), TemporaryDirectory() as folder:
+                data = deepcopy(original)
+                data["trade"][path] = value
+                fixture = Path(folder) / "case.json"
+                fixture.write_text(json.dumps(data), encoding="utf-8")
+                with patch("workflows.animal_lamp_demo.FIXTURE", fixture), self.assertRaises(CrossBotError):
+                    load_animal_fixture()
+
+    def test_editable_wording_rules_flag_risky_claims_and_leave_supported_specs(self):
+        risky = "100% safe, CE certified, improves eyesight, lasts all night, 5000 mAh, 12 W, EUR 9.99"
+        codes = {risk.code for risk in review_content(risky, source_text="DEMO-ANIMAL-LAMP-001 1200 mAh 3 W EUR 18.50")}
+        self.assertTrue({"absolute_claim", "certification_claim", "health_claim", "unsupported_specification", "unsupported_price"} <= codes)
+        self.assertEqual(review_content("1200 mAh, DC 5 V, 3 W, 3000 K, 17 cm, 0.4 kg", source_text="1200 mAh, DC 5 V, 3 W, 3000 K, 17 cm, 0.4 kg"), [])
 
     def test_candidates_preserve_original_spans_and_do_not_mutate_input(self):
         request = SalesRequest("Need 500 USB lamps for Germany, or 1000 pcs.\nCE certificate, invoice, packing list?", "lamp", "英文")

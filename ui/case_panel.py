@@ -7,7 +7,7 @@ from core.errors import CrossBotError
 from core.models import Case
 from core.identity import Permission, Role
 from auth.cases import CaseAccessService
-from storage.bootstrap import DEMO_ID, import_demo_case
+from storage.bootstrap import DEMO_ID, import_animal_lamp_case, import_demo_case
 from storage.sqlite_store import SQLiteStore
 
 STATUS_LABELS = {
@@ -25,6 +25,11 @@ def render_case_panel(store: SQLiteStore, auth, token, principal) -> Case | None
             auth.require_permission(token, Permission.CASE_ASSIGN)
             import_demo_case(store)
             st.session_state["selected_case_id"] = DEMO_ID
+            st.rerun()
+        if st.button("导入动物台灯固定演示案例", key="import_animal_lamp_demo", disabled=principal.active_role != Role.ADMIN):
+            auth.require_permission(token, Permission.CASE_ASSIGN)
+            case = import_animal_lamp_case(store)
+            st.session_state["selected_case_id"] = case.case_id
             st.rerun()
         with st.expander("新建 Case"):
             with st.form("create_case"):

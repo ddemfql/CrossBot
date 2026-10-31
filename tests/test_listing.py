@@ -6,6 +6,7 @@ from core.errors import CrossBotError, ErrorCode, ValidationError
 from core.schemas import ListingRequest
 from providers.listing_mock import MockListingClient
 from workflows.listing import build_listing_messages, generate_listings
+from workflows.animal_lamp_demo import animal_listing_request
 
 
 class ListingTests(unittest.TestCase):
@@ -30,6 +31,15 @@ class ListingTests(unittest.TestCase):
                     self.assertEqual(response.correlation_id, "listing-test")
                     self.assertTrue(response.pending_confirmations)
                     self.assertIn("模拟", response.content)
+
+    def test_animal_demo_api_prompt_pins_listing_fields_and_exclusions(self):
+        system = build_listing_messages(animal_listing_request())[0]["content"]
+        payload = json.loads(build_listing_messages(animal_listing_request())[1]["content"])
+        self.assertIn("英文标题、5条", system)
+        self.assertIn("不要写订单价格", system)
+        self.assertIn("健康功效", system)
+        self.assertEqual(payload["platforms"], ["Amazon", "TikTok"])
+        self.assertIn("DEMO-ANIMAL-LAMP-001", payload["product_description"])
 
     def test_empty_unsupported_duplicate_or_wrong_platform_type_never_calls(self):
         for platforms in [[], None, "Amazon", ["Unknown"], ["Amazon", "Amazon"], [False], [["Amazon"]]]:

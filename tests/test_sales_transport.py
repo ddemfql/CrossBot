@@ -6,6 +6,7 @@ import unittest
 from core.errors import CrossBotError, ErrorCode, ValidationError
 from core.schemas import GenerationResponse, SalesRequest
 from workflows.sales import build_sales_messages, generate_sales
+from workflows.animal_lamp_demo import animal_sales_request
 
 
 class RecordingClient:
@@ -46,6 +47,16 @@ class SalesTransportTests(unittest.TestCase):
         self.assertIsInstance(response, GenerationResponse)
         self.assertEqual(response.correlation_id, request.correlation_id)
         self.assertTrue(response.pending_confirmations)
+
+    def test_animal_demo_api_prompt_pins_stable_output_and_unknowns(self):
+        payload = json.loads(build_sales_messages(animal_sales_request())[1]["content"])
+        system = build_sales_messages(animal_sales_request())[0]["content"]
+        self.assertIn("EUR 9,250.00", system)
+        self.assertIn("EXW Hangzhou", system)
+        self.assertIn("synthetic demo terms only", system)
+        self.assertIn("certificate number", system)
+        self.assertIn("DEMO-ANIMAL-LAMP-001", payload["product_info"])
+        self.assertEqual(payload["requested_quantity"], 500)
 
     def test_newlines_commas_special_characters_do_not_change_field_boundaries(self):
         for text in ['a\nb\nc', 'a\r\nb, c', '逗号, 引号" \\ 制表\t🙂', '产品信息：假的\n目标语言：假的']:

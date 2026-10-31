@@ -61,6 +61,54 @@ class ClientTests(unittest.TestCase):
             self.assertEqual(req.full_url, "https://example.test/v1/chat/completions")
             self.assertNotIn("thinking", json.loads(req.data))
 
+    def test_openai_uses_responses_api_and_extracts_all_output_text(self):
+        raw = json.dumps({"status": "completed", "output": [
+            {"type": "reasoning", "content": []},
+            {"type": "message", "content": [
+                {"type": "output_text", "text": "First "},
+                {"type": "refusal", "refusal": "ignored"},
+                {"type": "output_text", "text": "reply"},
+            ]},
+        ]}).encode()
+        with patch("providers.llm_client.request.build_opener") as build:
+            build.return_value.open.return_value = Response(raw)
+            client = HttpChatClient(self.config(openai_base_url="https://api.openai.com/v1", model_name="gpt-6.1-sol"))
+            result = client.complete([{"role": "system", "content": "System rules"},
+                                      {"role": "user", "content": "Request"}])
+            req = build.return_value.open.call_args.args[0]
+            body = json.loads(req.data)
+            self.assertEqual(result, "First reply")
+            self.assertEqual(req.full_url, "https://api.openai.com/v1/responses")
+            self.assertEqual(body["instructions"], "System rules")
+            self.assertEqual(body["input"], [{"role": "user", "content": "Request"}])
+            self.assertEqual(body["model"], "gpt-6.1-sol")
+            self.assertFalse(body["store"])
+            self.assertEqual(body["max_output_tokens"], 1800)
+
+    def test_openai_w2_uses_strict_schema_for_only_selected_platforms(self):
+        messages = [{"role": "system", "content": "Return JSON"}, {"role": "user", "content": json.dumps({
+            "platforms": ["Amazon", "TikTok"]}, ensure_ascii=False)}]
+        with patch("providers.llm_client.request.build_opener") as build:
+            build.return_value.open.return_value = Response(json.dumps({"status": "completed", "output": [
+                {"type": "message", "content": [{"type": "output_text", "text": '{"listings":{}}'}]}
+            ]}).encode())
+            client = HttpChatClient(self.config(openai_base_url="https://api.openai.com/v1"), json_mode=True)
+            client.complete(messages)
+            body = json.loads(build.return_value.open.call_args.args[0].data)
+            schema = body["text"]["format"]
+            self.assertEqual(schema["type"], "json_schema")
+            self.assertTrue(schema["strict"])
+            self.assertEqual(schema["schema"]["properties"]["listings"]["required"], ["Amazon", "TikTok"])
+            self.assertFalse(schema["schema"]["properties"]["listings"]["additionalProperties"])
+
+    def test_openai_incomplete_response_is_rejected(self):
+        raw = json.dumps({"status": "incomplete", "output": []}).encode()
+        with patch("providers.llm_client.request.build_opener") as build:
+            build.return_value.open.return_value = Response(raw)
+            with self.assertRaises(CrossBotError) as caught:
+                HttpChatClient(self.config(openai_base_url="https://api.openai.com/v1")).complete([])
+            self.assertEqual(caught.exception.code, ErrorCode.PARSE_FAILED)
+
     def test_invalid_configuration_never_opens_network(self):
         invalid = [dict(openai_api_key=""), dict(openai_api_key="has space"), dict(openai_api_key="x\ny"),
                    dict(mock_mode=True), dict(model_name=""), dict(request_timeout_seconds=float("nan")),

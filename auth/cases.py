@@ -65,6 +65,8 @@ class CaseAccessService:
         with self.auth.repository.transaction() as conn:
             principal = self.auth._require(conn, token, action, case_id)
             case = from_dict(Case, json.loads(conn.execute("SELECT payload FROM cases WHERE id=?", (case_id,)).fetchone()["payload"]))
+            if case.metadata.get("w3_workspace") and target in {CaseStatus.PASSED, CaseStatus.CLOSED}:
+                raise CrossBotError(ErrorCode.REVIEW_REQUIRED, "W3 Case 必须通过单证工作流的当前版本核验与人工放行")
             def load(table, model):
                 return [from_dict(model, json.loads(row["payload"])) for row in conn.execute(f"SELECT payload FROM {table} WHERE case_id=?", (case_id,))]
             case, audit = transition_case(

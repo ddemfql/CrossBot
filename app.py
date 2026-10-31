@@ -42,6 +42,7 @@ if Permission.W1_GENERATE in ROLE_PERMISSIONS[principal.active_role]:
     available.append("W1 询盘极速转化")
 if Permission.W2_GENERATE in ROLE_PERMISSIONS[principal.active_role]:
     available.append("W2 多平台Listing生成")
+available.append("W3 交易单证工作台")
 if not available:
     st.info("当前岗位没有已接入的生成工作流；Case 文档和审计记录仍可查看。")
     st.stop()
@@ -49,13 +50,20 @@ if not available:
 with st.sidebar:
     st.header("工作流")
     workflow_label = st.radio("工作流", available, label_visibility="collapsed")
-    workflow = "sales" if workflow_label.startswith("W1") else "listing"
+    workflow = "sales" if workflow_label.startswith("W1") else "listing" if workflow_label.startswith("W2") else "documents"
     try:
-        auth.require_permission(token, Permission.W1_GENERATE if workflow == "sales" else Permission.W2_GENERATE, case.case_id)
+        action = Permission.W1_GENERATE if workflow == "sales" else Permission.W2_GENERATE if workflow == "listing" else Permission.CASE_READ
+        auth.require_permission(token, action, case.case_id)
     except CrossBotError as error:
         st.error(error.message)
         st.stop()
-    config, ready = render_provider_settings()
+    if workflow != "documents":
+        config, ready = render_provider_settings()
+
+if workflow == "documents":
+    from ui.w3_panel import render_w3
+    render_w3(auth, token, case)
+    st.stop()
 
 generation_service = GenerationService(auth)
 bind_case_state(access, token, st.session_state, case.case_id, workflow)

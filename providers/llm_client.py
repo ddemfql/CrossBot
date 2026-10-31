@@ -48,15 +48,30 @@ class HttpChatClient:
         timeout = cfg.request_timeout_seconds
         if isinstance(timeout, bool) or not isinstance(timeout, (int, float)) or not math.isfinite(timeout) or not 1 <= timeout <= 120:
             raise CrossBotError(ErrorCode.CONFIGURATION, "网络超时设置须在1到120秒之间。")
-        endpoint = base.rstrip("/")
-        if not endpoint.endswith("/chat/completions"):
-            endpoint += "/chat/completions"
-        body = {"model": cfg.model_name, "messages": messages, "stream": False,
-                "max_tokens": 4096 if self.json_mode else 1800}
-        if self.json_mode:
-            body["response_format"] = {"type": "json_object"}
-        if url.hostname == "api.deepseek.com":
-            body["thinking"] = {"type": "disabled"}
+        is_openai = url.hostname == "api.openai.com"
+        max_output_tokens = 4096 if self.json_mode else 1800
+        if is_openai:
+            endpoint = base.rstrip("/")
+            if not endpoint.endswith("/responses"):
+                endpoint += "/responses"
+            instructions = "\n\n".join(m["content"] for m in messages if m.get("role") in {"system", "developer"})
+            inputs = [{"role": m["role"], "content": m["content"]}
+                      for m in messages if m.get("role") in {"user", "assistant"}]
+            body = {"model": cfg.model_name, "instructions": instructions,
+                    "input": inputs, "max_output_tokens": max_output_tokens, "store": False}
+            if self.json_mode:
+                platform_schema = self._listing_schema(messages)
+                body["text"] = {"format": platform_schema or {"type": "json_object"}}
+        else:
+            endpoint = base.rstrip("/")
+            if not endpoint.endswith("/chat/completions"):
+                endpoint += "/chat/completions"
+            body = {"model": cfg.model_name, "messages": messages, "stream": False,
+                    "max_tokens": max_output_tokens}
+            if self.json_mode:
+                body["response_format"] = {"type": "json_object"}
+            if url.hostname == "api.deepseek.com":
+                body["thinking"] = {"type": "disabled"}
         try:
             payload = json.dumps(body, ensure_ascii=False).encode("utf-8")
         except (TypeError, ValueError):
@@ -97,12 +112,41 @@ class HttpChatClient:
             raise CrossBotError(ErrorCode.PARSE_FAILED, "接口返回过大，未保存新结果。")
         try:
             data = json.loads(raw)
-            choice = data["choices"][0]
-            if choice["finish_reason"] != "stop":
-                raise ValueError
-            content = choice["message"]["content"]
+            if is_openai:
+                if data.get("status") != "completed":
+                    raise ValueError
+                content = "".join(
+                    item["text"]
+                    for output in data["output"]
+                    for item in output.get("content", [])
+                    if item.get("type") == "output_text" and isinstance(item.get("text"), str)
+                )
+            else:
+                choice = data["choices"][0]
+                if choice["finish_reason"] != "stop":
+                    raise ValueError
+                content = choice["message"]["content"]
             if not isinstance(content, str) or not content.strip():
                 raise ValueError
         except (ValueError, KeyError, IndexError, TypeError):
             raise CrossBotError(ErrorCode.PARSE_FAILED, "接口返回为空、格式不完整或生成被截断，未保存新结果。") from None
         return content
+
+    @staticmethod
+    def _listing_schema(messages):
+        """Use strict structured output when a W2 request declares its platform set."""
+        try:
+            payload = json.loads(next(m["content"] for m in reversed(messages) if m.get("role") == "user"))
+            platforms = payload["platforms"]
+            if not isinstance(platforms, list) or not platforms or any(not isinstance(p, str) or not p for p in platforms):
+                return None
+            properties = {platform: {"type": "string"} for platform in platforms}
+            return {
+                "type": "json_schema", "name": "platform_listings", "strict": True,
+                "schema": {"type": "object", "properties": {
+                    "listings": {"type": "object", "properties": properties,
+                                 "required": platforms, "additionalProperties": False}},
+                    "required": ["listings"], "additionalProperties": False},
+            }
+        except (StopIteration, KeyError, TypeError, ValueError):
+            return None

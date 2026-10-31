@@ -49,3 +49,19 @@ def import_demo_case(store: SQLiteStore) -> Case:
         if error.code != ErrorCode.CONFLICT or store.get_case(DEMO_ID) is None:
             raise
     return store.get_case(DEMO_ID)
+
+
+def import_animal_lamp_case(store: SQLiteStore) -> Case:
+    """Idempotently import the independent, explicitly synthetic lamp scenario."""
+    from workflows.animal_lamp_demo import animal_lamp_case, CASE_ID
+
+    existing = store.get_case(CASE_ID)
+    if existing:
+        return existing
+    case = animal_lamp_case()
+    try:
+        store.create_case(case, actor_id="demo_import")
+    except CrossBotError as error:
+        if error.code != ErrorCode.CONFLICT or store.get_case(CASE_ID) is None:
+            raise
+    return store.get_case(CASE_ID)

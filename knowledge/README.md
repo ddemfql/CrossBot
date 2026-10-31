@@ -13,3 +13,11 @@
 ## V3 固定案例增量
 
 demo_case_products.json 新增 DEMO-DE-LAMP-001，一条模拟产品知识；资料总数由7条增为8条。价格只在固定Case演示订单中存在，不写为产品通用报价。原 products/platform_rules/compliance_rules 三文件保留字节不变，历史引用与SHA仍可核对。该文件不是经账号审核发布的正式产品主档，知识治理依赖A的版本与权限契约。
+
+## 动物台灯固定演示增量
+
+`animal_lamp_knowledge.json`、`docs/demo_case/animal_lamp_fixture.json` 和 `workflows/animal_lamp_demo.py` 提供隔离的自编案例 `DEMO-ANIMAL-LAMP-001` / `CASE-DE-ANIMAL-LAMP-001`。不修改早期德国台灯 SKU、Case 或它们的历史引用。数据标记 `synthetic`，虚构供应商为 CrossBot Demo Lighting。
+
+固定交易为 500 件、20 件/箱、25 箱、EUR 18.50/件、EUR 9,250 货品总额、EXW Hangzhou、订单确认及收到约定款项后 25 个工作日生产。按单件 0.4 kg、每箱净重 8 kg、毛重 10 kg 计算，总净重 200 kg、总毛重 250 kg。fixture loader 会以 Decimal 拒绝金额、箱数或重量不一致；认证、证书编号、德国注册信息、续航和送达日期保持未知。
+
+`prohibited_terms.json` 是可编辑的项目演示词库，10 条规则覆盖认证、绝对化、医疗功效、护眼、性能推断、交期、续航、儿童安全、健康/光学声明和注册声明。W1/W2 共用 `workflows.content_review.review_content`，逐条匹配并返回规则 ID、版本和改写建议；不自动删除或批准。规则文件会被校验并参与知识快照 SHA256，缺失/无效时生成失败关闭。此词库不是官方平台规则或完整违禁词集合。新 SKU 对应五条模拟知识，当前条目合计 13。

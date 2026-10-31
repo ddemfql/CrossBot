@@ -300,7 +300,7 @@ class V3ServicesTests(unittest.TestCase):
             for button in app.button:
                 if button.key in {"role_product", "role_operations", "role_admin", "role_reviewer"}:
                     self.assertTrue(button.disabled)
-            self.assertEqual(app.radio[0].options, ["W1 询盘极速转化"])
+            self.assertEqual(app.radio[0].options, ["W1 询盘极速转化", "W3 交易单证工作台"])
             self.auth.revoke_case(self.admin_token, self.case.case_id, self.users[Role.CUSTOMER_SERVICE].user_id)
             app.run()
             self.assertFalse(app.exception)

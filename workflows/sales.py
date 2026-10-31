@@ -42,8 +42,18 @@ def build_sales_messages(request: SalesRequest) -> list[dict[str, str]]:
         payload.pop("context", None)
     payload["local_inquiry_candidates"] = [to_dict(item) for item in analyze_inquiry(request)]
     payload["knowledge_context"] = retrieve_context(request.product_info, country=request.customer_country)
+    system_prompt = SYSTEM_PROMPT
+    if "DEMO-ANIMAL-LAMP-001" in request.product_info.upper():
+        system_prompt += """
+本次是固定动物台灯演示。请用简明英文按以下顺序输出，不要添加其他段落：
+1. 简短问候及感谢询价。
+2. Product: ABS dog-shaped USB-C rechargeable desk lamp; 1200 mAh; DC 5 V; 3 W LED; 3000 K / 4500 K / 6000 K; 17 x 17 x 18 cm.
+3. Demo order: 500 pcs; EUR 18.50 per unit; goods total EUR 9,250.00; 25 cartons, 20 pcs/carton; net 200 kg, gross 250 kg.
+4. Trade and production: EXW Hangzhou; EUR 18.50 and 25 working days are synthetic demo terms only. Production lead time starts after order confirmation and agreed payment; shipping and import taxes are excluded; no arrival date is promised.
+5. Pending confirmation: payment terms, CE/RoHS documents and model scope, certificate number, German EPR/WEEE/LUCID details, runtime and charging time.
+Do not add any product number, price, date, certification, registration, performance, customer name or delivery promise absent from these exact facts. Clearly label the offer as demonstration-only, not a commercial quotation. Keep every number, unit, currency and EXW condition unchanged in revisions."""
     return [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "system", "content": system_prompt},
         {"role": "user", "content": json.dumps(payload, ensure_ascii=False)},
     ]
 

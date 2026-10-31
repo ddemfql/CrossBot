@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "DEMO-ANIMAL-LAMP-001", "type": "product",
+      "content": "固定自编演示产品：ABS 狗造型 USB 充电桌面台灯。完整参数见 facts；只适用于此 SKU，不代表真实供应商商品。订单价格和生产周期只在指定 Case 中提供，不能当作通用报价。认证、注册、运行续航与充电时间待确认。",
+      "facts": {"name": "USB 动物造型 LED 桌面台灯", "supplier": "CrossBot Demo Lighting（虚构）", "model": "DEMO-ANIMAL-LAMP-001", "material": "ABS", "shape": "狗造型", "power_supply": "USB 充电，内置电池", "connector": "USB-C", "battery_capacity_mah": 1200, "input_voltage_v": 5, "power_w": 3, "color_temperatures_k": [3000, 4500, 6000], "dimensions_cm": [17, 17, 18], "unit_net_weight_kg": "0.4", "units_per_carton": 20, "carton_dimensions_cm": [57, 53, 48], "carton_net_weight_kg": "8", "carton_gross_weight_kg": "10", "certifications": null, "certificate_number": null, "epr_registration": null, "runtime_hours": null, "charging_time_hours": null, "waterproof_rating": null, "age_suitability": null, "price": null, "lead_time": null},
+      "data_kind": "synthetic", "source": {"title": "用户授权自编的固定台灯演示档案", "path": "docs/demo_case/动物台灯演示指南.md", "kind": "synthetic", "official": false},
+      "version": "animal-lamp-demo-1", "effective_from": null, "effective_until": null,
+      "applicable_product_skus": ["DEMO-ANIMAL-LAMP-001"], "applicable_platforms": [], "applicable_countries": []
+    },
+    {
+      "id": "ANIMAL-LAMP-FAQ", "type": "process",
+      "content": "报价/交期：仅引用当前演示 Case 显式提供的条件；其他数量重新确认。生产周期不等于送达日期，EXW 不含运费及进口税费。认证/证书/EPR/WEEE/LUCID：待确认，不编编号。1200mAh不证明续航；3W不证明照度/护眼。USB-C只表示本演示接口，不证明快充。包装按20件/箱，500件为25箱；不可沿用旧款36件/箱或11kg毛重。",
+      "facts": {}, "data_kind": "synthetic", "source": {"title": "CrossBot 演示客服问答口径", "path": "docs/demo_case/动物台灯演示指南.md", "kind": "synthetic", "official": false},
+      "version": "animal-lamp-demo-1", "effective_from": null, "effective_until": null,
+      "applicable_product_skus": ["DEMO-ANIMAL-LAMP-001"], "applicable_platforms": [], "applicable_countries": []
+    },
+    {
+      "id": "ANIMAL-LAMP-AMAZON", "type": "platform",
+      "content": "内部演示格式：英文标题、五条卖点、短描述。标题包含动物造型、USB充电及桌面照明；卖点仅用材质、功率、电池容量、三档色温、尺寸等参数。不要将本次订单价格、数量、生产周期写成通用产品承诺。禁止虚构护眼、儿童安全、续航、认证及注册结论；命中词库后人工处理。不是 Amazon 官方规则。",
+      "facts": {}, "data_kind": "synthetic", "source": {"title": "CrossBot 自定 Amazon 演示写作规范", "path": "docs/demo_case/动物台灯演示指南.md", "kind": "synthetic", "official": false},
+      "version": "animal-lamp-demo-1", "effective_from": null, "effective_until": null,
+      "applicable_product_skus": ["DEMO-ANIMAL-LAMP-001"], "applicable_platforms": ["Amazon"], "applicable_countries": []
+    },
+    {
+      "id": "ANIMAL-LAMP-TIKTOK", "type": "platform",
+      "content": "内部演示格式：一句场景开场、三条参数介绍、一句行动引导。只描述书桌、床头等照明场景；不编造用户评价、亲身体验、倒计时促销和销量，不承诺护眼、改善睡眠或儿童安全。不是 TikTok 官方规则。",
+      "facts": {}, "data_kind": "synthetic", "source": {"title": "CrossBot 自定 TikTok 演示写作规范", "path": "docs/demo_case/动物台灯演示指南.md", "kind": "synthetic", "official": false},
+      "version": "animal-lamp-demo-1", "effective_from": null, "effective_until": null,
+      "applicable_product_skus": ["DEMO-ANIMAL-LAMP-001"], "applicable_platforms": ["TikTok"], "applicable_countries": []
+    },
+    {
+      "id": "ANIMAL-LAMP-DE-REVIEW", "type": "country",
+      "content": "德国演示沟通口径：本案例未提供认证文件、注册号和适用责任主体，回复应列为待确认。不得宣称已获德国销售许可或已经合规。不判断具体法规义务；该条为内部待办，不是法律结论。",
+      "facts": {}, "data_kind": "synthetic", "source": {"title": "CrossBot 自定德国案例核对提示", "path": "docs/demo_case/动物台灯演示指南.md", "kind": "synthetic", "official": false},
+      "version": "animal-lamp-demo-1", "effective_from": null, "effective_until": null,
+      "applicable_product_skus": ["DEMO-ANIMAL-LAMP-001"], "applicable_platforms": [], "applicable_countries": ["DE"]
+    }
+  ]
+}

@@ -30,7 +30,7 @@ class ProviderUI(unittest.TestCase):
             page.button(key="sales_generate").click().run()
             response = page.session_state.sales_conversation.turns[-1].response
             self.assertEqual(response.provider, "real")
-            self.assertEqual(response.model, "deepseek-flash")
+            self.assertEqual(response.model, "gpt-6.1-sol")
             self.assertNotIn("dummy-test-token", str(response.to_dict()))
             page.run()
             complete.assert_called_once()
@@ -43,6 +43,8 @@ class ProviderUI(unittest.TestCase):
 
     def test_key_clear_and_address_change_revoke_ready_state(self):
         page = self.real_settings(AppTest.from_file(str(APP), default_timeout=15).run())
+        self.assertEqual(page.text_input(key="provider_url").value, "https://api.openai.com/v1")
+        self.assertEqual(page.text_input(key="provider_model").value, "gpt-6.1-sol")
         self.assertFalse(page.button(key="sales_generate").disabled)
         page.button(key="provider_clear").click().run()
         self.assertEqual(page.text_input(key="provider_key").value, "")

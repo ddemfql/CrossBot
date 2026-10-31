@@ -9,7 +9,7 @@ from core.errors import CrossBotError
 from core.models import Case
 from core.identity import Role
 from core.schemas import WorkflowConversation
-from storage.bootstrap import DEMO_ID, import_demo_case
+from storage.bootstrap import DEMO_ID, import_animal_lamp_case, import_demo_case
 from storage.sqlite_store import SQLiteStore
 from auth import AuthService
 from workflows.access import GenerationService
@@ -31,6 +31,17 @@ class DatabaseIntegrationTests(unittest.TestCase):
         self.assertEqual(self.store.get_case(DEMO_ID).customer_name, "Edited demo")
         self.assertEqual(len(self.store.list_audit_events(DEMO_ID)), 1)
         self.assertTrue(case.metadata["is_demo"])
+
+    def test_animal_lamp_import_is_idempotent_and_preserves_edits(self):
+        case = import_animal_lamp_case(self.store)
+        case.customer_name = "Edited synthetic demo"
+        self.store.save_case(case)
+        imported_again = import_animal_lamp_case(self.store)
+        self.assertEqual(imported_again.case_id, "CASE-DE-ANIMAL-LAMP-001")
+        self.assertEqual(imported_again.customer_name, "Edited synthetic demo")
+        self.assertEqual(len(self.store.list_cases()), 1)
+        self.assertEqual(import_demo_case(self.store).case_id, DEMO_ID)
+        self.assertEqual(len(self.store.list_cases()), 2)
 
     def test_conversations_survive_reopen_and_are_isolated(self):
         case = import_demo_case(self.store)
@@ -206,11 +217,11 @@ class DatabaseIntegrationTests(unittest.TestCase):
             app.session_state["session_token"] = token
             app.run()
             self.assertFalse(app.exception)
-            self.assertEqual(app.radio[0].options, ["W1 询盘极速转化"])
+            self.assertEqual(app.radio[0].options, ["W1 询盘极速转化", "W3 交易单证工作台"])
             self.assertTrue(app.button(key="role_product").disabled)
             app.button(key="role_operations").click().run()
             self.assertFalse(app.exception)
-            self.assertEqual(app.radio[0].options, ["W2 多平台Listing生成"])
+            self.assertEqual(app.radio[0].options, ["W2 多平台Listing生成", "W3 交易单证工作台"])
 
 
 if __name__ == "__main__":

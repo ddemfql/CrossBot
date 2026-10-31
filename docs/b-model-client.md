@@ -38,3 +38,11 @@
 应出现来源real与模型名、英文回复及待确认/引用。人工核对：没有编造认证、价格、交期；知识仍全部模拟。失败时记录页面显示的错误类型即可，不复制密钥或账号信息到聊天。成功后回报W1真实生成通过，再决定W2和两轮真实修订的后续验收，避免一次发送多次请求。
 
 本阶段完成的是客户端与离线验证，不把fake响应测试记为真实API成功。正式来源、完整事实/规则检查、语义修订的真实质量、流式事件、持久化及导出仍有限或未实现。
+
+## OpenAI GPT API 接入（2026-10-31）
+
+当前设置页默认 `https://api.openai.com/v1` 和 `gpt-6.1-sol`。识别到 OpenAI 官方 API 主机时走 Responses API：将 system/developer 内容发为 `instructions`，其余对话以 `input` 传递，设置 `store=false`，并从全部 `output_text` 内容中读取完整结果。W1 使用文本输出；W2 在已选平台集合可解析时构造 `strict: true` 的 JSON Schema，否则 JSON 工作流使用 JSON Object 模式。Responses 状态非 completed、输出为空/畸形或超限均拒绝保存。
+
+其他兼容服务仍走原 Chat Completions 路径；DeepSeek 的 `thinking` 参数只发给 DeepSeek 官方主机。OpenAI API Key 在本机页面输入，由 Streamlit 服务端会话内存持有；不读取 `.env`、不写入数据库或代码。API 组织的额度与费用依账户配置和当前价格表为准。本轮只做离线传输替身测试，真实网络调用需由用户在本机配置密钥后手动验收。
+
+官方依据： [Responses 文本生成](https://developers.openai.com/api/docs/guides/text?api-mode=responses)、[迁移至 Responses](https://developers.openai.com/api/docs/guides/migrate-to-responses)、[Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)、[GPT-6.1 Sol](https://developers.openai.com/api/docs/models/gpt-6.1-sol)。模型/请求行为以该文档和用户账户权限为准。

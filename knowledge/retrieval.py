@@ -7,9 +7,11 @@ from pathlib import Path
 import re
 
 from core.errors import CrossBotError, ErrorCode
+from knowledge.wording_rules import load_wording_rules
 
 ROOT = Path(__file__).parent
-FILES = ("products.json", "platform_rules.json", "compliance_rules.json", "demo_case_products.json")
+FILES = ("products.json", "platform_rules.json", "compliance_rules.json", "demo_case_products.json",
+         "animal_lamp_knowledge.json")
 
 
 def load_entries():
@@ -49,6 +51,8 @@ def load_entries():
 
 def retrieve_context(product_text: str, *, platforms=(), country=None, as_of=None):
     records, hashes = load_entries()
+    rules, rule_hash = load_wording_rules()
+    hashes["prohibited_terms.json"] = rule_hash
     today = as_of or date.today()
     # Only complete, explicit demo identifiers from the product field are eligible.
     # A generic phrase such as 'USB lamp' never establishes product identity.
@@ -78,7 +82,8 @@ def retrieve_context(product_text: str, *, platforms=(), country=None, as_of=Non
         if not any(r["type"] == "platform" and platform in r["applicable_platforms"] for r in matches):
             notes.append(f"{platform}平台资料未知、待确认。")
     return {"product_status": "reference_only" if product_hit else "unknown", "entries": matches,
-            "notes": notes, "source_hashes": hashes, "as_of": today.isoformat()}
+            "notes": notes, "source_hashes": hashes, "as_of": today.isoformat(),
+            "wording_rules": rules}
 
 
 def citation_notes(context):
@@ -88,5 +93,9 @@ def citation_notes(context):
         result.append(f"模拟引用 {record['id']} | {record['source']['title']} | {record['source']['path']} | "
                       f"版本{record['version']} | 生效{record['effective_from'] or '未知'} | "
                       f"截止{record['effective_until'] or '未知'} | 适用{json.dumps(scope, ensure_ascii=False)} | {record['content']}")
+    rules = context.get("wording_rules")
+    if rules:
+        result.append(f"内部演示风险词库 | {rules['source']['path']} | 版本{rules['version']} | "
+                      f"{len(rules['rules'])}条规则；非官方违禁词全集；命中需人工处理。")
     result.append("知识文件SHA256：" + json.dumps(context["source_hashes"], ensure_ascii=False))
     return result

@@ -9,6 +9,7 @@ from knowledge.ui import render_knowledge_preview
 from core.config import AppConfig
 from providers.llm_client import HttpChatClient
 from workflows.demo_case import demo_sales_request
+from workflows.animal_lamp_demo import animal_sales_request
 from workflows.inquiry_analysis import analyze_inquiry, extract_inquiry_candidates
 from providers.inquiry_mock import MockInquiryClient
 from core.models import to_dict
@@ -23,11 +24,20 @@ def load_sales_demo():
         st.session_state[key] = value
 
 
+def load_animal_lamp_sales_demo():
+    request = animal_sales_request()
+    for key, value in {"sales_inquiry": request.inquiry, "sales_product": request.product_info,
+                       "sales_language": request.target_language, "sales_country": request.customer_country,
+                       "sales_quantity": request.requested_quantity}.items():
+        st.session_state[key] = value
+
+
 def render_sales(config=None, ready=True, *, case_id=None, generation_service=None, auth_token=None):
     config = config or AppConfig(mock_mode=True)
     mode = "模拟" if config.mock_mode else "真实，消耗额度"
     st.subheader("W1 · 询盘回复与修订")
     st.button("载入德国台灯演示资料", key="sales_demo", on_click=load_sales_demo)
+    st.button("载入动物台灯固定案例（自编演示数据）", key="sales_animal_lamp_demo", on_click=load_animal_lamp_sales_demo)
     st.caption(f"当前 Case：{case_id or '未关联'}。演示资料仅载入表单，不替换历史；生成草稿仍需人工复核。")
     st.info("模拟模式：不调用真实模型，不消耗API额度。仅验证流程，不进行翻译或语义改写。" if config.mock_mode else "真实模式：点击生成会发送当前业务资料到所填服务，并消耗额度。知识参考仍全部为模拟资料。")
     st.caption("W1历史按Case保存在本地数据库；API Key仅留在当前浏览器会话。结果须人工复核。")

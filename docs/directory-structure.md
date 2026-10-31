@@ -30,6 +30,10 @@ CrossBot/
 └── README.md
 ```
 
+W3 已迁入主入口：`ui/w3_panel.py` 负责页面衔接，`review/access.py` 绑定 A 的服务端会话，
+`storage/integrated_workspace.py` 在同一数据库保存 W3 快照和 Case 投影。
+原 W1/W2 和 GPT 配置保留。使用及迁移边界见 [W3 集成说明](w3-integration.md)。
+
 ## 分支对应关系
 
 | 分支 | 目录 | 负责人 |
