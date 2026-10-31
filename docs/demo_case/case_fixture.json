@@ -1,22 +1,24 @@
 {
-  "schema_version": 1,
-  "data_kind": "synthetic",
-  "source": "docs/plans/project-direction-v3.md#四固定演示案例",
-  "case_number": "CASE-DE-LAMP-001",
-  "product_id": "DEMO-DE-LAMP-001",
-  "name": "USB供电桌面台灯",
-  "material": "ABS",
-  "color_temperature_modes": 3,
-  "destination_country": "Germany",
-  "incoterm": "DAP Frankfurt",
-  "currency": "EUR",
-  "quantity": 500,
-  "unit_price": "18.50",
-  "invoice_total": "9250.00",
-  "cartons": 25,
-  "units_per_carton": 20,
-  "gross_weight_kg": "185",
-  "net_weight_kg": "150",
-  "unknown": ["customer_name", "order_no", "power", "dimensions", "color", "lead_time", "certificate_number", "certification_result", "payment_terms"],
-  "planned_attachments": ["invoice_case_de_lamp_001.pdf", "packing_list_case_de_lamp_001.xlsx", "sales_contract_case_de_lamp_001.pdf", "customer_inquiry_screenshot.png"]
+  "case_id": "CASE-DE-LAMP-001",
+  "product": {
+    "name": "USB desk lamp",
+    "material": "ABS",
+    "power": "USB",
+    "color_temperature_levels": 3,
+    "claims_allowed": ["USB powered", "three color temperature settings"],
+    "claims_forbidden_without_evidence": ["eye protection", "100% safe", "risk-free", "medical benefit"]
+  },
+  "trade": {
+    "customer_country": "Germany",
+    "incoterm": "DAP",
+    "currency": "EUR",
+    "quantity": 500,
+    "unit_price": "18.50",
+    "invoice_total": "9250.00",
+    "packages": 25,
+    "gross_weight_kg": "185",
+    "net_weight_kg": "150"
+  },
+  "documents_required": ["commercial_invoice", "packing_list"],
+  "status": "draft"
 }

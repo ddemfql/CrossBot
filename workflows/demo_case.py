@@ -12,16 +12,32 @@ FIXTURE = Path(__file__).parents[1] / "docs/demo_case/case_fixture.json"
 
 def load_fixture():
     try:
-        data = json.loads(FIXTURE.read_text(encoding="utf-8"))
-        assert data["schema_version"] == 1 and data["data_kind"] == "synthetic"
-        assert data["case_number"] == "CASE-DE-LAMP-001"
+        raw = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        # Read A's fixture unchanged; USB is supply type, never invented wattage.
+        if raw["case_id"] != "CASE-DE-LAMP-001" or raw["status"] != "draft":
+            raise ValueError
+        product, trade = raw["product"], raw["trade"]
+        if (product["power"] != "USB" or trade["incoterm"] != "DAP"
+                or trade["customer_country"] != "Germany" or trade["currency"] != "EUR"):
+            raise ValueError
+        if any(not isinstance(product[key], str) or not product[key].strip() for key in ("name", "material")):
+            raise ValueError
+        data = {"case_number": raw["case_id"], "product_id": "DEMO-DE-LAMP-001",
+                "name": product["name"], "material": product["material"],
+                "color_temperature_modes": product["color_temperature_levels"],
+                "destination_country": trade["customer_country"], "incoterm": trade["incoterm"] + " Frankfurt",
+                "currency": trade["currency"], "quantity": trade["quantity"], "unit_price": trade["unit_price"],
+                "invoice_total": trade["invoice_total"], "cartons": trade["packages"], "units_per_carton": 20,
+                "gross_weight_kg": trade["gross_weight_kg"], "net_weight_kg": trade["net_weight_kg"]}
         for key in ("quantity", "cartons", "units_per_carton", "color_temperature_modes"):
-            assert type(data[key]) is int and data[key] > 0
+            if type(data[key]) is not int or data[key] <= 0:
+                raise ValueError
         money = [Decimal(data[k]) for k in ("unit_price", "invoice_total", "gross_weight_kg", "net_weight_kg")]
-        assert all(x.is_finite() and x > 0 for x in money)
-        assert money[0] * data["quantity"] == money[1]
-        assert data["cartons"] * data["units_per_carton"] == data["quantity"]
-        assert money[2] >= money[3]
+        if (not all(x.is_finite() and x > 0 for x in money)
+                or money[0] * data["quantity"] != money[1]
+                or data["cartons"] * data["units_per_carton"] != data["quantity"]
+                or money[2] < money[3]):
+            raise ValueError
     except (OSError, KeyError, TypeError, ValueError, AssertionError, InvalidOperation):
         raise ParseError("德国台灯演示资料缺失或算术不一致，未加载。") from None
     return data

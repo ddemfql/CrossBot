@@ -14,7 +14,7 @@ from knowledge.retrieval import retrieve_context
 from providers.customer_mock import MockCustomerClient
 from workflows.content_review import review_content
 from workflows.customer_simulator import simulate_customer
-from workflows.demo_case import demo_case, demo_listing_request, demo_sales_request, load_fixture
+from workflows.demo_case import FIXTURE, demo_case, demo_listing_request, demo_sales_request, load_fixture
 from workflows.inquiry_analysis import analyze_inquiry, extract_inquiry_candidates
 from providers.inquiry_mock import MockInquiryClient
 from workflows.sales import build_sales_messages, generate_sales
@@ -42,11 +42,11 @@ class V3Workflows(unittest.TestCase):
         self.assertEqual(w2.platforms, ["Amazon", "TikTok"])
 
     def test_bad_demo_arithmetic_refuses_to_load(self):
-        original = load_fixture()
-        for field, value in [("invoice_total", "9249.99"), ("cartons", 24), ("gross_weight_kg", "140"),
+        original = json.loads(FIXTURE.read_text(encoding="utf-8"))
+        for field, value in [("invoice_total", "9249.99"), ("packages", 24), ("gross_weight_kg", "140"),
                              ("unit_price", "NaN"), ("quantity", True)]:
             with self.subTest(field=field), TemporaryDirectory() as folder:
-                data = deepcopy(original); data[field] = value
+                data = deepcopy(original); data["trade"][field] = value
                 path = Path(folder) / "case.json"
                 path.write_text(json.dumps(data), encoding="utf-8")
                 with patch("workflows.demo_case.FIXTURE", path), self.assertRaises(CrossBotError):
@@ -116,7 +116,9 @@ class V3Workflows(unittest.TestCase):
 
     def test_advisory_checks_cover_original_extra_design_and_new_claims(self):
         for text, expected in [("Compact design", "design_inference"), ("100% safe", "absolute_claim"),
-                               ("cures illness", "medical_claim"), ("CE-certified", "certification_claim")]:
+                               ("cures illness", "medical_claim"), ("CE-certified", "certification_claim"),
+                               ("risk-free", "absolute_claim"), ("eye protection", "evidence_claim"),
+                               ("medical benefit", "medical_claim"), ("护眼", "evidence_claim")]:
             with self.subTest(text=text):
                 self.assertIn(expected, [r.code for r in review_content(text)])
         self.assertEqual(review_content("Please confirm specifications."), [])
