@@ -1,0 +1,10 @@
+# 可选启动配置模板：复制为项目根 .streamlit/config.toml 后生效。
+# ZIP 工作台仍需命令行 --server.port 8503；两个入口不要占用同一端口。
+[server]
+address = "127.0.0.1"
+port = 8502
+headless = true
+maxUploadSize = 200
+
+[browser]
+gatherUsageStats = false

@@ -276,3 +276,10 @@ W1 支持真实询盘、多轮修订和历史，明确下单后建立未确认�
 [真实工作流](docs/real-workflow.md) · [AI 开发约束](AI开发约束.md) · [目录与协作](docs/directory-structure.md) · [公共契约](core/README.md) · [V3 服务](docs/B_V3接入说明.md)
 
 历史文档记录当时状态，当前行为以主入口代码和测试为准。`requirements.txt` 使用版本范围，并非完整锁文件，不同日期可能安装不同依赖版本；升级后应重新执行第 6 节验收。
+
+
+## 10. 可运行作品交付（hackathon-final）
+
+最终提交以 `hackathon-final` Tag 为准。[交付说明](docs/submission/README.md) 汇总完整工程包、[无密钥平台配置导出](docs/submission/platform-config.json)、[Streamlit 配置模板](docs/submission/streamlit-config.toml)、[第三方组件声明](THIRD_PARTY_NOTICES.md) 和 [实际验证环境的依赖清单](docs/submission/third-party-components.json)。工程包内含本 README、全部源码、测试、教程和用户授权的原 ZIP；不含本机账号库或模型 Key。
+
+[下载最终工程源码 ZIP](https://github.com/ddemfql/CrossBot/archive/refs/tags/hackathon-final.zip)，或 clone 后运行 `python docs/submission/package.py` 生成工程包及 SHA-256 清单（使用已安装的 Python 3.12）。解压后按第 1～6 节安装和启动；私有仓库下载需要读取权限。
