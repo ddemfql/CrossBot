@@ -24,3 +24,9 @@ data/
 *.zip
 .idea/
 
+
+# 用户明确授权随教程提交的唯一交易示例包
+!/documents/tester_guide/examples/2026003  已经发货等待收钱(1).zip
+
+# 本地生成的完整工程包及校验清单
+/dist/

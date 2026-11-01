@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "release_tag": "hackathon-final",
+  "description": "CrossBot 可运行作品的无密钥配置快照；不是应用自动读取的配置文件。",
+  "runtime": {
+    "python": "3.12",
+    "requirements": "requirements.txt",
+    "database": "SQLite (Python standard library)",
+    "network_bind": "127.0.0.1"
+  },
+  "main_workbench": {
+    "entrypoint": "app.py",
+    "port": 8502,
+    "environment": {
+      "STORAGE_DIR": "./data"
+    },
+    "administrator_password_min_length": 12
+  },
+  "zip_test_workbench": {
+    "entrypoint": "documents/tester_guide/zip_workbench.py",
+    "port": 8503,
+    "environment": {
+      "CROSSBOT_W3_DATA": "./.w3-data/tester-guide"
+    },
+    "administrator_password_min_length": 10,
+    "separate_accounts_and_data": true
+  },
+  "model_service": {
+    "configuration_mode": "登录主工作台后，在模型服务页面手工设置；不自动导入此 JSON 或 .env。",
+    "base_url": "https://api.tokenhubcloud.net",
+    "protocol": "auto",
+    "model": "gpt-6.1-sol",
+    "api_key": "",
+    "send_business_data_confirmation": false,
+    "timeout_seconds": 60,
+    "automatic_retries": 0,
+    "note": "地址和模型为代码预填值；须自行取得服务账号、权限及额度，可替换为兼容 HTTPS 服务。刷新或退出后重新填写 Key 和确认。"
+  },
+  "knowledge": {
+    "initial_data": "empty",
+    "publish_requires_independent_review": true,
+    "templates": "主工作台产品资料、知识库、风险词库页面下载 JSON 模板。"
+  },
+  "sample": {
+    "path": "documents/tester_guide/examples/2026003  已经发货等待收钱(1).zip",
+    "real_transaction": true,
+    "anonymized": false,
+    "automatic_import": false,
+    "sha256": "c5c40b4a1c20482a4b6c9cc57f450d03062c5b7a8c767f477fda6b5efbfac7b8"
+  },
+  "excluded_state": [
+    "API keys",
+    "passwords",
+    "session tokens",
+    "local databases",
+    "virtual environments",
+    "non-authorized customer uploads"
+  ]
+}
