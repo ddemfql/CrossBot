@@ -116,9 +116,11 @@ def from_ocr_lines(lines, *, lookup=None) -> list[ExtractedField]:
                 continue
             _, candidate, value = min(neighbors, key=lambda row: row[0])
             name = label
-            confidence = min(item.confidence, candidate.confidence)
+            confidence = (min(item.confidence, candidate.confidence)
+                if item.confidence is not None and candidate.confidence is not None else None)
+            score = f"{confidence:.2f}" if confidence is not None else "not provided"
             note = (f"OCR candidate; page {item.page_number}; "
-                    f"confidence {confidence:.2f}; approximate image bounds retained by OCR.")
+                    f"confidence {score}; approximate image bounds retained by OCR.")
             field = _field(name, value, page_number=item.page_number,
                            confidence=confidence, note=note)
             previous = found.get(name)
@@ -127,7 +129,8 @@ def from_ocr_lines(lines, *, lookup=None) -> list[ExtractedField]:
             found.setdefault(name, field)
             continue
         confidence = item.confidence
-        note = (f"OCR candidate; page {item.page_number}; confidence {confidence:.2f}; "
+        score = f"{confidence:.2f}" if confidence is not None else "not provided"
+        note = (f"OCR candidate; page {item.page_number}; confidence {score}; "
                 "需人工复核原件。")
         field = _field(name, value, page_number=item.page_number,
                        confidence=confidence, note=note)
@@ -136,4 +139,3 @@ def from_ocr_lines(lines, *, lookup=None) -> list[ExtractedField]:
             raise ParseError("OCR 对同一标签识别出多个不同值，请人工复核原件。")
         found.setdefault(name, field)
     return list(found.values())
-

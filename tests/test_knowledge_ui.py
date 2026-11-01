@@ -24,11 +24,13 @@ class KnowledgeUI(unittest.TestCase):
         page.radio[0].set_value("W2 多平台Listing生成").run()
         page.text_area(key="listing_description").set_value("DEMO-CUP-001").run()
         page.multiselect(key="listing_platforms").set_value(["Amazon"]).run()
+        page.text_input(key="listing_country").set_value("US").run()
         page.button(key="listing_generate").click().run()
         notes = "\n".join(page.session_state.listing_results["Amazon"].pending_confirmations)
-        self.assertIn("STYLE-AMAZON", notes)
-        self.assertNotIn("STYLE-TIKTOK", notes)
-        self.assertIn("生效未知", notes)
+        self.assertIn("amazon-us-detail-page", notes)
+        self.assertNotIn("tiktok-us-content", notes)
+        self.assertNotIn("模拟引用", notes)
+        self.assertIn("pending_primary_text_verification", notes)
         self.assertFalse(page.exception)
 
 

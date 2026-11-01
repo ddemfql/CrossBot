@@ -1,5 +1,6 @@
 import unittest
 from io import BytesIO
+from pathlib import Path
 
 from PIL import Image, ImageDraw, ImageFont
 
@@ -9,7 +10,10 @@ from documents.ocr import OCRBackend, OCRInputError, RecognizedLine
 def synthetic_text_image() -> bytes:
     image = Image.new("RGB", (1000, 240), "white")
     draw = ImageDraw.Draw(image)
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 48)
+    candidates = (Path("C:/Windows/Fonts/arial.ttf"),
+                  Path("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"))
+    available = next((path for path in candidates if path.is_file()), None)
+    font = ImageFont.truetype(str(available), 48) if available else ImageFont.load_default(size=48)
     draw.text((36, 70), "ORDER NUMBER 12345", font=font, fill="black")
     result = BytesIO()
     image.save(result, format="PNG")
@@ -73,7 +77,7 @@ class OCRTests(unittest.TestCase):
         text = " ".join(line.text.upper() for line in lines)
         self.assertIn("ORDER", text)
         self.assertIn("NUMBER", text)
-        self.assertTrue(all(0 <= line.confidence <= 1 for line in lines))
+        self.assertTrue(all(line.confidence is None or 0 <= line.confidence <= 1 for line in lines))
         self.assertTrue(all(line.bbox[2] > line.bbox[0] and line.bbox[3] > line.bbox[1]
                             for line in lines))
         self.assertTrue(all(line.page_number is None for line in lines))

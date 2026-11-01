@@ -2,6 +2,9 @@
 import streamlit as st
 
 from auth import AuthService
+from auth.browser_session import (
+    app_cookie_name, browser_cookie, queue_cookie, queue_cookie_clear, session_expiry, validated_cookie,
+)
 from core.errors import CrossBotError
 from core.identity import Role
 
@@ -13,8 +16,23 @@ ROLE_LABELS = {
 
 def render_auth_panel(store, *, show_controls=True):
     auth = AuthService(store)
+    name = app_cookie_name(auth)
+    candidate = browser_cookie(name=name)
     token = st.session_state.get("session_token")
+    if not token and candidate:
+        try:
+            validated_cookie(auth, candidate)
+            st.session_state.clear()
+            st.session_state["session_token"] = token = candidate
+            st.rerun()
+        except CrossBotError:
+            st.session_state.clear()
+            queue_cookie_clear(name=name)
+            st.session_state["_auth_notice"] = "登录已失效，请重新登录"
+            st.rerun()
     if not token:
+        if notice := st.session_state.pop("_auth_notice", None):
+            st.warning(notice)
         first = auth.needs_bootstrap()
         st.subheader("创建初始管理员" if first else "登录")
         with st.form("login"):
@@ -25,7 +43,11 @@ def render_auth_panel(store, *, show_controls=True):
             try:
                 if first:
                     auth.bootstrap_admin(username, password)
-                st.session_state["session_token"] = auth.login(username, password)
+                token = auth.login(username, password)
+                expires_at = session_expiry(auth, token)
+                st.session_state.clear()
+                st.session_state["session_token"] = token
+                queue_cookie(token, expires_at, name=name)
                 st.rerun()
             except CrossBotError as error:
                 st.error(str(error))
@@ -34,8 +56,9 @@ def render_auth_panel(store, *, show_controls=True):
         principal = auth.require_session(token)
     except CrossBotError as error:
         st.session_state.clear()
-        st.error(str(error))
-        st.stop()
+        queue_cookie_clear(name=name)
+        st.session_state["_auth_notice"] = "登录已失效，请重新登录"
+        st.rerun()
     if show_controls:
         render_user_controls(auth, token, principal)
     return auth, token, principal
@@ -51,8 +74,13 @@ def render_user_controls(auth, token, principal):
                 st.session_state.pop("selected_case_id", None)
                 st.rerun()
         if st.button("退出登录"):
-            auth.logout(token)
-            st.session_state.clear()
+            try:
+                auth.logout(token)
+            except CrossBotError:
+                pass
+            finally:
+                st.session_state.clear()
+                queue_cookie_clear(name=app_cookie_name(auth))
             st.rerun()
 
 

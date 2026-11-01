@@ -26,6 +26,16 @@ def saved_records():
 
 
 class ExportTests(unittest.TestCase):
+    def test_scoped_export_does_not_read_another_workflow(self):
+        class ListingOnlyState(dict):
+            def get(self, key):
+                if key == "sales_conversation":
+                    raise AssertionError("Another workflow must not be read")
+                return super().get(key)
+        snapshot = business_snapshot(ListingOnlyState(saved_records()), workflow="listing")
+        self.assertIsNone(snapshot["w1"])
+        self.assertIsNotNone(snapshot["w2"])
+
     def test_three_versions_feedback_and_w2_are_preserved_without_config(self):
         state = saved_records()
         before = deepcopy(state)

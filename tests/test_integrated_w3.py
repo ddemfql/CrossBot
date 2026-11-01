@@ -136,11 +136,13 @@ class IntegratedW3Tests(unittest.TestCase):
 
     def test_main_app_exposes_w3_without_second_login_and_persists(self):
         from streamlit.testing.v1 import AppTest
-        with patch("storage.bootstrap.open_store", return_value=self.store):
+        with patch("storage.bootstrap.open_store", return_value=self.store), \
+             patch("ui.auth_panel.browser_cookie", return_value=None), \
+             patch("providers.llm_client.HttpChatClient.complete") as provider:
             app = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=25)
             app.session_state["session_token"] = self.token
             app.session_state["selected_case_id"] = self.case.case_id
-            app.session_state["workbench_environment"] = "真实工作区"
+            app.session_state["workbench_page"] = "cases"
             app.run()
             app.button(key="nav_documents").click().run()
             self.assertFalse(app.exception, [item.message for item in app.exception])
@@ -149,6 +151,15 @@ class IntegratedW3Tests(unittest.TestCase):
             self.assertFalse(app.exception, [item.message for item in app.exception])
             self.assertEqual([tab.label for tab in app.tabs], ["文件分类与查看", "生成与导出"])
             self.assertTrue(self.repo.get(self.case.case_id).case.metadata["w3_workspace"])
+            reloaded = AppTest.from_file(str(Path(__file__).resolve().parents[1] / "app.py"), default_timeout=25)
+            reloaded.session_state["session_token"] = self.token
+            reloaded.session_state["selected_case_id"] = self.case.case_id
+            reloaded.session_state["workbench_page"] = "documents"
+            reloaded.run()
+            self.assertFalse(reloaded.exception, [item.message for item in reloaded.exception])
+            self.assertEqual([tab.label for tab in reloaded.tabs], ["文件分类与查看", "生成与导出"])
+            self.assertEqual(len(self.repo.history(self.case.case_id)), 1)
+            provider.assert_not_called()
 
     def test_shared_case_transition_cannot_bypass_w3_review(self):
         self.initialize()

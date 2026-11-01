@@ -16,11 +16,13 @@ def fields(value, names):
     return {name: deepcopy(to_dict(getattr(value, name))) for name in names}
 
 
-def business_snapshot(state):
+def business_snapshot(state, *, workflow=None):
     """Read exactly three successful-result keys, ignoring current form/configuration values."""
-    conversation = state.get("sales_conversation")
-    listing_request = state.get("listing_request")
-    listing_results = state.get("listing_results")
+    if workflow not in {None, "sales", "listing"}:
+        raise CrossBotError(ErrorCode.INVALID_INPUT, "未知导出工作流")
+    conversation = state.get("sales_conversation") if workflow in {None, "sales"} else None
+    listing_request = state.get("listing_request") if workflow in {None, "listing"} else None
+    listing_results = state.get("listing_results") if workflow in {None, "listing"} else None
     w1 = w2 = None
     try:
         if conversation is not None and conversation.turns:
@@ -48,7 +50,7 @@ def export_bundle(snapshot):
     return {
         "format": "crossbot-business-export", "schema_version": 1,
         "exported_at_utc": datetime.now(timezone.utc).isoformat(),
-        "notice": "仅保存已有业务输入、草稿和引用，不是原始HTTP日志/请求ID/用量；没有记录各版生成时间。知识资料仍为模拟，内容须人工核对。",
+        "notice": "仅保存已有业务输入、草稿和引用，不是原始HTTP日志/请求ID/用量；没有记录各版生成时间。请按各版引用核对来源与适用范围，内容须人工复核。",
         "business_sha256": hashlib.sha256(canonical.encode("utf-8")).hexdigest(),
         **business,
     }

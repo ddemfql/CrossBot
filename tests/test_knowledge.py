@@ -136,10 +136,11 @@ class KnowledgeTests(unittest.TestCase):
         listing_client = Mock(wraps=MockListingClient())
         result = generate_listings(ListingRequest("DEMO-CUP-001", ["TikTok"]), listing_client)
         payload = json.loads(listing_client.complete.call_args.args[0][1]["content"])
-        ids = {x["id"] for x in payload["knowledge_context"]["entries"]}
-        self.assertIn("STYLE-TIKTOK", ids)
-        self.assertNotIn("STYLE-AMAZON", ids)
-        self.assertTrue(any("DEMO-CUP-001" in x for x in result["TikTok"].pending_confirmations))
+        context = payload["knowledge_context"]
+        self.assertEqual(set(context["entries_by_platform"]), {"TikTok"})
+        self.assertEqual(context["entries_by_platform"]["TikTok"], [])
+        self.assertEqual(context["database_status"], "not_connected")
+        self.assertTrue(any("未命中唯一" in note for note in result["TikTok"].pending_confirmations))
 
 
 if __name__ == "__main__":

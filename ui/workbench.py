@@ -7,7 +7,7 @@ from core.identity import Permission
 RESOURCE_PAGES = {"products": "产品资料", "knowledge": "知识库", "risk_terms": "风险词库"}
 PAGE_LABELS = {"cases": "我的 Case", "sales": "起草客户回复", "sales_history": "回复与修订历史",
                "listing": "多平台文案", "listing_history": "文案结果记录", "documents": "交易单证工作台",
-               **RESOURCE_PAGES, "model": "模型服务", "accounts": "账号与岗位", "offline": "断网保底测试"}
+               **RESOURCE_PAGES, "model": "模型服务", "accounts": "账号与岗位"}
 
 
 def apply_theme():
@@ -15,10 +15,10 @@ def apply_theme():
     .stApp {background:#f6f7f4;color:#23352f;}
     [data-testid="stSidebar"] {background:#fff;border-right:1px solid #e1e7e2;}
     .block-container {max-width:1280px;padding-top:4.5rem;}
-    h1 {font-size:1.9rem!important;letter-spacing:-.03em;}
-    h2,h3 {letter-spacing:-.02em;}
-    [data-testid="stExpander"] {background:#fff;border-radius:12px;}
-    [data-testid="stVerticalBlockBorderWrapper"] {border-radius:12px;}
+    h1 {font-size:1.9rem!important;letter-spacing:0;}
+    h2,h3 {letter-spacing:0;}
+    [data-testid="stExpander"] {background:#fff;border-radius:8px;}
+    [data-testid="stVerticalBlockBorderWrapper"] {border-radius:8px;}
     button[kind="primary"] {background:#176e5d!important;border-color:#176e5d!important;}
     button[data-variant="segmented_control"][aria-checked="true"] {background:#edf5ef!important;color:#176e5d!important;border-color:#176e5d!important;}
     [data-testid="stSidebar"] button {text-align:left;}
@@ -43,7 +43,7 @@ def navigate(page):
 
 def render_navigation(principal):
     permissions = ROLE_PERMISSIONS[principal.active_role]
-    permitted = {"cases", "documents", *RESOURCE_PAGES, "model", "accounts", "offline"}
+    permitted = {"cases", "documents", *RESOURCE_PAGES, "model", "accounts"}
     if Permission.W1_GENERATE in permissions:
         permitted.update(("sales", "sales_history"))
     if Permission.W2_GENERATE in permissions:
@@ -56,10 +56,6 @@ def render_navigation(principal):
     with st.sidebar:
         st.markdown('<div class="cb-brand">CrossBot<span style="color:#9fb2a7"> /</span></div>'
                     '<div class="cb-kicker">外贸业务协作工作台</div>', unsafe_allow_html=True)
-        environment = st.segmented_control("工作区域", ["真实工作区", "模拟演示区"],
-                                           default="模拟演示区", key="workbench_environment")
-        if environment is None:
-            environment = "模拟演示区"
         groups = [("Case 协作", ["cases"]), ("W1 · 询盘回复", ["sales", "sales_history"]),
                   ("W2 · 商品文案", ["listing", "listing_history"]),
                   ("W3 · 交易单证", ["documents"]),
@@ -71,11 +67,7 @@ def render_navigation(principal):
                               disabled=target not in permitted,
                               type="primary" if page == target else "secondary",
                               on_click=navigate, args=(target,))
-        st.divider()
-        st.button("断网保底测试", key="nav_offline", width="stretch",
-                  on_click=navigate, args=("offline",))
-        st.caption("独立本地测试 · 不会替代真实业务结果")
-    return page, environment == "模拟演示区"
+    return page, False
 
 
 def render_steps(workflow, case_id):

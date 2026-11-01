@@ -1,6 +1,6 @@
 """Optional CPU OCR for scanned W3 images and PDF pages.
 
-Requires the optional ``rapidocr-onnxruntime`` and ``pypdfium2`` packages.
+Uses RapidOCR when installed, or the local Windows OCR engine as a fallback.
 No OCR content is logged or persisted by this module.
 """
 from __future__ import annotations
@@ -29,7 +29,7 @@ class OCRInputError(ValueError):
 @dataclass(frozen=True, slots=True)
 class RecognizedLine:
     text: str
-    confidence: float
+    confidence: float | None
     bbox: tuple[float, float, float, float]
     page_number: int | None = None
 
@@ -41,7 +41,7 @@ class PDFOCRResult:
 
 
 class OCRBackend:
-    """Lazy-loaded multilingual Chinese/English OCR running on ONNX CPU."""
+    """Lazy local OCR using RapidOCR or the installed Windows language engine."""
 
     def __init__(self):
         self._engine = None
@@ -50,12 +50,15 @@ class OCRBackend:
     @property
     def available(self) -> bool:
         try:
-            from rapidocr_onnxruntime import RapidOCR  # noqa: F401
-            import pypdfium2  # noqa: F401
             from PIL import Image  # noqa: F401
-            return True
         except ImportError:
             return False
+        try:
+            from rapidocr_onnxruntime import RapidOCR  # noqa: F401
+            return True
+        except ImportError:
+            from providers.windows_ocr import WindowsOCREngine
+            return WindowsOCREngine.available()
 
     def _get_engine(self):
         with self._lock:
@@ -63,9 +66,13 @@ class OCRBackend:
                 try:
                     from rapidocr_onnxruntime import RapidOCR
                 except ImportError as exc:
-                    raise OCRUnavailableError(
-                        "Install the optional rapidocr-onnxruntime OCR dependency."
-                    ) from exc
+                    from providers.windows_ocr import WindowsOCREngine
+                    if not WindowsOCREngine.available():
+                        raise OCRUnavailableError(
+                            "Install RapidOCR or enable a local Windows OCR language."
+                        ) from exc
+                    self._engine = WindowsOCREngine()
+                    return self._engine
                 # RapidOCR uses the bundled PP-OCR model files and ONNX CPU runtime.
                 self._engine = RapidOCR()
             return self._engine
@@ -120,7 +127,7 @@ class OCRBackend:
                 if len(points) < 4:
                     continue
                 xs, ys = zip(*points)
-                score = max(0.0, min(1.0, float(confidence)))
+                score = None if confidence is None else max(0.0, min(1.0, float(confidence)))
                 lines.append(RecognizedLine(clean, score,
                     (min(xs), min(ys), max(xs), max(ys)), page_number))
             except OCRInputError:
@@ -146,7 +153,7 @@ class OCRBackend:
             raise
         except ImportError as exc:
             raise OCRUnavailableError(
-                "Install pypdf, pypdfium2, Pillow and rapidocr-onnxruntime for PDF OCR."
+                "Install pypdf, pypdfium2 and Pillow, and enable a local OCR backend."
             ) from exc
         except Exception as exc:
             raise OCRInputError("PDF data is invalid or unsupported.") from exc
@@ -206,9 +213,9 @@ class OCRBackend:
                 if len(points) < 4:
                     continue
                 xs, ys = zip(*points)
-                lines.append(RecognizedLine(clean, max(0.0, min(1.0, float(confidence))),
+                score = None if confidence is None else max(0.0, min(1.0, float(confidence)))
+                lines.append(RecognizedLine(clean, score,
                     (min(xs), min(ys), max(xs), max(ys)), page_number))
             except (TypeError, ValueError, IndexError):
                 continue
         return lines
-

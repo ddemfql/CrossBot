@@ -75,6 +75,24 @@ class ListingUI(unittest.TestCase):
             self.assertTrue(page.error)
             complete.assert_not_called()
 
+    def test_revision_rechecks_platform_rules_and_failure_preserves_last_success(self):
+        page = self.page()
+        page.multiselect(key="listing_platforms").set_value(["Amazon"]).run()
+        page.text_input(key="listing_country").set_value("US").run()
+        page.button(key="listing_generate").click().run()
+        feedback = next(item for item in page.text_area if item.label == "修改要求")
+        feedback.set_value("Make it shorter").run()
+        with patch("workflows.listing_ui.MockListingClient.complete", return_value='{"listings":{"Amazon":"Contact us at https://example.invalid"}}'):
+            page.button(key="listing_revise").click().run()
+        self.assertFalse(page.exception)
+        revised = page.session_state.listing_results
+        self.assertTrue(any(risk.code == "amazon_contact_link" for risk in revised["Amazon"].risks))
+        with patch("workflows.listing_ui.MockListingClient.complete", return_value='{"listings":{"TikTok":"wrong platform"}}'):
+            page.button(key="listing_revise").click().run()
+        self.assertFalse(page.exception)
+        self.assertTrue(page.error)
+        self.assertEqual(page.session_state.listing_results, revised)
+
 
 if __name__ == "__main__":
     unittest.main()

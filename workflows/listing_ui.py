@@ -5,8 +5,7 @@ import streamlit as st
 from core.errors import CrossBotError
 from core.schemas import ListingRequest
 from providers.listing_mock import MockListingClient
-from workflows.listing import PLATFORM_STYLES, generate_listings
-from knowledge.ui import render_knowledge_preview
+from workflows.listing import PLATFORM_STYLES, generate_listings, revise_listings, listing_knowledge_context
 from core.config import AppConfig
 from providers.llm_client import HttpChatClient
 from workflows.demo_case import demo_listing_request
@@ -50,7 +49,23 @@ def render_listing(config=None, ready=True, *, case_id=None, generation_service=
             language = columns[0].selectbox("文案输出语言", ["英文", "德文", "中文"], key="listing_language",
                             help="决定标题、卖点和描述的语言，与产品资料原文及目标市场无关。模拟模式不执行翻译。")
             country = columns[1].text_input("目标市场（可留空）", key="listing_country")
-        render_knowledge_preview(description, platforms=platforms, country=country.strip() or None)
+        with st.expander("已发布知识与平台规则（当前输入）"):
+            try:
+                auth = generation_service.auth if generation_service is not None else None
+                if auth is not None and case_id:
+                    from core.identity import Permission
+                    auth.require_permission(auth_token, Permission.CASE_READ, case_id)
+                preview = listing_knowledge_context(
+                    ListingRequest(description, list(platforms), country.strip() or None, language),
+                    auth=auth, auth_token=auth_token)
+            except CrossBotError as error:
+                st.error(error.message)
+            else:
+                if preview["database_status"] == "not_connected":
+                    st.caption("未接入授权数据库；产品知识未知。")
+                if preview["product_status"] == "unknown":
+                    st.caption("未命中唯一的已发布产品，产品事实待确认。")
+                st.json(preview)
         if step == 1:
             st.button("下一步 · 生成文案", key="listing_next", disabled=not platforms, on_click=_next_step)
             return
@@ -89,6 +104,18 @@ def render_listing(config=None, ready=True, *, case_id=None, generation_service=
         return
     with st.expander("核对本次结构化输入"):
         st.json(saved.to_dict())
+    if current == previous:
+        feedback_key = f"listing_feedback_{case_id or 'local'}_{saved.correlation_id}"
+        feedback = st.text_area("修改要求", key=feedback_key)
+        if st.button(f"修订所选平台文案（{mode}）", key="listing_revise", disabled=not ready or not feedback.strip()):
+            try:
+                client = MockListingClient() if config.mock_mode else HttpChatClient(config, json_mode=True)
+                revised = revise_listings(saved, st.session_state.listing_results, feedback, client,
+                                          generation_service=generation_service, auth_token=auth_token)
+            except CrossBotError as error:
+                st.error(error.message)
+            else:
+                st.session_state.listing_results = revised
     for platform, response in st.session_state.listing_results.items():
         label = "模拟结果" if response.provider == "mock" else "真实模型结果" if response.provider == "real" else "未标注来源"
         st.subheader(f"{platform} · {label}")

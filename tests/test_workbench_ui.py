@@ -10,15 +10,16 @@ from streamlit.testing.v1 import AppTest
 
 from auth import AuthService
 from auth.cases import CaseAccessService
-from core.errors import CrossBotError
+from core.errors import CrossBotError, ErrorCode
 from core.identity import Role
-from core.models import Case
+from core.models import Case, CaseStatus
 from core.v3 import LifecycleStatus, ResourceKind, SourceKind
 from knowledge.governance import KnowledgeService
 from storage.blobs import LocalBlobStore
-from storage.bootstrap import DEMO_ID, import_demo_case
+from storage.bootstrap import import_demo_case
 from storage.sqlite_store import SQLiteStore
 from ui.resources_panel import SAMPLES, parse_upload, save_upload_draft
+from workflows.inquiry import InquiryService
 
 APP = Path(__file__).resolve().parents[1] / "app.py"
 PASSWORD = "synthetic-ui-password-123"
@@ -38,14 +39,36 @@ class WorkbenchUI(unittest.TestCase):
         self.patcher = patch("storage.bootstrap.open_store", return_value=self.store)
         self.patcher.start()
         self.addCleanup(self.patcher.stop)
+        for target in ("ui.auth_panel.browser_cookie", "providers.llm_client.HttpChatClient.complete"):
+            patcher = patch(target, return_value=None)
+            mocked = patcher.start()
+            self.addCleanup(patcher.stop)
+            if target.endswith("complete"):
+                self.provider = mocked
+                self.provider.return_value = '{"reply":"Synthetic reply", "fields":{}}'
 
-    def page(self, *, real=False, route=None, token=None):
+    def page(self, *, route=None, token=None):
         app = AppTest.from_file(str(APP), default_timeout=20)
         app.session_state["session_token"] = token or self.token
-        app.session_state["workbench_environment"] = "真实工作区" if real else "模拟演示区"
         if route:
             app.session_state["workbench_page"] = route
         return app.run()
+
+    def configure_provider(self, page):
+        page.button(key="nav_model").click().run()
+        page.text_input(key="provider_url").input("https://provider.invalid").run()
+        page.text_input(key="provider_key").input("synthetic-not-a-real-key").run()
+        page.checkbox(key="provider_confirm").check().run()
+        page.button(key="nav_sales").click().run()
+        self.assertFalse(page.exception)
+        return page
+
+    def submit(self, page, text):
+        page.text_area(key="inquiry_customer_text").input(text)
+        next(button for button in page.button if button.label == "保存并生成回复").click().run()
+        self.assertFalse(page.exception)
+        self.assertFalse(page.error)
+        return page.session_state["active_inquiry"]
 
     @staticmethod
     def upload(kind, *, resource_id="resource-001"):
@@ -73,7 +96,7 @@ class WorkbenchUI(unittest.TestCase):
             with self.subTest(kind=kind):
                 uploaded = self.upload(kind, resource_id=f"{kind.value}-test")
                 with patch("ui.resources_panel.st.file_uploader", return_value=uploaded):
-                    page = self.page(real=True, route=route)
+                    page = self.page(route=route)
                     self.assertFalse(page.exception)
                     next(item for item in page.text_input if item.label == "内容来源（必填）").input("Synthetic verified source")
                     next(item for item in page.button if item.label.startswith("保存到")).click().run()
@@ -120,7 +143,7 @@ class WorkbenchUI(unittest.TestCase):
     def test_reader_cannot_upload_even_with_forged_ui_request(self):
         user = self.auth.create_user(self.token, "reader", PASSWORD, "Reader", [Role.CUSTOMER_SERVICE])
         token = self.auth.login(user.username, PASSWORD)
-        page = self.page(real=True, route="products", token=token)
+        page = self.page(route="products", token=token)
         self.assertFalse(page.exception)
         self.assertFalse(page.get("file_uploader"))
         with self.assertRaises(CrossBotError):
@@ -128,52 +151,137 @@ class WorkbenchUI(unittest.TestCase):
                 resource_id="forged", content={"name": "Lamp"}, source="Synthetic", raw=b"raw", filename="a.json")
         self.assertFalse(list(self.blobs.root.iterdir()))
 
-    def test_real_and_demo_inputs_and_tools_are_isolated(self):
-        import_demo_case(self.store)
-        real = Case(case_number="REAL-UI", customer_name="Synthetic real-mode buyer", destination_country="DE")
+    def test_real_only_navigation_requires_confirmation_and_hides_demo_cases(self):
+        demo = import_demo_case(self.store)
+        real = Case(case_number="REAL-UI", customer_name="Synthetic buyer", destination_country="DE")
         CaseAccessService(self.auth).create_case(self.token, real)
-        with patch("providers.llm_client.HttpChatClient.complete") as network:
-            page = self.page(real=True)
-            self.assertEqual(page.session_state["selected_case_id"], real.case_id)
-            self.assertEqual(page.text_area(key="sales_inquiry").value, "")
-            self.assertNotIn("sales_demo", [item.key for item in page.button])
-            self.assertNotIn("customer_generate", [item.key for item in page.button])
-            page.text_area(key="sales_inquiry").input("Real input retained")
-            page.button(key="sales_next").click().run()
-            self.assertTrue(page.button(key="sales_generate").disabled)
-            page.session_state["workbench_environment"] = "模拟演示区"
-            page.run()
-            self.assertEqual(page.session_state["selected_case_id"], DEMO_ID)
-            self.assertIn("sales_demo", [item.key for item in page.button])
-            page.session_state["workbench_environment"] = "真实工作区"
-            page.run()
-            self.assertEqual(page.text_area(key="sales_inquiry").value, "Real input retained")
-            page.button(key="nav_cases").click().run()
-            self.assertNotIn("import_demo", [item.key for item in page.button])
-            network.assert_not_called()
-
-    def test_steps_and_other_pages_preserve_inputs_language_and_versions(self):
-        import_demo_case(self.store)
         page = self.page()
-        page.text_area(key="sales_inquiry").input("Need 500 lamps")
-        page.selectbox(key="sales_language").select("德文")
-        page.button(key="sales_next").click().run()
-        page.button(key="sales_generate").click().run()
         self.assertFalse(page.exception)
-        page.button(key="nav_knowledge").click().run()
+        self.assertFalse(any(widget.label == "当前 Case" for widget in page.selectbox))
+        self.assertTrue(next(button for button in page.button if button.label == "保存并生成回复").disabled)
+        page.button(key="nav_model").click().run()
+        page.text_input(key="provider_key").input("synthetic-not-a-real-key").run()
         page.button(key="nav_sales").click().run()
-        page.button(key="sales_step_1").click().run()
-        self.assertEqual(page.text_area(key="sales_inquiry").value, "Need 500 lamps")
-        self.assertEqual(page.selectbox(key="sales_language").value, "德文")
-        page.button(key="sales_demo").click().run()
-        self.assertEqual(page.selectbox(key="sales_language").value, "德文")
-        self.assertEqual(len(page.session_state["sales_conversation"].turns), 1)
-        page.button(key="sales_step_3").click().run()
+        self.assertTrue(next(button for button in page.button if button.label == "保存并生成回复").disabled)
+        self.assertNotIn("workbench_environment", [widget.key for widget in page.radio])
+        self.assertNotIn("nav_offline", [button.key for button in page.button])
+        self.assertNotIn("sales_demo", [button.key for button in page.button])
+        self.assertNotIn("customer_generate", [button.key for button in page.button])
+        page.button(key="nav_cases").click().run()
+        selector = next(widget for widget in page.selectbox if widget.label == "当前 Case")
+        self.assertEqual(selector.value, real.case_id)
+        self.assertFalse(any(demo.case_number in option for option in selector.options))
+        self.assertNotIn("import_demo", [button.key for button in page.button])
+        self.assertNotIn("import_animal_lamp_demo", [button.key for button in page.button])
+        self.provider.assert_not_called()
+
+    def test_other_pages_and_inquiry_selector_preserve_language_product_and_versions(self):
+        product = self.service.create_draft(self.token, resource_id="synthetic-lamp", kind=ResourceKind.PRODUCT,
+            content={"name": "Synthetic lamp", "sku": "SYN-001"}, source="Synthetic verified source")
+        self.service.submit(self.token, product.version_id)
+        reviewer = self.auth.create_user(self.token, "resource-reviewer", PASSWORD, "Reviewer", [Role.REVIEWER])
+        reviewer_token = self.auth.login(reviewer.username, PASSWORD)
+        self.service.review(reviewer_token, product.version_id, approve=True, reason="Synthetic source verified")
+        self.service.publish(self.token, product.version_id)
+        draft = self.service.create_draft(self.token, resource_id="unpublished-lamp", kind=ResourceKind.PRODUCT,
+            content={"name": "Unpublished lamp"}, source="Synthetic draft source")
+        page = self.configure_provider(self.page())
+        self.assertEqual(page.selectbox(key="inquiry_product").options,
+                         ["按询盘关键词检索", "Synthetic lamp · SYN-001"])
+        page.selectbox(key="inquiry_product").set_value(product.resource_id)
+        page.selectbox(key="inquiry_language").select("德文")
+        inquiry_id = self.submit(page, "Need 500 synthetic lamps")
+        inquiry = InquiryService(self.auth).get(self.token, inquiry_id)
+        self.assertEqual(inquiry.target_language, "德文")
+        self.assertEqual(inquiry.product_resource_id, product.resource_id)
+        self.assertEqual(inquiry.citations[0]["version_id"], product.version_id)
+        self.assertNotIn(draft.version_id, [citation["version_id"] for citation in inquiry.citations])
+        payload = json.loads(self.provider.call_args.args[0][1]["content"])
+        self.assertEqual(payload["target_language"], "德文")
+        page.button(key="nav_knowledge").click().run()
+        page.button(key="nav_sales_history").click().run()
+        page.selectbox(key="active_inquiry").set_value(inquiry_id).run()
+        self.assertFalse(page.exception)
         self.assertTrue(page.get("download_button"))
-        self.assertEqual(page.session_state["sales_conversation"].request.inquiry, "Need 500 lamps")
+        self.assertIn("Need 500 synthetic lamps", [item.value for item in page.markdown])
+        page.button(key="nav_sales").click().run()
+        page.selectbox(key="active_inquiry").set_value(None).run()
+        second_id = self.submit(page, "A separate inquiry")
+        self.assertNotEqual(second_id, inquiry_id)
+        page.selectbox(key="active_inquiry").set_value(inquiry_id).run()
+        page.text_area(key="inquiry_revision_text").input("Make it shorter")
+        self.provider.return_value = '{"reply":"Short revised reply", "fields":{}}'
+        next(button for button in page.button if button.label == "生成修改稿").click().run()
+        self.assertFalse(page.exception)
+        inquiry = InquiryService(self.auth).get(self.token, inquiry_id)
+        self.assertEqual([message["role"] for message in inquiry.messages], ["user", "assistant", "assistant"])
+        self.assertEqual(inquiry.messages[-1]["revision_instruction"], "Make it shorter")
+        self.assertEqual(inquiry.messages[-1]["content"], "Short revised reply")
+        self.assertEqual(len(InquiryService(self.auth).get(self.token, second_id).messages), 2)
+        self.assertFalse(self.store.list_cases())
+
+    def test_generation_failure_preserves_message_across_pages_and_retry(self):
+        page = self.configure_provider(self.page())
+        self.provider.side_effect = CrossBotError(ErrorCode.PROVIDER_TIMEOUT, "Synthetic provider timeout", retryable=True)
+        page.text_area(key="inquiry_customer_text").input("Please quote 500 lamps")
+        next(button for button in page.button if button.label == "保存并生成回复").click().run()
+        self.assertFalse(page.exception)
+        self.assertIn("Synthetic provider timeout", [item.value for item in page.error])
+        inquiry_id = page.session_state["active_inquiry"]
+        inquiry = InquiryService(self.auth).get(self.token, inquiry_id)
+        self.assertTrue(inquiry.awaiting_reply)
+        self.assertEqual([message["content"] for message in inquiry.messages], ["Please quote 500 lamps"])
+        page.button(key="nav_products").click().run()
+        page.button(key="nav_sales").click().run()
+        page.selectbox(key="active_inquiry").set_value(inquiry_id).run()
+        self.assertTrue(page.button(key="inquiry_retry"))
+        self.provider.side_effect = None
+        page.button(key="inquiry_retry").click().run()
+        self.assertFalse(page.exception)
+        self.assertFalse(page.error)
+        inquiry = InquiryService(self.auth).get(self.token, inquiry_id)
+        self.assertEqual([message["role"] for message in inquiry.messages], ["user", "assistant"])
+        self.assertFalse(inquiry.awaiting_reply)
+        self.assertEqual(self.provider.call_count, 2)
+        self.assertFalse(self.store.list_cases())
+
+    def test_explicit_order_hands_off_one_unconfirmed_case_to_w3(self):
+        other = Case(case_number="OTHER-UI", customer_name="Other synthetic buyer", destination_country="DE")
+        CaseAccessService(self.auth).create_case(self.token, other)
+        text = "We confirm the order: 500 lamps, buyer Synthetic GmbH, destination Germany."
+        self.provider.return_value = json.dumps({"reply": "Hello. Your order draft awaits review.", "fields": {
+            "quantity": {"value": "500", "evidence": text},
+            "buyer": {"value": "Synthetic GmbH", "evidence": text},
+            "destination_country": {"value": "Germany", "evidence": text}}})
+        page = self.configure_provider(self.page())
+        inquiry_id = self.submit(page, text)
+        inquiry = InquiryService(self.auth).get(self.token, inquiry_id)
+        case = CaseAccessService(self.auth).get_case(self.token, inquiry.case_id)
+        self.assertEqual(case.status, CaseStatus.DRAFT)
+        self.assertEqual(case.customer_name, "Synthetic GmbH")
+        draft = case.metadata["w1_order_draft"]
+        self.assertEqual(draft["messages"][0]["content"], text)
+        self.assertEqual(draft["fields"]["quantity"]["value"], "500")
+        self.assertTrue(all(not field["confirmed"] for field in draft["fields"].values()))
+        page.button(key="inquiry_open_case").click().run()
+        self.assertFalse(page.exception)
+        self.assertEqual(page.session_state["selected_case_id"], case.case_id)
+        self.assertEqual(page.session_state["workbench_page"], "documents")
+        selector = next(widget for widget in page.selectbox if widget.label == "当前 Case")
+        self.assertEqual(selector.value, case.case_id)
+        self.assertIn("OTHER-UI · Other synthetic buyer", selector.options)
+        next(button for button in page.button if button.label == "启用 W3 单证工作台").click().run()
+        self.assertFalse(page.exception)
+        self.assertTrue(self.store.get_case(case.case_id).metadata["w3_workspace"])
+        page.button(key="nav_sales").click().run()
+        page.selectbox(key="active_inquiry").set_value(inquiry_id).run()
+        page.button(key="inquiry_open_case").click().run()
+        self.assertFalse(page.exception)
+        self.assertEqual(len(self.store.list_cases()), 2)
+        self.assertEqual(self.provider.call_count, 1)
 
     def test_settings_survive_page_navigation_and_no_api_test_in_real_mode(self):
-        page = self.page(real=True, route="model")
+        page = self.page(route="model")
         page.text_input(key="provider_key").input("synthetic-not-a-real-key").run()
         page.checkbox(key="provider_confirm").check().run()
         page.button(key="nav_products").click().run()
@@ -182,17 +290,15 @@ class WorkbenchUI(unittest.TestCase):
         self.assertTrue(page.checkbox(key="provider_confirm").value)
         self.assertNotIn("provider_test", [item.key for item in page.button])
 
-    def test_offline_fallback_needs_no_case_and_never_writes_business_state(self):
-        with patch("providers.llm_client.HttpChatClient.complete") as network:
-            page = self.page(real=True, route="offline")
-            page.button(key="offline_sales").click().run()
-            page.button(key="offline_listing").click().run()
-            self.assertFalse(page.exception)
-            self.assertFalse(page.error)
-            self.assertEqual(page.session_state["offline_sales_result"].turns[0].response.provider, "mock")
-            self.assertFalse(self.store.list_cases())
-            self.assertNotIn("sales_conversation", page.session_state)
-            network.assert_not_called()
+    def test_removed_offline_route_falls_back_without_generation_or_business_state(self):
+        page = self.page(route="offline")
+        self.assertFalse(page.exception)
+        self.assertNotEqual(page.session_state["workbench_page"], "offline")
+        self.assertNotIn("offline_sales", [button.key for button in page.button])
+        self.assertNotIn("offline_listing", [button.key for button in page.button])
+        self.assertFalse(self.store.list_cases())
+        self.assertFalse(InquiryService(self.auth).list(self.token))
+        self.provider.assert_not_called()
 
 
 if __name__ == "__main__":

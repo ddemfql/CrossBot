@@ -4,12 +4,13 @@ from core.errors import CrossBotError
 from workflows.exports import business_snapshot, export_bundle, json_bytes, text_bytes
 
 
-def render_downloads():
+def render_downloads(*, workflow=None):
     st.divider()
-    st.subheader("备份与下载（已有成功记录）")
-    st.caption("只导出已保存的W1历史和W2结果，不调用模型，不包含密钥或模型设置。输入框的新改动不会覆盖历史。")
+    st.subheader("导出文案" if workflow == "listing" else "备份与下载（已有成功记录）")
+    if workflow is None:
+        st.caption("只导出已保存的W1历史和W2结果，不调用模型，不包含密钥或模型设置。输入框的新改动不会覆盖历史。")
     try:
-        snapshot = business_snapshot(st.session_state)
+        snapshot = business_snapshot(st.session_state, workflow=workflow)
         if snapshot["w1"] is None and snapshot["w2"] is None:
             st.caption("当前没有成功记录可下载。")
             return
