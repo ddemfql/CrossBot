@@ -1,0 +1,29 @@
+{
+  "checked_on": "2026-10-30",
+  "pages": 1,
+  "size_mm": [
+    800,
+    1800
+  ],
+  "sha256": "637b232e3af8b57365788a7e85c74f8579ca2a4bc712adcdec62ccc3e0df4f0a",
+  "embedded_font_subsets": [
+    {
+      "font": "/AAAAAA+MicrosoftYaHei-0",
+      "embedded": true
+    },
+    {
+      "font": "/AAAAAB+MicrosoftYaHei-0",
+      "embedded": true
+    },
+    {
+      "font": "/AAAAAA+MicrosoftYaHei-Bold-0",
+      "embedded": true
+    }
+  ],
+  "visual_review": "Poppler full-page PNG checked; no clipping or overlap observed",
+  "preview_pixels": [
+    1067,
+    2400
+  ],
+  "print_proof": "Not physically printed; PDF uses vector text, PNG is screen preview"
+}

@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "purpose": "Review snapshot; not loaded by the app and not a hosted-platform import format",
+  "configuration_basis": "Current local source, not a capture of a running session",
+  "entrypoint": "local_lab/app.py",
+  "launcher": "start-local.cmd",
+  "endpoint": "https://api.deepseek.com/chat/completions",
+  "model": "deepseek-flash",
+  "credential_handling": "Entered by user in local masked UI; credential value is not read or exported",
+  "generation": {
+    "parameters": {
+      "stream": false,
+      "thinking": {
+        "type": "disabled"
+      },
+      "max_tokens": 1800,
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "timeout_seconds": 60,
+    "prompt_file": "generation-system-prompt.txt",
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "english_reply": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "English Reply",
+          "type": "string"
+        },
+        "chinese_checklist": {
+          "maxLength": 12000,
+          "minLength": 1,
+          "title": "Chinese Checklist",
+          "type": "string"
+        }
+      },
+      "required": [
+        "english_reply",
+        "chinese_checklist"
+      ],
+      "title": "Draft",
+      "type": "object"
+    }
+  },
+  "interpretation": {
+    "parameters": {
+      "thinking": {
+        "type": "disabled"
+      },
+      "stream": false,
+      "max_tokens": 700,
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "timeout_seconds": 60,
+    "prompt_file": "interpretation-system-prompt.txt",
+    "output_schema": {
+      "additionalProperties": false,
+      "properties": {
+        "quantity": {
+          "anyOf": [
+            {
+              "maximum": 1000000,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Quantity"
+        },
+        "payment_terms": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Payment Terms"
+        },
+        "clarification": {
+          "maxLength": 1000,
+          "title": "Clarification",
+          "type": "string"
+        },
+        "unsupported": {
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 10,
+          "title": "Unsupported",
+          "type": "array"
+        }
+      },
+      "required": [
+        "clarification",
+        "unsupported"
+      ],
+      "title": "ChangeProposal",
+      "type": "object"
+    }
+  },
+  "sources": [
+    {
+      "path": "start-local.cmd",
+      "sha256": "1fd6c02741239761badd6031c43e7786a6a625ade73339c648288637caab119d"
+    },
+    {
+      "path": "requirements-lock.txt",
+      "sha256": "0fb040d45f9d9bfd6bd427aa77030847f34c96f1da5ae7ac3bcc16589a3bc5d0"
+    },
+    {
+      "path": "local_lab/app.py",
+      "sha256": "94d10409942796a3a7ed60754f19418e4c92ceecedab5c65d23b93335d87ae20"
+    },
+    {
+      "path": "local_lab/deepseek_client.py",
+      "sha256": "ab9ef1a73bf3d5cad7bfcef6474455aeb7a8913edfd40a3523aa2945877ee154"
+    },
+    {
+      "path": "local_lab/dialogue.py",
+      "sha256": "f29b518c2c2d87854b70f4da9bd4097233f6e921a3cde9231fb38acedd6f6c57"
+    },
+    {
+      "path": "local_lab/dialogue_panel.py",
+      "sha256": "974b4b26daaf018e10ca097b51756e9f1fef626992a56ddf7f654a703aab9f00"
+    },
+    {
+      "path": "local_lab/revisions.py",
+      "sha256": "c2f74c254c83961901a75d934154b9a37d907d000006db8a65993b9cbadce077"
+    },
+    {
+      "path": "local_lab/revision_panel.py",
+      "sha256": "4976d3c7f04be657ef7f1009712187235c63674bd9534dbcf3674ccb5de38d41"
+    },
+    {
+      "path": "local_lab/history_recovery.py",
+      "sha256": "1c92d46e34bcd021453fbe0bac52dae9a07f41695dc02bdd7dd4f31861b04a37"
+    },
+    {
+      "path": "local_lab/rfq_check.py",
+      "sha256": "103bcf997fd10707c406f36e0b6bad24ea2339afb3037f7dfbc09890f0ab4c84"
+    },
+    {
+      "path": "local_lab/check_report.py",
+      "sha256": "fce130966ac577525203abcf22f75bf3cc9345dcc157794a26debcea2ab05ee4"
+    },
+    {
+      "path": "local_lab/payment_ratio.py",
+      "sha256": "72a759ffb313b81e42b6f20a1d23b2c08d6f2f641f8c10cb03f52f1b6c8f1521"
+    },
+    {
+      "path": "local_lab/payment_wording.py",
+      "sha256": "aa0c67a573e9c4038a819a6785b3ba4035321f31a0d1962eaa10fb720d075b3d"
+    },
+    {
+      "path": "local_lab/catalog.py",
+      "sha256": "cc42c286a17ff5d6812b7199d6e273c0694e20c3791291f32e82d3abd3c79b5e"
+    },
+    {
+      "path": "local_lab/quotation.py",
+      "sha256": "3b6d0ffdf2fa8d6a75ca1b5a4d50172284cc5ce45674e239af8fd51d0629086d"
+    },
+    {
+      "path": "planning/fixtures/products.json",
+      "sha256": "d4ed5781bac77300b22651da90bb51fc99eaaf45e64cdf9f982096502c318cfe"
+    },
+    {
+      "path": "local_lab/rules/rfq-material.json",
+      "sha256": "c5f550cae8dc2154b719549382ea2848f8270c5c949c32162bf63027092fa259"
+    },
+    {
+      "path": "local_lab/rules/payment-wording.json",
+      "sha256": "68bfee1e6d0ef36b392c8cead22e131c356ea213c730f82e215d0dce22bb3c36"
+    }
+  ]
+}
