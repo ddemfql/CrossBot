@@ -11,3 +11,16 @@ __pycache__/
 # 系统文件
 .DS_Store
 Thumbs.db
+data/
+*.db
+*.sqlite
+*.db-wal
+*.db-shm
+*.sqlite3
+.w3-data/
+/outputs/
+/tests/fixtures/real_transaction_*.json
+/scripts/build_real_w3_demo.py
+*.zip
+.idea/
+

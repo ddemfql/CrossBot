@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "DEMO-LAMP-001",
+      "type": "product",
+      "content": "模拟USB台灯：ABS材质、白色；仅为练习设定，非真实供应商资料。",
+      "facts": {
+        "material": "ABS",
+        "color": "白色",
+        "certifications": null,
+        "price": null,
+        "lead_time": null
+      },
+      "data_kind": "synthetic",
+      "source": {
+        "title": "CrossBot项目自建模拟资料",
+        "path": "knowledge/README.md",
+        "kind": "synthetic",
+        "official": false
+      },
+      "version": "demo-1",
+      "effective_from": null,
+      "effective_until": null,
+      "applicable_product_skus": [
+        "DEMO-LAMP-001"
+      ],
+      "applicable_platforms": [],
+      "applicable_countries": []
+    },
+    {
+      "id": "DEMO-CUP-001",
+      "type": "product",
+      "content": "模拟咖啡杯：316不锈钢、350ml；保温时长未经验证。",
+      "facts": {
+        "material": "316不锈钢",
+        "capacity": "350ml",
+        "certifications": null,
+        "price": null,
+        "lead_time": null
+      },
+      "data_kind": "synthetic",
+      "source": {
+        "title": "CrossBot项目自建模拟资料",
+        "path": "knowledge/README.md",
+        "kind": "synthetic",
+        "official": false
+      },
+      "version": "demo-1",
+      "effective_from": null,
+      "effective_until": null,
+      "applicable_product_skus": [
+        "DEMO-CUP-001"
+      ],
+      "applicable_platforms": [],
+      "applicable_countries": []
+    }
+  ]
+}

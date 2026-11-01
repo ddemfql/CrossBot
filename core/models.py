@@ -1,0 +1,732 @@
+﻿"""Shared domain models for workflow, document, review, and validation layers."""
+from __future__ import annotations
+from dataclasses import asdict, dataclass, field, is_dataclass
+from datetime import datetime, timezone
+from decimal import Decimal
+from enum import Enum
+from typing import Any, Mapping, Union, get_args, get_origin, get_type_hints
+import types
+from uuid import uuid4
+
+def utc_now() -> datetime:
+    return datetime.now(timezone.utc)
+
+def new_id(prefix: str) -> str:
+    return f"{prefix}_{uuid4().hex}"
+
+class CaseStatus(str, Enum):
+    DRAFT = "draft"
+    MISSING_DOCUMENTS = "missing_documents"
+    PARSING = "parsing"
+    PENDING_REVIEW = "pending_review"
+    REVIEW_RETURNED = "review_returned"
+    CROSS_CHECK_FAILED = "cross_check_failed"
+    PASSED = "passed"
+    CLOSED = "closed"
+
+class DocumentType(str, Enum):
+    QUOTATION = "quotation"
+    ORDER_CONFIRMATION = "order_confirmation"
+    PRODUCTION_ORDER = "production_order"
+    INSPECTION_RECORD = "inspection_record"
+    PACKAGING_ARTWORK = "packaging_artwork"
+    BOOKING_REQUEST = "booking_request"
+    CUSTOMS_WORKSHEET = "customs_worksheet"
+    PAYMENT_NOTICE = "payment_notice"
+    STATEMENT_OF_ACCOUNT = "statement_of_account"
+    COMPLIANCE_DRAFT = "compliance_draft"
+    ISF_WORKSHEET = "isf_worksheet"
+    COMBINED_INVOICE_PACKING_LIST = "combined_invoice_packing_list"
+    AIR_WAYBILL = "air_waybill"
+    CERTIFICATE_OF_ORIGIN = "certificate_of_origin"
+    INSURANCE_POLICY = "insurance_policy"
+    BANK_RECEIPT = "bank_receipt"
+    TEST_REPORT = "test_report"
+    INSPECTION_REPORT = "inspection_report"
+    PURCHASE_CONTRACT = "purchase_contract"
+    FORWARDER_RECEIPT = "forwarder_receipt"
+    PROFORMA_INVOICE = "proforma_invoice"
+    PURCHASE_ORDER = "purchase_order"
+    PRODUCT_SPEC = "product_spec"
+    COMPLIANCE = "compliance"
+    SHIPPING_INSTRUCTION = "shipping_instruction"
+    ISF_RECEIPT = "isf_receipt"
+    PHOTO = "photo"
+    COMMERCIAL_INVOICE = "commercial_invoice"
+    PACKING_LIST = "packing_list"
+    SALES_CONTRACT = "sales_contract"
+    BILL_OF_LADING = "bill_of_lading"
+    OTHER = "other"
+
+class DocumentStatus(str, Enum):
+    UPLOADED = "uploaded"
+    PARSING = "parsing"
+    PARSED = "parsed"
+    PARSE_FAILED = "parse_failed"
+    MANUALLY_ENTERED = "manually_entered"
+    SUPERSEDED = "superseded"
+
+class FieldSource(str, Enum):
+    MACHINE = "machine"
+    HUMAN = "human"
+    SYSTEM = "system"
+
+class FieldValueStatus(str, Enum):
+    CANDIDATE = "candidate"
+    CONFIRMED = "confirmed"
+    REJECTED = "rejected"
+    MISSING = "missing"
+
+class ReviewStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    RETURNED = "returned"
+    SKIPPED = "skipped"
+
+class CrossCheckStatus(str, Enum):
+    PASS = "pass"
+    FAIL = "fail"
+    PENDING_REVIEW = "pending_review"
+
+class RiskSeverity(str, Enum):
+    INFO = "info"
+    WARNING = "warning"
+    BLOCKING = "blocking"
+
+@dataclass(slots=True)
+class RiskItem:
+    code: str
+    message: str
+    severity: RiskSeverity = RiskSeverity.WARNING
+    source: str = "rule"
+    field_name: str | None = None
+    evidence: str | None = None
+    blocking: bool = False
+
+@dataclass(slots=True)
+class ExtractedField:
+    name: str
+    value: Any = None
+    normalized_value: Any = None
+    source: FieldSource = FieldSource.MACHINE
+    status: FieldValueStatus = FieldValueStatus.CANDIDATE
+    confidence: float | None = None
+    page_number: int | None = None
+    sheet_name: str | None = None
+    cell_reference: str | None = None
+    note: str | None = None
+    confirmed_value: Any = None
+    confirmed_by: str | None = None
+    confirmed_at: datetime | None = None
+    assisted_value: Any = None
+    assistance_note: str | None = None
+
+@dataclass(slots=True)
+class SourceTable:
+    name: str = ""
+    rows: list[list[str]] = field(default_factory=list)
+    page_number: int | None = None
+
+@dataclass(slots=True)
+class DocumentVersion:
+    version_id: str = field(default_factory=lambda: new_id("docver"))
+    document_id: str = ""
+    version_number: int = 1
+    sha256: str = ""
+    original_filename: str = ""
+    storage_path: str = ""
+    uploaded_by: str = ""
+    uploaded_at: datetime = field(default_factory=utc_now)
+    parser_name: str | None = None
+    parser_version: str | None = None
+    status: DocumentStatus = DocumentStatus.UPLOADED
+    fields: list[ExtractedField] = field(default_factory=list)
+    parse_error: str | None = None
+    media_type: str = "application/octet-stream"
+    size_bytes: int = 0
+    source_party: str = ""
+    expires_on: str | None = None
+    original_path: str = ""
+    source_text: str = ""
+    source_tables: list[SourceTable] = field(default_factory=list)
+    extraction_warnings: list[str] = field(default_factory=list)
+
+@dataclass(slots=True)
+class Document:
+    document_id: str = field(default_factory=lambda: new_id("doc"))
+    case_id: str = ""
+    document_type: DocumentType = DocumentType.OTHER
+    title: str = ""
+    current_version_id: str | None = None
+    status: DocumentStatus = DocumentStatus.UPLOADED
+    required: bool = True
+    versions: list[DocumentVersion] = field(default_factory=list)
+    created_at: datetime = field(default_factory=utc_now)
+    deleted_at: datetime | None = None
+    deleted_by: str | None = None
+    deletion_reason: str | None = None
+    responsibility: str = ""
+    classification_note: str = ""
+
+@dataclass(slots=True)
+class ReviewDecision:
+    decision_id: str = field(default_factory=lambda: new_id("decision"))
+    task_id: str = ""
+    reviewer_id: str = ""
+    status: ReviewStatus = ReviewStatus.PENDING
+    reason: str | None = None
+    changed_fields: list[str] = field(default_factory=list)
+    decided_at: datetime = field(default_factory=utc_now)
+
+@dataclass(slots=True)
+class ReviewTask:
+    task_id: str = field(default_factory=lambda: new_id("review"))
+    case_id: str = ""
+    document_id: str | None = None
+    assignee_id: str | None = None
+    role: str = "reviewer"
+    required: bool = True
+    status: ReviewStatus = ReviewStatus.PENDING
+    field_names: list[str] = field(default_factory=list)
+    decisions: list[ReviewDecision] = field(default_factory=list)
+    created_at: datetime = field(default_factory=utc_now)
+
+class ReviewEditArea(str, Enum):
+    FORM = "form"
+    TRADE = "trade"
+    SOURCE = "source"
+    MANUAL_SOURCE = "manual_source"
+    SOURCE_LINKS = "source_links"
+
+@dataclass(slots=True)
+class ReviewEditTarget:
+    """Structured location to correct an input; never an approval instruction."""
+    area: ReviewEditArea
+    document_type: DocumentType | None = None
+    field_name: str = ""
+    row_number: int | None = None
+    document_id: str = ""
+    version_id: str = ""
+    record_id: str = ""
+    table_index: int | None = None
+
+@dataclass(slots=True)
+class CrossCheckResult:
+    result_id: str = field(default_factory=lambda: new_id("check"))
+    case_id: str = ""
+    rule_code: str = ""
+    status: CrossCheckStatus = CrossCheckStatus.PENDING_REVIEW
+    message: str = ""
+    left_document_id: str | None = None
+    right_document_id: str | None = None
+    left_field: str | None = None
+    right_field: str | None = None
+    left_value: Any = None
+    right_value: Any = None
+    left_source: str | None = None
+    right_source: str | None = None
+    rule_version: str = "1"
+    checked_at: datetime = field(default_factory=utc_now)
+    left_version_id: str | None = None
+    right_version_id: str | None = None
+    normalized_left: Any = None
+    normalized_right: Any = None
+    left_unit: str | None = None
+    right_unit: str | None = None
+    comparison_policy: dict[str, Any] = field(default_factory=dict)
+    scope: str = ""
+    item_key: str = ""
+    required: bool = True
+    edit_targets: list[ReviewEditTarget] = field(default_factory=list)
+
+@dataclass(slots=True)
+class SourceFieldSelection:
+    """An explicit human-selected value for one current original field."""
+    document_id: str
+    version_id: str
+    field_name: str
+    value: str
+
+@dataclass(slots=True)
+class ExportReviewReport:
+    """Current saved document assessment; never a Case approval."""
+    case_id: str
+    document_type: DocumentType
+    input_digest: str
+    rule_version: str
+    checks: list[CrossCheckResult] = field(default_factory=list)
+    human_confirmed: bool = False
+
+    @property
+    def ready(self) -> bool:
+        required = [check for check in self.checks if check.required]
+        return bool(self.human_confirmed and required
+                    and all(check.status is CrossCheckStatus.PASS for check in required))
+
+@dataclass(slots=True)
+class AuditEvent:
+    audit_id: str = field(default_factory=lambda: new_id("audit"))
+    case_id: str = ""
+    actor_id: str = "system"
+    action: str = ""
+    entity_type: str = ""
+    entity_id: str = ""
+    before: Mapping[str, Any] | None = None
+    after: Mapping[str, Any] | None = None
+    reason: str | None = None
+    occurred_at: datetime = field(default_factory=utc_now)
+
+@dataclass(slots=True)
+class Case:
+    case_id: str = field(default_factory=lambda: new_id("case"))
+    case_number: str = ""
+    order_no: str | None = None
+    customer_name: str = ""
+    destination_country: str = ""
+    incoterm: str | None = None
+    currency: str | None = None
+    invoice_total: Decimal | None = None
+    owner_id: str | None = None
+    due_at: datetime | None = None
+    required_document_types: list[DocumentType] = field(
+        default_factory=lambda: [DocumentType.COMMERCIAL_INVOICE, DocumentType.PACKING_LIST]
+    )
+    status: CaseStatus = CaseStatus.DRAFT
+    document_ids: list[str] = field(default_factory=list)
+    review_task_ids: list[str] = field(default_factory=list)
+    cross_check_result_ids: list[str] = field(default_factory=list)
+    created_at: datetime = field(default_factory=utc_now)
+    updated_at: datetime = field(default_factory=utc_now)
+    metadata: dict[str, Any] = field(default_factory=dict)
+
+class TradeMilestone(str, Enum):
+    ORDER = "order"
+    PREPARING = "preparing"
+    READY_TO_SHIP = "ready_to_ship"
+    SHIPPED = "shipped"
+    DELIVERED = "delivered"
+
+class TradeAdjustmentKind(str, Enum):
+    FREIGHT = "freight"
+    INSURANCE = "insurance"
+    COMMISSION = "commission"
+    PACKING = "packing"
+    DISCOUNT = "discount"
+    REBATE = "rebate"
+    DRAWBACK = "drawback"
+    BOUNTY = "bounty"
+    ASSIST = "assist"
+    OTHER = "other"
+
+class ReceivableStatus(str, Enum):
+    UNPAID = "unpaid"
+    PARTIAL = "partial"
+    PAID = "paid"
+    OVERDUE = "overdue"
+
+@dataclass(slots=True)
+class Actor:
+    """Trusted identity supplied by an authenticated application boundary."""
+    user_id: str
+    roles: list[str] = field(default_factory=list)
+    authenticated: bool = False
+    kind: str = "human"
+
+@dataclass(slots=True)
+class TradeLine:
+    product_code: str
+    description: str
+    quantity: str
+    unit_price: str
+    unit: str = "pcs"
+    packages: int = 0
+    gross_weight_kg: str = "0"
+    net_weight_kg: str = "0"
+    hs_code: str = ""
+    country_of_origin: str = ""
+    grade_quality: str = ""
+    marks_and_numbers: str = ""
+    package_contents: str = ""
+    supplied_fields: list[str] = field(default_factory=list)
+
+@dataclass(slots=True)
+class TradeAdjustment:
+    kind: TradeAdjustmentKind = TradeAdjustmentKind.OTHER
+    name: str = ""
+    amount: str = "0"
+    currency: str = "USD"
+    included_in_invoice_price: bool = False
+
+@dataclass(slots=True)
+class TradePackage:
+    package_number: str = ""
+    marks_and_numbers: str = ""
+    product_code: str = ""
+    contents_description: str = ""
+    quantity: str = ""
+    unit: str = ""
+    gross_weight_kg: str = ""
+    net_weight_kg: str = ""
+
+@dataclass(slots=True)
+class TradeData:
+    """Decimal quantities and money travel as strings; never binary floats."""
+    order_no: str = ""
+    seller: str = ""
+    buyer: str = ""
+    destination_country: str = ""
+    currency: str = "USD"
+    incoterm: str = ""
+    incoterm_version: str = "2020"
+    payment_terms: str = ""
+    transport_mode: str = ""
+    product_category: str = ""
+    expected_ship_date: str | None = None
+    actual_ship_date: str | None = None
+    due_date: str | None = None
+    transaction_date: str | None = None
+    transaction_place: str = ""
+    port_of_entry: str = ""
+    seller_address: str = ""
+    buyer_address: str = ""
+    responsible_exporter_person: str = ""
+    invoice_adjustments_confirmed: bool = False
+    adjustments: list[TradeAdjustment] = field(default_factory=list)
+    packages: list[TradePackage] = field(default_factory=list)
+    line_items: list[TradeLine] = field(default_factory=list)
+    revision: int = 1
+    confirmed_by: str | None = None
+    confirmed_at: datetime | None = None
+    supplied_fields: list[str] = field(default_factory=list)
+
+@dataclass(slots=True)
+class RequirementPolicy:
+    policy_id: str
+    required_types: list[DocumentType] = field(default_factory=list)
+    destination_country: str = ""
+    product_category: str = ""
+    transport_mode: str = ""
+    incoterm: str = ""
+    payment_terms: str = ""
+
+@dataclass(slots=True)
+class GeneratedArtifact:
+    artifact_id: str = field(default_factory=lambda: new_id("artifact"))
+    document_type: DocumentType = DocumentType.OTHER
+    version_number: int = 1
+    input_revision: int = 0
+    input_snapshot: dict[str, Any] = field(default_factory=dict)
+    source_versions: dict[str, str] = field(default_factory=dict)
+    template_id: str = ""
+    template_version: str = ""
+    template_sha256: str = ""
+    rule_version: str = "w3-1"
+    storage_path: str = ""
+    sha256: str = ""
+    media_type: str = "text/html"
+    filename: str = ""
+    created_by: str = ""
+    created_at: datetime = field(default_factory=utc_now)
+    status: str = "draft"
+    checks: list[CrossCheckResult] = field(default_factory=list)
+    form_snapshot: dict[str, Any] = field(default_factory=dict)
+    form_revision: int = 0
+
+@dataclass(slots=True)
+class ApprovalRecord:
+    approval_id: str = field(default_factory=lambda: new_id("approval"))
+    actor_id: str = ""
+    reason: str = ""
+    input_revision: int = 0
+    document_versions: dict[str, str] = field(default_factory=dict)
+    artifact_hashes: dict[str, str] = field(default_factory=dict)
+    checks_sha256: str = ""
+    approved_at: datetime = field(default_factory=utc_now)
+
+@dataclass(slots=True)
+class PaymentRecord:
+    payment_id: str = field(default_factory=lambda: new_id("payment"))
+    amount: str = "0"
+    currency: str = "USD"
+    reference: str = ""
+    received_on: str = ""
+    recorded_by: str = ""
+    recorded_at: datetime = field(default_factory=utc_now)
+
+@dataclass(slots=True)
+class WorkItem:
+    task_id: str = field(default_factory=lambda: new_id("task"))
+    title: str = ""
+    role: str = "documents"
+    assignee_id: str | None = None
+    status: str = "pending"
+    note: str = ""
+
+@dataclass(slots=True)
+class FormValueOrigin:
+    """Read-only explanation of one displayed/exported form value."""
+    field_name: str
+    value: str
+    origin_kind: str
+    row_number: int | None = None
+    document_id: str = ""
+    version_id: str = ""
+    filename: str = ""
+    version_number: int | None = None
+    location: str = ""
+    actor_id: str = ""
+    occurred_at: datetime | None = None
+    note: str = ""
+
+@dataclass(slots=True)
+class FormFieldCandidate:
+    """Unconfirmed value tied to a specific source file version and position."""
+    value: str
+    document_id: str
+    version_id: str
+    field_name: str = ""
+    page_number: int | None = None
+    sheet_name: str | None = None
+    cell_reference: str | None = None
+
+@dataclass(slots=True)
+class FormRowCandidate:
+    """One source row; identity is its source version/table/row, not its SKU."""
+    values: dict[str, str]
+    document_id: str
+    version_id: str
+    table_index: int
+    row_number: int
+    table_name: str = ""
+    page_number: int | None = None
+    cell_references: dict[str, str] = field(default_factory=dict)
+
+@dataclass(slots=True)
+class FormSourceReference:
+    """Exact manually supplied form revision used by another form."""
+    document_type: DocumentType
+    revision: int
+    record_id: str = ""
+
+@dataclass(slots=True)
+class ManualDataRecord:
+    document_type: DocumentType
+    title: str = ""
+    record_id: str = field(default_factory=lambda: new_id("input"))
+    values: dict[str, str] = field(default_factory=dict)
+    rows: list[dict[str, str]] = field(default_factory=list)
+    revision: int = 1
+    recorded_by: str = ""
+    recorded_at: datetime = field(default_factory=utc_now)
+
+@dataclass(slots=True)
+class SourceRowSelection:
+    document_id: str
+    version_id: str
+    table_index: int
+    row_number: int
+    values: dict[str, str]
+
+@dataclass(slots=True)
+class ReviewedSourceRow:
+    document_id: str
+    version_id: str
+    table_index: int
+    row_number: int
+    original_values: dict[str, str] = field(default_factory=dict)
+    values: dict[str, str] = field(default_factory=dict)
+    location: str = ""
+    confirmed_by: str = ""
+    confirmed_at: datetime = field(default_factory=utc_now)
+
+@dataclass(slots=True)
+class DataRequirement:
+    """One effective input slot used or required by a particular deliverable."""
+    document_type: DocumentType
+    field_name: str
+    label: str
+    required: bool = True
+    row_number: int | None = None
+    value: str = ""
+    status: str = "missing"
+    origin: FormValueOrigin | None = None
+    message: str = ""
+
+@dataclass(slots=True)
+class SourceRequirementLink:
+    document_id: str
+    version_id: str
+    document_type: DocumentType
+    field_name: str
+    row_number: int | None = None
+
+@dataclass(slots=True)
+class DocumentTemplate:
+    document_type: DocumentType
+    filename: str
+    sha256: str
+    storage_path: str
+    template_id: str = field(default_factory=lambda: new_id("template"))
+    version_number: int = 1
+    uploaded_by: str = ""
+    uploaded_at: datetime = field(default_factory=utc_now)
+
+@dataclass(slots=True)
+class DocumentForm:
+    document_type: DocumentType
+    values: dict[str, str] = field(default_factory=dict)
+    rows: list[dict[str, str]] = field(default_factory=list)
+    source_document_ids: list[str] = field(default_factory=list)
+    revision: int = 1
+    confirmed_by: str | None = None
+    confirmed_at: datetime | None = None
+    field_candidates: dict[str, list[FormFieldCandidate]] = field(default_factory=dict)
+    row_candidates: list[FormRowCandidate] = field(default_factory=list)
+    auto_values: dict[str, str] = field(default_factory=dict)
+    auto_rows: list[dict[str, str]] = field(default_factory=list)
+    manual_fields: list[str] = field(default_factory=list)
+    rows_manually_edited: bool = False
+    manually_provided: bool = False
+    source_form_references: list[FormSourceReference] = field(default_factory=list)
+    # None retains the catalog defaults; explicit lists choose optional content.
+    included_fields: list[str] | None = None
+    included_row_fields: list[str] | None = None
+    included_context_fields: list[str] | None = None
+    required_input_fields: list[str] = field(default_factory=list)
+    required_input_row_fields: list[str] = field(default_factory=list)
+    required_input_context_fields: list[str] = field(default_factory=list)
+
+@dataclass(slots=True)
+class UserDocumentDefaults:
+    document_type: DocumentType
+    included_fields: list[str] | None = None
+    included_row_fields: list[str] | None = None
+    included_context_fields: list[str] | None = None
+    required_input_fields: list[str] = field(default_factory=list)
+    required_input_row_fields: list[str] = field(default_factory=list)
+    required_input_context_fields: list[str] = field(default_factory=list)
+
+@dataclass(slots=True)
+class UserWorkbenchDefaults:
+    user_id: str
+    source_types: list[DocumentType] = field(default_factory=list)
+    delivery_types: list[DocumentType] = field(default_factory=lambda: [
+        DocumentType.COMMERCIAL_INVOICE, DocumentType.PACKING_LIST])
+    documents: list[UserDocumentDefaults] = field(default_factory=list)
+    revision: int = 0
+    updated_at: datetime = field(default_factory=utc_now)
+
+@dataclass(slots=True)
+class ImportContext:
+    archive_name: str = ""
+    archive_sha256: str = ""
+    imported_by: str = ""
+    imported_at: datetime = field(default_factory=utc_now)
+    reported_trade_state: str = ""
+    reported_receivable_state: str = ""
+
+@dataclass(slots=True)
+class AssistanceRecord:
+    """Unconfirmed transcription by a virtual salesperson, never human sign-off."""
+    method: str = "visual_transcription"
+    document_id: str = ""
+    version_id: str = ""
+    location: str = ""
+    field_name: str = ""
+    previous_value: str = ""
+    proposed_value: str = ""
+    reason: str = ""
+    created_at: datetime = field(default_factory=utc_now)
+    actor_kind: str = "virtual_sales"
+
+@dataclass(slots=True)
+class Workspace:
+    case: Case
+    trade: TradeData = field(default_factory=TradeData)
+    revision: int = 0
+    required_document_types: list[DocumentType] = field(default_factory=list)
+    base_required_document_types: list[DocumentType] = field(default_factory=list)
+    requirement_policies: list[RequirementPolicy] = field(default_factory=list)
+    documents: list[Document] = field(default_factory=list)
+    review_tasks: list[ReviewTask] = field(default_factory=list)
+    checks: list[CrossCheckResult] = field(default_factory=list)
+    artifacts: list[GeneratedArtifact] = field(default_factory=list)
+    approvals: list[ApprovalRecord] = field(default_factory=list)
+    audit: list[AuditEvent] = field(default_factory=list)
+    payments: list[PaymentRecord] = field(default_factory=list)
+    tasks: list[WorkItem] = field(default_factory=list)
+    milestone: TradeMilestone = TradeMilestone.ORDER
+    shipped_on: str | None = None
+    shipment_reference: str = ""
+    document_forms: list[DocumentForm] = field(default_factory=list)
+    import_context: ImportContext | None = None
+    assistance_records: list[AssistanceRecord] = field(default_factory=list)
+    # None preserves legacy type-based grouping; [] is an explicit empty group.
+    required_source_types: list[DocumentType] | None = None
+    required_delivery_types: list[DocumentType] | None = None
+    manual_data_records: list[ManualDataRecord] = field(default_factory=list)
+    reviewed_source_rows: list[ReviewedSourceRow] = field(default_factory=list)
+    document_templates: list[DocumentTemplate] = field(default_factory=list)
+    selected_template_ids: dict[str, str] = field(default_factory=dict)
+    source_requirement_links: list[SourceRequirementLink] = field(default_factory=list)
+    defaults_user_id: str = ""
+    defaults_revision: int = 0
+
+def to_dict(value: Any) -> Any:
+    if isinstance(value, Enum):
+        return value.value
+    if isinstance(value, datetime):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return str(value)
+    if is_dataclass(value):
+        return {key: to_dict(item) for key, item in asdict(value).items()}
+    if isinstance(value, Mapping):
+        return {str(key): to_dict(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple, set)):
+        return [to_dict(item) for item in value]
+    return value
+
+
+def from_dict(model_type: type, payload: Mapping[str, Any]) -> Any:
+    """Restore a model and its nested enums, dates, and dataclasses."""
+    hints = get_type_hints(model_type)
+    values = {
+        name: _restore_value(hints.get(name, Any), value)
+        for name, value in payload.items()
+        if name in hints
+    }
+    return model_type(**values)
+
+
+def _restore_value(value_type: Any, value: Any) -> Any:
+    if value is None or value_type is Any:
+        return value
+    if value_type is datetime:
+        return datetime.fromisoformat(value)
+    if value_type is Decimal:
+        return Decimal(str(value))
+    if isinstance(value_type, type) and issubclass(value_type, Enum):
+        return value_type(value)
+    origin = get_origin(value_type)
+    args = get_args(value_type)
+    if origin in (Union, types.UnionType):
+        candidates = [candidate for candidate in args if candidate is not type(None)]
+        for candidate in candidates:
+            try:
+                return _restore_value(candidate, value)
+            except (TypeError, ValueError):
+                continue
+        return value
+    if origin is list:
+        item_type = args[0] if args else Any
+        return [_restore_value(item_type, item) for item in value]
+    if origin is dict:
+        key_type, item_type = args if len(args) == 2 else (Any, Any)
+        return {
+            _restore_value(key_type, key): _restore_value(item_type, item)
+            for key, item in value.items()
+        }
+    if isinstance(value_type, type) and is_dataclass(value_type):
+        return from_dict(value_type, value)
+    return value

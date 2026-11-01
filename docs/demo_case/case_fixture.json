@@ -1,0 +1,24 @@
+{
+  "case_id": "CASE-DE-LAMP-001",
+  "product": {
+    "name": "USB desk lamp",
+    "material": "ABS",
+    "power": "USB",
+    "color_temperature_levels": 3,
+    "claims_allowed": ["USB powered", "three color temperature settings"],
+    "claims_forbidden_without_evidence": ["eye protection", "100% safe", "risk-free", "medical benefit"]
+  },
+  "trade": {
+    "customer_country": "Germany",
+    "incoterm": "DAP",
+    "currency": "EUR",
+    "quantity": 500,
+    "unit_price": "18.50",
+    "invoice_total": "9250.00",
+    "packages": 25,
+    "gross_weight_kg": "185",
+    "net_weight_kg": "150"
+  },
+  "documents_required": ["commercial_invoice", "packing_list"],
+  "status": "draft"
+}

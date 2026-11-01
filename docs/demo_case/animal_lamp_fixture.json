@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "version": "animal-lamp-demo-1",
+  "data_kind": "synthetic",
+  "case_id": "CASE-DE-ANIMAL-LAMP-001",
+  "product_id": "DEMO-ANIMAL-LAMP-001",
+  "customer_name": "Demo Licht Handel GmbH（虚构）",
+  "order_no": "DEMO-ORDER-ANIMAL-001",
+  "source": "用户授权自编演示订单；产品参数引用 knowledge/animal_lamp_knowledge.json；不代表真实报价或合同",
+  "trade": {
+    "customer_country": "Germany", "currency": "EUR", "incoterm": "EXW Hangzhou",
+    "quantity": 500, "unit_price": "18.50", "invoice_total": "9250.00", "packages": 25,
+    "net_weight_kg": "200", "gross_weight_kg": "250",
+    "production_lead_time_business_days": 25,
+    "lead_time_start": "订单确认及收到约定款项后", "freight_included": false,
+    "import_tax_included": false, "payment_terms": null, "arrival_date": null
+  },
+  "documents_required": ["commercial_invoice", "packing_list"],
+  "status": "draft",
+  "script": {
+    "inquiry": "Hello, we need 500 dog-shaped USB rechargeable desk lamps for Germany. Please quote the unit price and goods total, production lead time, packing details, and available certification documents. Does the quote include shipping?",
+    "feedback": ["请缩短回复，用要点列出报价、生产周期和包装，保持数字及EXW条件不变。", "请补充USB-C接口、电池容量及认证资料待确认的说明；不要承诺送达日期或续航时长。"],
+    "risk_sample": "100% safe, CE certified, improves eyesight, lasts all night, 24 hours runtime, 5000 mAh battery, 12 W, EUR 9.99, delivered in 3 days.",
+    "safe_sample": "Dog-shaped ABS desk lamp, USB-C rechargeable, 1200 mAh battery, DC 5 V, 3 W LED, three color temperatures: 3000 K / 4500 K / 6000 K. Dimensions: 17 cm x 17 cm x 18 cm. Unit net weight: 0.4 kg."
+  }
+}

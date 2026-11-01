@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "notice": "Policy references and locally derived advisory patterns. Not an official or complete prohibited-word list; not product facts. Verification varies by source. Amazon primary-text verification and TikTok latest-source verification are pending. Collected on 2026-11-01.",
+  "policies": [
+    {
+      "resource_id": "amazon-listing-guide",
+      "verification_status": "primary_text_verified",
+      "version_id": "local-2026-11-01-v1",
+      "source": "Amazon official listing creation guide: safety and compliance section; locally derived review triggers",
+      "source_url": "https://sell.amazon.com/blog/amazon-product-listings",
+      "platform": "Amazon",
+      "market": "US",
+      "collected_on": "2026-11-01",
+      "summary": "The official listing guide asks sellers to supply product-specific safety and compliance information, including relevant age hazards, certifications, batteries and required components. Some products require additional compliance or hazardous-material handling. This is listing guidance, not a complete policy or a product certificate; local patterns only request evidence review.",
+      "derived_rules": [
+        {"code": "amazon_safety_evidence", "term": "\\b(?:child[- ]safe|safe for children|certified|certification|CE[- ]certified|battery[- ]powered|lithium battery)\\b|儿童安全|已认证|锂电池", "message": "Amazon 官方上架指南提示填写适用的安全与合规资料；当前声明需核对证据。", "replacement_suggestion": "核实适用年龄、认证范围、电池资料及必需配件，不以关键词命中代替审核"}
+      ]
+    },
+    {
+      "resource_id": "amazon-us-detail-page",
+      "verification_status": "pending_primary_text_verification",
+      "version_id": "local-2026-11-01-v2",
+      "source": "Amazon Seller Central: Product detail page policy reference; primary text unverified; local advisory patterns",
+      "source_url": "https://sellercentral.amazon.com/gp/help/external/G200390640?locale=en-US",
+      "platform": "Amazon",
+      "market": "US",
+      "collected_on": "2026-11-01",
+      "summary": "Policy reference only: the retrieved HTML did not establish readable primary policy text in this collection. Pending verification, local advisory guidance is to describe the actual product accurately and avoid seller contact details, external links, advertising, promotional messages and review requests in detail-page content. No claim is made that the complete current policy was read. This reference establishes no title-length limits or product certification.",
+      "derived_rules": [
+        {"code": "amazon_contact_link", "term": "https?://[^\\s]+|www\\.[^\\s]+|[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,}|\\b(?:whatsapp|wechat|contact\\s+us|call\\s+us)\\b|联系(?:我们|客服)|加微信|联系电话", "message": "Amazon US：疑似联系方式或站外链接，核对详情页规则。", "replacement_suggestion": "删除联系方式和外链，保留产品说明"},
+        {"code": "amazon_review_request", "term": "\\b(?:leave|give|write|submit)\\s+(?:us\\s+)?(?:a\\s+)?(?:positive\\s+|five[- ]star\\s+|5[- ]star\\s+)?review\\b|好评返现|五星好评|请.{0,5}(?:评价|好评)", "message": "Amazon US：疑似索取评价。", "replacement_suggestion": "删除评价请求"},
+        {"code": "amazon_promotion", "term": "\\b(?:buy now|limited[- ]time offer|discount|sale price)\\b|\\d+\\s*%\\s*off\\b|限时优惠|促销|折扣|立减", "message": "Amazon US：疑似广告或促销内容。", "replacement_suggestion": "改写为可核实的产品描述"}
+      ]
+    },
+    {
+      "resource_id": "amazon-us-supported-claims",
+      "verification_status": "pending_primary_text_verification",
+      "version_id": "local-2026-11-01-v2",
+      "source": "Amazon Seller Central: supported-claims policy reference; primary text unverified; local advisory patterns",
+      "source_url": "https://sellercentral.amazon.com/help/hub/reference/external/GZ93G4JTAEVEJW62",
+      "platform": "Amazon",
+      "market": "US",
+      "collected_on": "2026-11-01",
+      "summary": "Policy reference only; primary text remains unverified in this collection. Local advisory guidance requires supporting evidence for product claims. Patterns flag candidate absolute or performance claims for verification; a hit does not establish a violation or validate a certificate. No claim is made that the complete current policy was read.",
+      "derived_rules": [
+        {"code": "amazon_claim_support", "term": "\\b(?:guaranteed results|100% safe|clinically proven|best in the world)\\b|绝对安全|效果保证|全球第一", "message": "Amazon US：该宣称需核对支持材料。", "replacement_suggestion": "核实证据，删除没有支持的承诺"}
+      ]
+    },
+    {
+      "resource_id": "tiktok-us-content",
+      "verification_status": "pending_latest_verification",
+      "version_id": "local-2026-11-01-v1",
+      "source": "TikTok Shop US Content Policy reference; latest text/date unverified; local advisory patterns",
+      "source_url": "https://seller-us.tiktok.com/university/essay?identity=1&knowledge_id=6837891779151617&role=seller",
+      "platform": "TikTok",
+      "market": "US",
+      "collected_on": "2026-11-01",
+      "summary": "Avoid exaggerated performance and misleading statements about prices or certification. Product claims must match evidence. Certification wording below is a local review trigger, not a blanket prohibition on truthful certification statements.",
+      "derived_rules": [
+        {"code": "tiktok_exaggerated_performance", "term": "\\b(?:miracle|instant cure|guaranteed results|100% effective)\\b|包治百病|立刻见效|百分百有效", "message": "TikTok Shop US：疑似夸大功效，需核实。", "replacement_suggestion": "删除夸大承诺，使用有依据的性能说明"},
+        {"code": "tiktok_certification_evidence", "term": "\\b(?:certified|certification|FDA[- ]approved|CE[- ]certified)\\b|权威认证|官方认证", "message": "TikTok Shop US：认证表述须核实真实性和适用范围。", "replacement_suggestion": "仅使用可追溯且适用于该产品的证据"}
+      ]
+    },
+    {
+      "resource_id": "tiktok-us-misleading-claims",
+      "verification_status": "pending_latest_verification",
+      "version_id": "local-2026-11-01-v1",
+      "source": "TikTok Shop US: misleading claims and pricing (official summary; local patterns)",
+      "source_url": "https://seller-us.tiktok.com/university/essay?from=policy&identity=1&knowledge_id=4581457528194817&role=1",
+      "platform": "TikTok",
+      "market": "US",
+      "collected_on": "2026-11-01",
+      "summary": "Avoid claims of impossible effects and confusing or misleading price representations. Pricing patterns identify wording that needs verification against the actual offer, not proof that a price is false.",
+      "derived_rules": [
+        {"code": "tiktok_impossible_effect", "term": "\\b(?:permanent cure|lose \\d+ (?:kg|pounds) overnight|works for everyone)\\b|永久治愈|一夜瘦|人人有效", "message": "TikTok Shop US：疑似不可能效果。", "replacement_suggestion": "删除不可能效果或无法支持的保证"},
+        {"code": "tiktok_pricing_review", "term": "\\b(?:lowest price ever|free forever|100% free|only \\$0)\\b|全网最低|永久免费|零元购", "message": "TikTok Shop US：价格表述可能引起误解，需核实条件。", "replacement_suggestion": "核实实际价格、条件及展示的一致性"}
+      ]
+    },
+    {
+      "resource_id": "alibaba-seller-publicity",
+      "verification_status": "primary_text_retrieved_by_coordinator",
+      "version_id": "local-2026-11-01-v1",
+      "source": "Alibaba.com Seller Onboarding Rules: publicity and category (official summary; local patterns)",
+      "source_url": "https://seller.alibaba.com/pages/seller_onboarding_rules.html",
+      "platform": "阿里国际站",
+      "market": "global",
+      "collected_on": "2026-11-01",
+      "summary": "Seller conduct rules prohibit false or exaggerated publicity and misleading category placement. Use accurate descriptions and categories. This summary does not import category-specific prohibited-product lists.",
+      "derived_rules": [
+        {"code": "alibaba_exaggerated_publicity", "term": "\\b(?:world's best|guaranteed results|100% effective|fake certification)\\b|全球第一|百分百有效|虚假认证|保证所有效果", "message": "Alibaba.com：疑似虚假或夸大宣传，需核实。", "replacement_suggestion": "使用有来源支持的描述，核对类目"}
+      ]
+    },
+    {
+      "resource_id": "alibaba-group-ip",
+      "verification_status": "primary_reference_provided_latest_check_pending",
+      "version_id": "local-2026-11-01-v1",
+      "source": "Alibaba Group Intellectual Property Protection Policy (official summary; local patterns)",
+      "source_url": "https://ipp.alibabagroup.com/policy/en.htm",
+      "platform": "阿里国际站",
+      "market": "global",
+      "collected_on": "2026-11-01",
+      "summary": "Respect intellectual property and verify authorization for brand, copyright and other protected material. A local keyword hit requests human review and does not determine ownership or infringement.",
+      "derived_rules": [
+        {"code": "alibaba_ip_review", "term": "\\b(?:counterfeit|replica|unauthorized brand)\\b|高仿|仿牌|未经授权品牌", "message": "Alibaba Group：疑似知识产权风险表述。", "replacement_suggestion": "核实权利与授权，并移除侵权内容"}
+      ]
+    }
+  ]
+}

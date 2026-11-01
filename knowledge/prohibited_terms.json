@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "version": "animal-lamp-demo-1",
+  "data_kind": "synthetic",
+  "source": {"title": "CrossBot 内部演示风险表达规则", "path": "docs/demo_case/动物台灯演示指南.md", "kind": "synthetic", "official": false},
+  "notice": "项目自定演示规则，适用于 W1/W2。命中表示需人工修改或核实，不是官方违禁词全集；否定或询问语句也可能命中。不自动删除原文，不自动发布。",
+  "rules": [
+    {"id": "DEMO-CLAIM-001", "code": "certification_claim", "pattern": "\\b(?:CE[ -]certified|FDA[ -]approved|RoHS[ -]compliant|certified)\\b|通过.{0,8}认证|已获.{0,8}认证", "message": "认证声明须核验证书及适用范围", "replacement": "认证相关文件及型号适用范围待确认。", "severity": "warning"},
+    {"id": "DEMO-CLAIM-002", "code": "absolute_claim", "pattern": "100\\s*%\\s*(?:safe|guaranteed|effective)|\\b(?:best in the world|zero risk|risk[ -]free|guaranteed safe)\\b|绝对安全|零风险|无风险|百分之百有效", "message": "绝对化表述需人工处理", "replacement": "改写为已提供的具体产品参数，删除绝对化保证。", "severity": "blocking"},
+    {"id": "DEMO-CLAIM-003", "code": "medical_claim", "pattern": "\\b(?:cures?|treats?|medical[ -]grade|medical benefit|heals?)\\b|治疗|治愈|医疗级", "message": "医疗或功效表达需证据及人工复核", "replacement": "仅描述桌面照明用途及已知规格。", "severity": "blocking"},
+    {"id": "DEMO-CLAIM-004", "code": "evidence_claim", "pattern": "\\beye protection\\b|护眼", "message": "护眼等声明需证据及人工复核", "replacement": "Three selectable color temperatures: 3000K, 4500K and 6000K.（仅适用于本演示 SKU）", "severity": "warning"},
+    {"id": "DEMO-CLAIM-005", "code": "design_inference", "pattern": "\\b(?:compact design|lightweight|waterproof)\\b|小巧设计|轻量化|防水", "message": "设计或性能描述需原始参数依据", "replacement": "用档案中具体尺寸、重量替代推断；防水性能待确认。", "severity": "warning"},
+    {"id": "DEMO-CLAIM-006", "code": "delivery_commitment", "pattern": "\\b(?:ships? tomorrow|immediate delivery|guaranteed delivery|ready for dispatch)\\b|明天发货|立即发货|保证交期", "message": "交付承诺须核实库存、运输及日期依据", "replacement": "仅按当前订单给出有条件的生产周期；不承诺送达日期。", "severity": "warning"},
+    {"id": "DEMO-CLAIM-007", "code": "unsupported_runtime", "pattern": "\\b(?:all[ -]night battery|lasts? all night|endless battery|permanent battery|24[ -]hour battery)\\b|永久续航|整夜续航|超长续航", "message": "电池容量不能证明实际续航时长", "replacement": "Built-in 1200 mAh battery; runtime and charging time to be confirmed.（仅适用于本演示 SKU）", "severity": "warning"},
+    {"id": "DEMO-CLAIM-008", "code": "child_safety_claim", "pattern": "\\b(?:safe for (?:all )?children|child[ -]safe|baby[ -]safe|toy[ -]certified)\\b|儿童绝对安全|婴幼儿适用|玩具认证", "message": "动物外形不证明玩具分类、适用年龄或儿童安全", "replacement": "Animal-shaped desk lamp; age suitability and safety documentation to be confirmed.", "severity": "warning"},
+    {"id": "DEMO-CLAIM-009", "code": "health_claim", "pattern": "\\b(?:improves? eyesight|prevents? myopia|improves? sleep|flicker[ -]free|blue[ -]light[ -]free)\\b|改善视力|预防近视|改善睡眠|无频闪|无蓝光", "message": "健康或光学性能宣称缺少测试依据", "replacement": "仅列明灯具功率、色温和使用场景。", "severity": "warning"},
+    {"id": "DEMO-CLAIM-010", "code": "registration_claim", "pattern": "\\b(?:EPR[ -]registered|WEEE[ -]registered|LUCID[ -]registered)\\b|已完成.{0,8}(?:EPR|WEEE|LUCID)注册", "message": "注册状态及注册号须核实，不能自动生成", "replacement": "相关注册信息及承担义务的主体待确认。", "severity": "warning"}
+  ]
+}

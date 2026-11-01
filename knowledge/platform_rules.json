@@ -1,0 +1,68 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "STYLE-AMAZON",
+      "type": "platform",
+      "content": "项目风格建议：按标题和产品要点组织，参数只引用已知资料；不代表官方规则。",
+      "facts": {},
+      "data_kind": "synthetic",
+      "source": {
+        "title": "CrossBot项目自建模拟资料",
+        "path": "knowledge/README.md",
+        "kind": "synthetic",
+        "official": false
+      },
+      "version": "demo-1",
+      "effective_from": null,
+      "effective_until": null,
+      "applicable_product_skus": [],
+      "applicable_platforms": [
+        "Amazon"
+      ],
+      "applicable_countries": []
+    },
+    {
+      "id": "STYLE-TIKTOK",
+      "type": "platform",
+      "content": "项目风格建议：短视频开场加产品介绍，不编造使用体验或功效；不代表官方规则。",
+      "facts": {},
+      "data_kind": "synthetic",
+      "source": {
+        "title": "CrossBot项目自建模拟资料",
+        "path": "knowledge/README.md",
+        "kind": "synthetic",
+        "official": false
+      },
+      "version": "demo-1",
+      "effective_from": null,
+      "effective_until": null,
+      "applicable_product_skus": [],
+      "applicable_platforms": [
+        "TikTok"
+      ],
+      "applicable_countries": []
+    },
+    {
+      "id": "STYLE-ALIBABA",
+      "type": "platform",
+      "content": "项目风格建议：产品介绍加采购待确认项，不编造价格、认证或交期；不代表官方规则。",
+      "facts": {},
+      "data_kind": "synthetic",
+      "source": {
+        "title": "CrossBot项目自建模拟资料",
+        "path": "knowledge/README.md",
+        "kind": "synthetic",
+        "official": false
+      },
+      "version": "demo-1",
+      "effective_from": null,
+      "effective_until": null,
+      "applicable_product_skus": [],
+      "applicable_platforms": [
+        "阿里国际站"
+      ],
+      "applicable_countries": []
+    }
+  ]
+}
