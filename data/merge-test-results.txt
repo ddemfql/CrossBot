@@ -1,0 +1,208 @@
+test_case_defaults_are_serializable (test_core_contracts.CoreContractTests.test_case_defaults_are_serializable) ... ok
+test_config_does_not_validate_key_by_prefix (test_core_contracts.CoreContractTests.test_config_does_not_validate_key_by_prefix) ... ok
+test_error_and_risk_contracts_are_explicit (test_core_contracts.CoreContractTests.test_error_and_risk_contracts_are_explicit) ... ok
+test_event_factories_keep_a_stable_shape (test_core_contracts.CoreContractTests.test_event_factories_keep_a_stable_shape) ... ok
+test_requests_keep_structured_fields (test_core_contracts.CoreContractTests.test_requests_keep_structured_fields) ... ok
+test_conversations_survive_reopen_and_are_isolated (test_database_integration.DatabaseIntegrationTests.test_conversations_survive_reopen_and_are_isolated) ... ok
+test_demo_import_is_idempotent_and_preserves_edits (test_database_integration.DatabaseIntegrationTests.test_demo_import_is_idempotent_and_preserves_edits) ... ok
+test_missing_case_and_duplicate_number_rejected (test_database_integration.DatabaseIntegrationTests.test_missing_case_and_duplicate_number_rejected) ... ok
+test_old_database_is_upgraded_without_data_loss (test_database_integration.DatabaseIntegrationTests.test_old_database_is_upgraded_without_data_loss) ... ok
+test_stale_save_is_rejected_without_overwrite (test_database_integration.DatabaseIntegrationTests.test_stale_save_is_rejected_without_overwrite) ... ok
+test_web_creates_case_and_imports_demo (test_database_integration.DatabaseIntegrationTests.test_web_creates_case_and_imports_demo) ... 2026-10-31 16:55:25.534 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:25.534 WARNING streamlit.runtime.scriptrunner_utils.script_run_context: Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:26.279 The widget with key "customer_topic" was created with a default value but also had its value set via the Session State API.
+Stack (most recent call last):
+  File "C:\Python314\Lib\threading.py", line 1044, in _bootstrap
+    self._bootstrap_inner()
+  File "C:\Python314\Lib\threading.py", line 1082, in _bootstrap_inner
+    self._context.run(self.run)
+  File "C:\Python314\Lib\threading.py", line 1024, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\hackathon\CrossBot\.venv\Lib\site-packages\streamlit\testing\v1\local_script_runner.py", line 144, in _run_script_thread
+    super()._run_script_thread()
+  File "D:\hackathon\CrossBot\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 436, in _run_script_thread
+    self._run_script(request.rerun_data)
+  File "D:\hackathon\CrossBot\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 949, in _run_script
+    ) = exec_func_with_error_handling(code_to_exec, ctx)
+  File "D:\hackathon\CrossBot\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 136, in exec_func_with_error_handling
+    result = func()
+  File "D:\hackathon\CrossBot\.venv\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 924, in code_to_exec
+    exec(code, module.__dict__)  # noqa: S102
+  File "D:\hackathon\CrossBot\app.py", line 68, in <module>
+    render_sales(config, ready, case_id=case.case_id, generation_service=generation_service, auth_token=token)
+  File "D:\hackathon\CrossBot\workflows\sales_ui.py", line 71, in render_sales
+    render_customer_simulator(current_request, config, ready, generation_service=generation_service, auth_token=auth_token)
+  File "D:\hackathon\CrossBot\workflows\customer_simulator_ui.py", line 17, in render_customer_simulator
+    topic = st.text_input("�ͻ�ģ������", "ѯ�ʲ�Ʒ�����֤���ϡ���װ�ͽ���", key="customer_topic")
+  File "D:\hackathon\CrossBot\.venv\Lib\site-packages\streamlit\runtime\metrics_util.py", line 725, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+  File "D:\hackathon\CrossBot\.venv\Lib\site-packages\streamlit\elements\widgets\text_widgets.py", line 727, in text_input
+    return self._text_input(
+  File "D:\hackathon\CrossBot\.venv\Lib\site-packages\streamlit\elements\widgets\text_widgets.py", line 790, in _text_input
+    check_widget_policies(
+  File "D:\hackathon\CrossBot\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 146, in check_widget_policies
+    check_session_state_rules(
+  File "D:\hackathon\CrossBot\.venv\Lib\site-packages\streamlit\elements\lib\policies.py", line 90, in check_session_state_rules
+    _LOGGER.warning(
+ok
+test_web_exposes_only_the_active_role_workflow (test_database_integration.DatabaseIntegrationTests.test_web_exposes_only_the_active_role_workflow) ... 2026-10-31 16:55:26.712 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:26.712 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_web_flow_persists_generation_feedback_and_new_session (test_database_integration.DatabaseIntegrationTests.test_web_flow_persists_generation_feedback_and_new_session) ... 2026-10-31 16:55:27.178 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:27.178 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:27.509 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:27.509 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_web_initial_admin_and_login_required (test_database_integration.DatabaseIntegrationTests.test_web_initial_admin_and_login_required) ... 2026-10-31 16:55:27.888 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:27.888 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_web_listing_saves_only_selected_platform_under_case (test_database_integration.DatabaseIntegrationTests.test_web_listing_saves_only_selected_platform_under_case) ... 2026-10-31 16:55:28.442 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:28.442 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_empty_or_partial_workflow_not_fabricated (test_exports.ExportTests.test_empty_or_partial_workflow_not_fabricated) ... ok
+test_existing_live_like_session_can_add_downloads_without_new_generation (test_exports.ExportTests.test_existing_live_like_session_can_add_downloads_without_new_generation) ... 2026-10-31 16:55:28.718 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:28.718 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:28.718 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:28.718 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:28.718 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:28.718 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_inconsistent_listing_not_silently_exported (test_exports.ExportTests.test_inconsistent_listing_not_silently_exported) ... ok
+test_only_three_business_keys_are_read (test_exports.ExportTests.test_only_three_business_keys_are_read) ... ok
+test_snapshot_is_detached_and_does_not_invent_generation_timestamps (test_exports.ExportTests.test_snapshot_is_detached_and_does_not_invent_generation_timestamps) ... ok
+test_three_versions_feedback_and_w2_are_preserved_without_config (test_exports.ExportTests.test_three_versions_feedback_and_w2_are_preserved_without_config) ... ok
+test_txt_contains_all_versions_and_both_feedbacks_without_rewriting_text (test_exports.ExportTests.test_txt_contains_all_versions_and_both_feedbacks_without_rewriting_text) ... ok
+test_duplicate_quote_without_exact_valid_span_is_rejected (test_inquiry_evidence.InquiryEvidenceTests.test_duplicate_quote_without_exact_valid_span_is_rejected) ... ok
+test_exact_legacy_span_can_distinguish_repeated_quote (test_inquiry_evidence.InquiryEvidenceTests.test_exact_legacy_span_can_distinguish_repeated_quote) ... ok
+test_fabricated_translated_or_normalized_quotes_are_not_repaired (test_inquiry_evidence.InquiryEvidenceTests.test_fabricated_translated_or_normalized_quotes_are_not_repaired) ... ok
+test_partial_batch_is_not_returned_and_error_does_not_echo_model_value (test_inquiry_evidence.InquiryEvidenceTests.test_partial_batch_is_not_returned_and_error_does_not_echo_model_value) ... ok
+test_prompt_requests_quotes_not_character_arithmetic (test_inquiry_evidence.InquiryEvidenceTests.test_prompt_requests_quotes_not_character_arithmetic) ... ok
+test_real_mode_ui_accepts_quote_only_and_preserves_previous_candidates_on_failure (test_inquiry_evidence.InquiryEvidenceTests.test_real_mode_ui_accepts_quote_only_and_preserves_previous_candidates_on_failure) ... 2026-10-31 16:55:28.859 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_unique_quote_without_model_offsets_is_located_in_unicode_original (test_inquiry_evidence.InquiryEvidenceTests.test_unique_quote_without_model_offsets_is_located_in_unicode_original) ... ok
+test_wrong_positive_model_offsets_replaced_only_for_unique_literal_quote (test_inquiry_evidence.InquiryEvidenceTests.test_wrong_positive_model_offsets_replaced_only_for_unique_literal_quote) ... ok
+test_all_entries_have_provenance_and_never_look_official (test_knowledge.KnowledgeTests.test_all_entries_have_provenance_and_never_look_official) ... ok
+test_corrupt_or_missing_knowledge_blocks_client_not_unknown_fallback (test_knowledge.KnowledgeTests.test_corrupt_or_missing_knowledge_blocks_client_not_unknown_fallback) ... ok
+test_exact_product_has_citations_and_unknown_commercial_facts (test_knowledge.KnowledgeTests.test_exact_product_has_citations_and_unknown_commercial_facts) ... ok
+test_expired_and_future_products_are_not_used (test_knowledge.KnowledgeTests.test_expired_and_future_products_are_not_used) ... ok
+test_generic_partial_unknown_and_ambiguous_skus_do_not_establish_identity (test_knowledge.KnowledgeTests.test_generic_partial_unknown_and_ambiguous_skus_do_not_establish_identity) ... ok
+test_metadata_missing_invalid_date_or_official_claim_is_not_silently_used (test_knowledge.KnowledgeTests.test_metadata_missing_invalid_date_or_official_claim_is_not_silently_used) ... ok
+test_platform_and_country_scopes_are_explicit (test_knowledge.KnowledgeTests.test_platform_and_country_scopes_are_explicit) ... ok
+test_returned_records_are_snapshots (test_knowledge.KnowledgeTests.test_returned_records_are_snapshots) ... ok
+test_unknown_platform_and_country_are_marked_unknown (test_knowledge.KnowledgeTests.test_unknown_platform_and_country_are_marked_unknown) ... ok
+test_w1_each_revision_and_w2_client_receive_scoped_context (test_knowledge.KnowledgeTests.test_w1_each_revision_and_w2_client_receive_scoped_context) ... ok
+test_w1_reference_unknown_and_historical_citations_are_separate (test_knowledge_ui.KnowledgeUI.test_w1_reference_unknown_and_historical_citations_are_separate) ... 2026-10-31 16:55:29.083 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_w2_citations_only_include_selected_platform_reference (test_knowledge_ui.KnowledgeUI.test_w2_citations_only_include_selected_platform_reference) ... 2026-10-31 16:55:29.270 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_each_selection_is_sent_and_returned_exactly (test_listing.ListingTests.test_each_selection_is_sent_and_returned_exactly) ... ok
+test_empty_unsupported_duplicate_or_wrong_platform_type_never_calls (test_listing.ListingTests.test_empty_unsupported_duplicate_or_wrong_platform_type_never_calls) ... ok
+test_error_is_not_a_normal_result_and_not_retried (test_listing.ListingTests.test_error_is_not_a_normal_result_and_not_retried) ... ok
+test_extra_missing_or_empty_platform_outputs_are_rejected (test_listing.ListingTests.test_extra_missing_or_empty_platform_outputs_are_rejected) ... ok
+test_invalid_json_wrong_envelope_and_duplicate_keys_are_rejected (test_listing.ListingTests.test_invalid_json_wrong_envelope_and_duplicate_keys_are_rejected) ... ok
+test_required_and_optional_type_errors_never_call (test_listing.ListingTests.test_required_and_optional_type_errors_never_call) ... ok
+test_structured_errors_keep_code (test_listing.ListingTests.test_structured_errors_keep_code) ... ok
+test_unknown_market_is_not_inferred (test_listing.ListingTests.test_unknown_market_is_not_inferred) ... ok
+test_blank_description_and_language_market_change_do_not_reuse_results (test_listing_ui.ListingUI.test_blank_description_and_language_market_change_do_not_reuse_results) ... 2026-10-31 16:55:29.470 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_empty_selection_disables_generation_and_hides_old_output (test_listing_ui.ListingUI.test_empty_selection_disables_generation_and_hides_old_output) ... 2026-10-31 16:55:29.712 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_provider_mismatch_preserves_old_batch_without_showing_wrong_sections (test_listing_ui.ListingUI.test_provider_mismatch_preserves_old_batch_without_showing_wrong_sections) ... 2026-10-31 16:55:29.892 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_single_and_multiple_selections_replace_all_sections (test_listing_ui.ListingUI.test_single_and_multiple_selections_replace_all_sections) ... 2026-10-31 16:55:30.130 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_blank_truncated_malformed_or_oversized_output_is_not_saved (test_llm_client.ClientTests.test_blank_truncated_malformed_or_oversized_output_is_not_saved) ... ok
+test_compatible_https_endpoint_and_arbitrary_key_prefix (test_llm_client.ClientTests.test_compatible_https_endpoint_and_arbitrary_key_prefix) ... ok
+test_explicit_request_params_and_no_secret_in_repr (test_llm_client.ClientTests.test_explicit_request_params_and_no_secret_in_repr) ... ok
+test_http_errors_are_structured_redacted_and_not_retried (test_llm_client.ClientTests.test_http_errors_are_structured_redacted_and_not_retried) ... ok
+test_invalid_configuration_never_opens_network (test_llm_client.ClientTests.test_invalid_configuration_never_opens_network) ... ok
+test_redirect_handler_does_not_forward_credentials (test_llm_client.ClientTests.test_redirect_handler_does_not_forward_credentials) ... ok
+test_timeout_and_connection_errors_never_return_normal_text (test_llm_client.ClientTests.test_timeout_and_connection_errors_never_return_normal_text) ... ok
+test_default_mock_does_not_access_network (test_provider_ui.ProviderUI.test_default_mock_does_not_access_network) ... 2026-10-31 16:55:30.504 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_key_clear_and_address_change_revoke_ready_state (test_provider_ui.ProviderUI.test_key_clear_and_address_change_revoke_ready_state) ... 2026-10-31 16:55:30.634 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_real_success_is_labeled_and_failed_revision_keeps_history (test_provider_ui.ProviderUI.test_real_success_is_labeled_and_failed_revision_keeps_history) ... 2026-10-31 16:55:30.869 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_w2_success_and_wrong_platform_response_do_not_replace_good_result (test_provider_ui.ProviderUI.test_w2_success_and_wrong_platform_response_do_not_replace_good_result) ... 2026-10-31 16:55:31.156 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_failed_revision_does_not_append_or_change_old_version (test_sales_conversation.ConversationTests.test_failed_revision_does_not_append_or_change_old_version) ... ok
+test_missing_previous_or_blank_feedback_never_call_provider (test_sales_conversation.ConversationTests.test_missing_previous_or_blank_feedback_never_call_provider) ... ok
+test_revision_before_first_draft_is_blocked (test_sales_conversation.ConversationTests.test_revision_before_first_draft_is_blocked) ... ok
+test_snapshot_is_not_changed_by_later_input_edits (test_sales_conversation.ConversationTests.test_snapshot_is_not_changed_by_later_input_edits) ... ok
+test_two_revisions_keep_facts_previous_text_feedback_and_recheck_claims (test_sales_conversation.ConversationTests.test_two_revisions_keep_facts_previous_text_feedback_and_recheck_claims) ... ok
+test_all_fields_reach_client_unchanged (test_sales_transport.SalesTransportTests.test_all_fields_reach_client_unchanged) ... ok
+test_dict_cannot_bypass_shared_contract (test_sales_transport.SalesTransportTests.test_dict_cannot_bypass_shared_contract) ... ok
+test_empty_or_nontext_provider_output_is_rejected (test_sales_transport.SalesTransportTests.test_empty_or_nontext_provider_output_is_rejected) ... ok
+test_invalid_optional_values_block_before_client_call (test_sales_transport.SalesTransportTests.test_invalid_optional_values_block_before_client_call) ... ok
+test_newlines_commas_special_characters_do_not_change_field_boundaries (test_sales_transport.SalesTransportTests.test_newlines_commas_special_characters_do_not_change_field_boundaries) ... ok
+test_optional_unknowns_are_null_without_inference (test_sales_transport.SalesTransportTests.test_optional_unknowns_are_null_without_inference) ... ok
+test_provider_failure_has_no_normal_response_or_raw_exception (test_sales_transport.SalesTransportTests.test_provider_failure_has_no_normal_response_or_raw_exception) ... ok
+test_required_missing_values_block_before_client_call (test_sales_transport.SalesTransportTests.test_required_missing_values_block_before_client_call) ... ok
+test_structured_provider_error_is_preserved (test_sales_transport.SalesTransportTests.test_structured_provider_error_is_preserved) ... ok
+test_invalid_new_input_and_failed_revision_preserve_successful_history (test_sales_ui.SalesUI.test_invalid_new_input_and_failed_revision_preserve_successful_history) ... 2026-10-31 16:55:31.441 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_multiline_first_and_two_rounds_are_stable_across_reruns (test_sales_ui.SalesUI.test_multiline_first_and_two_rounds_are_stable_across_reruns) ... 2026-10-31 16:55:31.694 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_switching_w2_and_back_preserves_w1_without_loading_real_client (test_sales_ui.SalesUI.test_switching_w2_and_back_preserves_w1_without_loading_real_client) ... 2026-10-31 16:55:31.960 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_case_can_close_after_all_gates (test_state_and_storage.StateAndStorageTests.test_case_can_close_after_all_gates) ... ok
+test_case_cannot_pass_without_review_and_checks (test_state_and_storage.StateAndStorageTests.test_case_cannot_pass_without_review_and_checks) ... ok
+test_duplicate_document_hash_is_rejected (test_state_and_storage.StateAndStorageTests.test_duplicate_document_hash_is_rejected) ... ok
+test_sqlite_queries_and_round_trip (test_state_and_storage.StateAndStorageTests.test_sqlite_queries_and_round_trip) ... ok
+test_unconfirmed_field_cannot_pass (test_state_and_storage.StateAndStorageTests.test_unconfirmed_field_cannot_pass) ... ok
+test_active_role_is_not_union_of_all_grants (test_v3_services.V3ServicesTests.test_active_role_is_not_union_of_all_grants) ... ok
+test_attachment_confidence_failure_and_confirmation_history (test_v3_services.V3ServicesTests.test_attachment_confidence_failure_and_confirmation_history) ... ok
+test_customer_service_cannot_close_case_or_approve_generation (test_v3_services.V3ServicesTests.test_customer_service_cannot_close_case_or_approve_generation) ... ok
+test_customer_service_cannot_edit_knowledge_and_operations_cannot_publish (test_v3_services.V3ServicesTests.test_customer_service_cannot_edit_knowledge_and_operations_cannot_publish) ... ok
+test_disabled_account_and_permission_revocation_invalidate_sessions (test_v3_services.V3ServicesTests.test_disabled_account_and_permission_revocation_invalidate_sessions) ... ok
+test_external_search_requires_real_url_and_round_trip (test_v3_services.V3ServicesTests.test_external_search_requires_real_url_and_round_trip) ... ok
+test_failed_attachment_preserves_original_and_is_not_promoted (test_v3_services.V3ServicesTests.test_failed_attachment_preserves_original_and_is_not_promoted) ... ok
+test_first_admin_cannot_be_rebootstrapped (test_v3_services.V3ServicesTests.test_first_admin_cannot_be_rebootstrapped) ... ok
+test_forged_actor_and_draft_product_rejected (test_v3_services.V3ServicesTests.test_forged_actor_and_draft_product_rejected) ... ok
+test_forged_role_or_unassigned_case_rejected_before_provider (test_v3_services.V3ServicesTests.test_forged_role_or_unassigned_case_rejected_before_provider) ... ok
+test_generation_context_checks_and_ai_manual_records_are_separate (test_v3_services.V3ServicesTests.test_generation_context_checks_and_ai_manual_records_are_separate) ... ok
+test_login_tokens_are_hashed_and_passwords_not_plaintext (test_v3_services.V3ServicesTests.test_login_tokens_are_hashed_and_passwords_not_plaintext) ... ok
+test_low_quality_can_only_be_released_after_field_confirmation (test_v3_services.V3ServicesTests.test_low_quality_can_only_be_released_after_field_confirmation) ... ok
+test_pending_review_accepts_candidates_but_pass_blocks_them (test_v3_services.V3ServicesTests.test_pending_review_accepts_candidates_but_pass_blocks_them) ... ok
+test_publication_and_audit_are_rolled_back_together (test_v3_services.V3ServicesTests.test_publication_and_audit_are_rolled_back_together) ... ok
+test_publish_and_rollback_preserve_versions_and_audits (test_v3_services.V3ServicesTests.test_publish_and_rollback_preserve_versions_and_audits) ... ok
+test_queues_and_history_obey_visibility (test_v3_services.V3ServicesTests.test_queues_and_history_obey_visibility) ... ok
+test_role_ui_disables_ungranted_roles_and_hides_other_cases (test_v3_services.V3ServicesTests.test_role_ui_disables_ungranted_roles_and_hides_other_cases) ... 2026-10-31 16:55:55.024 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+2026-10-31 16:55:55.024 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_search_authorization_failure_and_demo_provenance (test_v3_services.V3ServicesTests.test_search_authorization_failure_and_demo_provenance) ... ok
+test_self_review_blocked_even_for_admin (test_v3_services.V3ServicesTests.test_self_review_blocked_even_for_admin) ... ok
+test_streamed_result_and_context_conflict (test_v3_services.V3ServicesTests.test_streamed_result_and_context_conflict) ... ok
+test_unauthenticated_expired_and_revoked_assignment (test_v3_services.V3ServicesTests.test_unauthenticated_expired_and_revoked_assignment) ... ok
+test_unreviewed_and_demo_cannot_be_published (test_v3_services.V3ServicesTests.test_unreviewed_and_demo_cannot_be_published) ... ok
+test_v3_database_upgrade_retains_existing_cases (test_v3_services.V3ServicesTests.test_v3_database_upgrade_retains_existing_cases) ... ok
+test_candidate_identification_does_not_fill_quantity_or_create_history (test_v3_ui.V3UI.test_candidate_identification_does_not_fill_quantity_or_create_history) ... 2026-10-31 16:56:02.779 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_demo_load_only_changes_form_preserves_history_and_does_not_call_api (test_v3_ui.V3UI.test_demo_load_only_changes_form_preserves_history_and_does_not_call_api) ... 2026-10-31 16:56:02.922 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_demo_w2_multi_platform_and_unsupported_claim_visible (test_v3_ui.V3UI.test_demo_w2_multi_platform_and_unsupported_claim_visible) ... 2026-10-31 16:56:03.096 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_mock_buyer_requires_explicit_apply_and_leaves_sales_history_alone (test_v3_ui.V3UI.test_mock_buyer_requires_explicit_apply_and_leaves_sales_history_alone) ... 2026-10-31 16:56:03.272 Thread 'MainThread': missing ScriptRunContext! This warning can be ignored when running in bare mode.
+ok
+test_advisory_checks_cover_original_extra_design_and_new_claims (test_v3_workflows.V3Workflows.test_advisory_checks_cover_original_extra_design_and_new_claims) ... ok
+test_ai_candidate_fake_source_fields_duplicate_keys_and_extra_status_rejected (test_v3_workflows.V3Workflows.test_ai_candidate_fake_source_fields_duplicate_keys_and_extra_status_rejected) ... ok
+test_ai_candidates_are_located_and_never_confirmed (test_v3_workflows.V3Workflows.test_ai_candidates_are_located_and_never_confirmed) ... ok
+test_bad_demo_arithmetic_refuses_to_load (test_v3_workflows.V3Workflows.test_bad_demo_arithmetic_refuses_to_load) ... ok
+test_both_workflows_review_model_output_instead_of_trusting_prompt (test_v3_workflows.V3Workflows.test_both_workflows_review_model_output_instead_of_trusting_prompt) ... ok
+test_candidates_preserve_original_spans_and_do_not_mutate_input (test_v3_workflows.V3Workflows.test_candidates_preserve_original_spans_and_do_not_mutate_input) ... ok
+test_customer_failure_does_not_surface_provider_exception_text (test_v3_workflows.V3Workflows.test_customer_failure_does_not_surface_provider_exception_text) ... ok
+test_customer_simulation_is_explicit_separate_and_never_confirms_case (test_v3_workflows.V3Workflows.test_customer_simulation_is_explicit_separate_and_never_confirms_case) ... ok
+test_empty_ai_candidate_set_stays_unknown_and_exception_is_static (test_v3_workflows.V3Workflows.test_empty_ai_candidate_set_stays_unknown_and_exception_is_static) ... ok
+test_exact_demo_amounts_units_and_no_fabricated_customer (test_v3_workflows.V3Workflows.test_exact_demo_amounts_units_and_no_fabricated_customer) ... ok
+test_new_sku_does_not_override_legacy_evidence (test_v3_workflows.V3Workflows.test_new_sku_does_not_override_legacy_evidence) ... ok
+test_numbers_normalize_decimal_ordering_but_not_currency_or_unit (test_v3_workflows.V3Workflows.test_numbers_normalize_decimal_ordering_but_not_currency_or_unit) ... ok
+test_request_has_candidates_but_null_quantity_stays_null (test_v3_workflows.V3Workflows.test_request_has_candidates_but_null_quantity_stays_null) ... ok
+test_unknown_text_and_country_not_inferred_from_product (test_v3_workflows.V3Workflows.test_unknown_text_and_country_not_inferred_from_product) ... ok
+test_case_isolation_and_round_trip (test_workflow_persistence.WorkflowPersistenceTests.test_case_isolation_and_round_trip) ... ok
+test_legacy_history_is_not_treated_as_new_workflow_payload (test_workflow_persistence.WorkflowPersistenceTests.test_legacy_history_is_not_treated_as_new_workflow_payload) ... ok
+
+----------------------------------------------------------------------
+Ran 131 tests in 40.290s
+
+OK
