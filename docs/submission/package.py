@@ -54,12 +54,17 @@ def main() -> None:
         members = {name[len(prefix):] for name in archive.namelist() if not name.endswith("/")}
         if members != set(names):
             raise SystemExit("Archive contents do not match the Git tree")
+        sample_sha256 = hashlib.sha256(archive.read(prefix + SAMPLE)).hexdigest()
+    try:
+        tagged_commit = git("rev-parse", "--verify", f"{TAG}^{{commit}}")
+    except subprocess.CalledProcessError:
+        tagged_commit = None
     manifest = {
-        "release_tag": TAG, "source_ref": args.ref, "commit": commit, "git_tree": tree,
+        "release_tag": TAG if tagged_commit == commit else None, "source_ref": args.ref, "commit": commit, "git_tree": tree,
         "archive": target.name, "tracked_file_count": len(names),
         "archive_bytes": target.stat().st_size,
         "archive_sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
-        "sample_sha256": "c5c40b4a1c20482a4b6c9cc57f450d03062c5b7a8c767f477fda6b5efbfac7b8",
+        "sample_sha256": sample_sha256,
     }
     target.with_suffix(".manifest.json").write_text(
         json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8",
