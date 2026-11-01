@@ -8,9 +8,7 @@ from streamlit.testing.v1 import AppTest
 from auth import AuthService
 from core.errors import CrossBotError
 from core.identity import Role
-from providers.user_settings import ProviderSettings, UserSettingsRepository
 from storage.sqlite_store import SQLiteStore
-from tests.test_user_provider_settings import MemoryCipher
 
 
 class AuthProviderUITests(unittest.TestCase):
@@ -24,18 +22,12 @@ class AuthProviderUITests(unittest.TestCase):
         self.principal = self.auth.require_session(self.token)
         self.auth.create_user(self.token, "other", "synthetic-password-123", "Other", [Role.OPERATIONS])
         self.other_token = self.auth.login("other", "synthetic-password-123")
-        self.cipher = MemoryCipher()
-        self.repository = UserSettingsRepository(self.auth, cipher=self.cipher)
-        binding = patch("providers.settings_ui.UserSettingsRepository",
-                        side_effect=lambda auth, **kwargs: UserSettingsRepository(auth, cipher=self.cipher))
-        binding.start()
-        self.addCleanup(binding.stop)
         self.script = f'''
 from storage.sqlite_store import SQLiteStore
 from ui.auth_panel import render_auth_panel
-from providers.settings_ui import load_user_provider_settings, render_provider_settings
+from providers.settings_ui import initialize_provider_session, render_provider_settings
 auth, token, principal = render_auth_panel(SQLiteStore({str(self.path)!r}))
-load_user_provider_settings(auth, token, principal)
+initialize_provider_session(auth, token, principal)
 render_provider_settings(mode="真实", show_test=False)
 '''
 
@@ -74,21 +66,57 @@ render_provider_settings(mode="真实", show_test=False)
         self.assertNotIn("session_token", rejected.session_state)
         self.assertNotIn("provider_key", rejected.session_state)
 
-    def test_remember_save_refresh_and_confirmation_reset(self):
+    def test_new_browser_session_keeps_login_but_resets_model_settings(self):
         page = self.page(self.token)
+        page.text_input(key="provider_url").set_value("https://provider.invalid").run()
+        page.text_input(key="provider_model").set_value("synthetic-model").run()
         page.text_input(key="provider_key").set_value("synthetic-key").run()
-        page.checkbox(key="provider_remember").check().run()
         page.checkbox(key="provider_confirm").check().run()
-        page.button(key="provider_save").click().run()
+        page.run()
         self.assertFalse(page.exception)
+        self.assertEqual(page.text_input(key="provider_key").value, "synthetic-key")
+        self.assertTrue(page.checkbox(key="provider_confirm").value)
         fresh = self.page(self.token)
-        self.assertEqual(fresh.text_input(key="provider_key").value, "synthetic-key")
+        self.assertFalse(fresh.exception)
+        self.assertEqual(fresh.session_state["session_token"], self.token)
+        self.assertEqual(fresh.text_input(key="provider_url").value, "https://api.tokenhubcloud.net")
+        self.assertEqual(fresh.text_input(key="provider_model").value, "gpt-6.1-sol")
+        self.assertEqual(fresh.text_input(key="provider_key").value, "")
         self.assertFalse(fresh.checkbox(key="provider_confirm").value)
-        self.assertTrue(fresh.checkbox(key="provider_remember").value)
+
+    def test_save_controls_removed_and_settings_table_not_created(self):
+        page = self.page(self.token)
+        self.assertFalse(page.exception)
+        self.assertNotIn("记住此账号的 API Key", [item.label for item in page.checkbox])
+        self.assertTrue({"保存设置", "删除已保存配置"}.isdisjoint(item.label for item in page.button))
+        page.text_input(key="provider_key").set_value("synthetic-key").run()
+        page.checkbox(key="provider_confirm").check().run()
+        page.button(key="provider_clear").click().run()
+        with self.auth.repository.transaction() as connection:
+            self.assertIsNone(connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name='user_provider_settings'"
+            ).fetchone())
+
+    def test_legacy_saved_configuration_is_ignored_and_preserved(self):
+        with self.auth.repository.transaction() as connection:
+            connection.execute("CREATE TABLE user_provider_settings (user_id TEXT PRIMARY KEY, encrypted_payload BLOB NOT NULL)")
+            connection.execute("INSERT INTO user_provider_settings VALUES (?, ?)",
+                               (self.principal.user_id, b"synthetic-legacy-encrypted-settings"))
+        page = self.page(self.token)
+        self.assertFalse(page.exception)
+        self.assertFalse(page.error)
+        self.assertFalse(any("DPAPI" in item.value or "无法解密" in item.value for item in page.warning))
+        self.assertEqual(page.text_input(key="provider_key").value, "")
+        page.button(key="provider_clear").click().run()
+        with self.auth.repository.transaction() as connection:
+            row = connection.execute("SELECT encrypted_payload FROM user_provider_settings WHERE user_id=?",
+                                     (self.principal.user_id,)).fetchone()
+            self.assertEqual(bytes(row[0]), b"synthetic-legacy-encrypted-settings")
 
     def test_user_switch_replaces_all_provider_state(self):
-        self.repository.save(self.token, self.principal, ProviderSettings(api_key="admin-synthetic-key", remember=True))
         page = self.page(self.token)
+        page.text_input(key="provider_key").set_value("admin-synthetic-key").run()
+        page.checkbox(key="provider_confirm").check().run()
         self.assertEqual(page.text_input(key="provider_key").value, "admin-synthetic-key")
         page.session_state["session_token"] = self.other_token
         page.run()
@@ -96,23 +124,43 @@ render_provider_settings(mode="真实", show_test=False)
         self.assertEqual(page.text_input(key="provider_key").value, "")
         self.assertFalse(page.checkbox(key="provider_confirm").value)
 
-    def test_uncheck_and_clear_remove_persisted_key_immediately(self):
-        self.repository.save(self.token, self.principal, ProviderSettings(api_key="synthetic-key", remember=True))
+    def test_clear_key_revokes_current_session_confirmation(self):
         page = self.page(self.token)
-        page.checkbox(key="provider_remember").uncheck().run()
-        self.assertEqual(self.repository.load(self.token, self.principal).api_key, "")
-        page.checkbox(key="provider_remember").check().run()
-        page.button(key="provider_save").click().run()
+        page.text_input(key="provider_key").set_value("synthetic-key").run()
+        page.checkbox(key="provider_confirm").check().run()
         page.button(key="provider_clear").click().run()
         self.assertFalse(page.exception)
         self.assertEqual(page.text_input(key="provider_key").value, "")
-        self.assertEqual(self.repository.load(self.token, self.principal).api_key, "")
+        self.assertFalse(page.checkbox(key="provider_confirm").value)
 
     def test_same_user_rerun_does_not_overwrite_unsaved_input(self):
         page = self.page(self.token)
         page.text_input(key="provider_model").set_value("unsaved-model").run()
         page.run()
         self.assertEqual(page.text_input(key="provider_model").value, "unsaved-model")
+
+    def test_revoked_login_clears_current_session_settings(self):
+        page = self.page(self.token)
+        page.text_input(key="provider_key").set_value("synthetic-key").run()
+        self.auth.logout(self.token)
+        page.run()
+        self.assertFalse(page.exception)
+        self.assertNotIn("session_token", page.session_state)
+        self.assertNotIn("provider_key", page.session_state)
+
+    def test_exports_exclude_in_memory_model_settings_and_tokens(self):
+        from core.schemas import GenerationResponse, ListingRequest
+        from workflows.exports import business_snapshot, export_bundle, json_bytes, text_bytes
+        state = {"provider_key": "synthetic-private-key", "session_token": self.token,
+                 "_provider_owner": ("memory-only-v1", "synthetic-owner"),
+                 "_browser_cookie_command": {"token": self.token},
+                 "listing_request": ListingRequest("synthetic product", ["Amazon"]),
+                 "listing_results": {"Amazon": GenerationResponse("synthetic listing")}}
+        bundle = export_bundle(business_snapshot(state))
+        exported = json_bytes(bundle) + text_bytes(bundle, "w2")
+        self.assertNotIn(b"synthetic-private-key", exported)
+        self.assertNotIn(self.token.encode(), exported)
+        self.assertNotIn(b"_provider_owner", exported)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-# Browser Login and Per-User Provider Settings
+# Browser Login and Session-Only Provider Settings
 
 The login panel uses the built-in Streamlit components v2 JavaScript bridge.
 Streamlit 1.51 or newer is required; the inspected local installation is 1.66.0.
@@ -9,21 +9,19 @@ No cookie extension package is required.
 After `render_auth_panel` returns, and before rendering provider widgets, call:
 
 ```python
-from providers.settings_ui import load_user_provider_settings
-load_user_provider_settings(auth, token, principal)
+from providers.settings_ui import initialize_provider_session
+initialize_provider_session(auth, token, principal)
 ```
 
-Call this on every Streamlit run. It validates the server session, loads saved
-settings once per database/user/session, and clears provider state on a user
-change or rejected identity. `render_provider_settings` keeps its existing
-signature and handles saving, forgetting, and the optional remember-key choice.
-Restoring a key never restores the consent to send business data.
+Call this on every Streamlit run. It validates the server session and initializes
+in-memory provider values once per database/user/session. A rejected identity or
+user change clears the provider values. It never reads configuration from disk
+or from the database. `render_provider_settings` has no save or remember action.
 
-`UserSettingsRepository(auth, cipher=...)` accepts an injectable cipher with
-`encrypt(bytes, entropy) -> bytes` and `decrypt(bytes, entropy) -> bytes`.
-Production defaults to Windows CurrentUser DPAPI; the injected cipher is for
-synthetic tests. Repository operations verify the token and principal in the
-same transaction and access only the current application user row.
+The main app calls `ui.workbench.retain_widget_state()` before routing, so URL,
+model, protocol, key and confirmation survive navigation between work pages.
+A full browser refresh creates new Streamlit state and resets these values.
+Restoring the login cookie does not restore the key or the send-data consent.
 
 ## Session Boundaries
 
@@ -56,29 +54,18 @@ remaining cookie cannot authenticate because its server session is revoked.
 The initial websocket cookie header is consulted once; a stale header cannot
 undo a completed logout.
 
-## Encryption and Operational Boundaries
+## Configuration Boundaries
 
-The private repository lazily creates only `user_provider_settings`, without
-changing the storage schema version or public tables. The entire settings
-payload is encrypted, with the application user ID bound as DPAPI entropy.
-The database contains no plaintext key. An unchecked remember option excludes
-the API key before encryption. Unchecking remember, clearing a key, changing
-the endpoint, or deleting saved settings removes the persisted row.
+Provider persistence and its Windows DPAPI implementation have been removed.
+The app neither creates nor reads, decrypts, updates or deletes the historical
+`user_provider_settings` table. Existing encrypted rows are left untouched.
+No database migration, account change or customer-data cleanup is needed.
 
-CurrentUser DPAPI is scoped to the Windows account running the server, not to
-a separate Windows identity for each application login. Application-user
-isolation comes from authenticated repository access plus user-bound entropy.
-The service account must have its Windows user profile loaded. Moving the
-database to another Windows account or losing the profile/master keys can make
-saved settings unrecoverable. There is no LocalMachine or plaintext fallback.
-Encryption failures leave prior saved data intact and report a generic message
-plus a Windows error code, never the key.
-
-The CodexSandboxOffline test identity returned WinError 2 for CryptProtectData.
-The independent .NET ProtectedData(CurrentUser) API also failed and reported
-that the user profile was not loaded. Deployment acceptance therefore requires
-an encrypt/decrypt round trip and remember/refresh test under the actual Windows
-service account with its profile loaded; injected-cipher tests do not prove this.
+The model configuration lives only in the current Streamlit server session.
+Clearing the key or changing the endpoint clears the key and send-data consent.
+Changing model or protocol resets consent. Logout and account changes clear all
+provider values. A browser refresh or a new tab needs a new key entry, even when
+the valid login cookie restores the user's identity.
 
 Settings and tokens remain outside business export models and audit payloads.
 There is no settings audit payload, plaintext export helper, or environment-key
@@ -88,23 +75,15 @@ application must not serialize arbitrary session state into logs or exports.
 ## Focused Validation
 
 ```powershell
-.\.venv\Scripts\python.exe -B -m unittest discover -s tests -p test_user_provider_settings.py -v
 .\.venv\Scripts\python.exe -B -m unittest discover -s tests -p test_browser_session.py -v
 .\.venv\Scripts\python.exe -B -m unittest discover -s tests -p test_auth_provider_ui.py -v
+.\.venv\Scripts\python.exe -B -m unittest discover -s tests -p test_provider_ui.py -v
+.\.venv\Scripts\python.exe -B -m unittest discover -s tests -p test_workbench_ui.py -v
 ```
 
-The DPAPI smoke test explicitly skips when Windows reports that the sandbox
-profile is inaccessible. That skip is a deployment validation gap, not success.
-
-Run this non-skipping deployment gate from the repository root under the real
-Windows server account before accepting remembered-key persistence:
-
-```powershell
-.\.venv\Scripts\python.exe -B tests/check_windows_dpapi.py
-```
-
-The isolated Edge browser checks covered cookie set/read on refresh, actual
-logout deletion, revoked-cookie replay rejection and tampered-cookie rejection.
-The synthetic browser harness also checked settings refresh and reset consent
-using an explicitly injected test cipher. This does not validate production
-DPAPI encryption under the sandbox identity.
+The UI regression checks cover missing save/remember controls, fresh-session
+configuration reset, account isolation, clearing the key, revoked login, ignored
+legacy ciphertext, no new settings table, and secret-free business exports.
+Workbench tests cover configuration retention across page navigation. All model
+calls in automated checks use synthetic responses; they do not consume real API
+quota. The browser harness requires an explicitly supplied synthetic database.

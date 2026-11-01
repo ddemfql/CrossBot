@@ -6,7 +6,7 @@ import streamlit as st
 from auth.cases import CaseAccessService
 from core.errors import CrossBotError
 from core.identity import Permission, Role
-from providers.settings_ui import render_provider_settings, session_provider_config
+from providers.settings_ui import initialize_provider_session, render_provider_settings, session_provider_config
 from storage.bootstrap import open_store
 from ui.auth_panel import render_admin_panel, render_auth_panel, render_user_controls
 from ui.case_panel import render_case_panel, render_case_summary
@@ -23,8 +23,7 @@ retain_widget_state()
 try:
     store = open_store()
     auth, token, principal = render_auth_panel(store, show_controls=False)
-    from providers.settings_ui import load_user_provider_settings
-    load_user_provider_settings(auth, token, principal)
+    initialize_provider_session(auth, token, principal)
     access = CaseAccessService(auth)
     page, demo = render_navigation(principal)
     render_user_controls(auth, token, principal)
