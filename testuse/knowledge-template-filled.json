@@ -1,0 +1,27 @@
+{
+  "kind": "knowledge",
+  "entries": [
+    {
+      "resource_id": "knowledge-2026003-ybfcwp19",
+      "source": "CFT_FACIAL CLEANSING WIPES_YBFCWP19, BBFCWP19.xlsx (Non Makeup CFT Form, rows 5-40); PI-RBZ2026003-WP19.xls (PROFORMA INVOICE, rows 12-13); label/artwork files in the 2026003 source folder. Transcribed for draft testing; verify against originals before review and publication.",
+      "market": "US",
+      "product_scope": "YBFCWP19",
+      "content": {
+        "text": "Product: FACIAL CLEANSING WIPES. Brand shown in CFT: Body Prescriptions. SKU/style: YBFCWP19. Label description: 50CT FACIAL CLEANSING WIPES. Packaging information stated in PI: single pack; 50 wipes per pack; 24 pcs per master carton; PI states no inner bag. Shared product details stated in supplied files: R2T RETINOL; wipe size 18 x 20 cm; substrate 50 GSM, 30% viscose, embossed. The CFT lists product nature as LEAVE ON and shelf life as 24 months / 6 months after opening. These are source-file candidates for internal review, not independently verified or published specifications. The CFT contains a 2026-03-19 ingredient-declaration update note and the supplied artwork lists Linalyl Acetate; confirm the current approved formula and label before using ingredient, allergen, safety, efficacy, or regulatory statements.",
+        "category": "Product specifications - pending review",
+        "applicability": "US market; applies only to SKU YBFCWP19. Internal candidate transcribed from supplied transaction files; verify before publication."
+      }
+    },
+    {
+      "resource_id": "knowledge-2026003-bbfcwp19",
+      "source": "CFT_FACIAL CLEANSING WIPES_YBFCWP19, BBFCWP19.xlsx (Non Makeup CFT Form, rows 5-40); PI-RBZ2026003-WP19.xls (PROFORMA INVOICE, rows 12-13); label/artwork files in the 2026003 source folder. Transcribed for draft testing; verify against originals before review and publication.",
+      "market": "US",
+      "product_scope": "BBFCWP19",
+      "content": {
+        "text": "Product: FACIAL CLEANSING WIPES. Brand shown in CFT: Body Prescriptions. SKU/style: BBFCWP19. Label description: 2PK 50CT FACIAL CLEANSING WIPES. Packaging information stated in PI: 2 packs per sale unit; 50 wipes per pack; PI states 2 packs per inner bag and 12 pcs per master carton. Shared product details stated in supplied files: R2T RETINOL; wipe size 18 x 20 cm; substrate 50 GSM, 30% viscose, embossed. The CFT lists product nature as LEAVE ON and shelf life as 24 months / 6 months after opening. These are source-file candidates for internal review, not independently verified or published specifications. The CFT contains a 2026-03-19 ingredient-declaration update note and the supplied artwork lists Linalyl Acetate; confirm the current approved formula and label before using ingredient, allergen, safety, efficacy, or regulatory statements.",
+        "category": "Product specifications - pending review",
+        "applicability": "US market; applies only to SKU BBFCWP19. Internal candidate transcribed from supplied transaction files; verify before publication."
+      }
+    }
+  ]
+}

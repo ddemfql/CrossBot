@@ -1,0 +1,78 @@
+{
+  "kind": "product",
+  "entries": [
+    {
+      "resource_id": "product-2026003-ybfcwp19",
+      "source": "CFT_FACIAL CLEANSING WIPES_YBFCWP19, BBFCWP19.xlsx (Non Makeup CFT Form, rows 5-40); PI-RBZ2026003-WP19.xls (PROFORMA INVOICE, rows 12-13); label/artwork files in the 2026003 source folder. Transcribed for draft testing; verify against originals before review and publication.",
+      "market": "US",
+      "product_scope": "YBFCWP19",
+      "content": {
+        "name": "50CT FACIAL CLEANSING WIPES",
+        "sku": "YBFCWP19",
+        "specifications": {
+          "product_name": "FACIAL CLEANSING WIPES",
+          "brand": "Body Prescriptions",
+          "color_formula": "R2T RETINOL",
+          "wipe_dimensions": "18 x 20 cm",
+          "substrate": "50 GSM, 30% viscose, embossed",
+          "product_nature": "LEAVE ON (as listed in CFT)",
+          "stated_shelf_life": "24 months; 6 months after opening (as listed in CFT; verify during review)",
+          "style_number": "YBFCWP19"
+        },
+        "materials": [
+          "Nonwoven wipe substrate: 50 GSM, 30% viscose, embossed (as stated in PI)"
+        ],
+        "package_info": {
+          "configuration": "single pack",
+          "wipes_per_pack": 50,
+          "inner_pack": "No inner bag (as stated in PI)",
+          "units_per_master_carton": 24
+        },
+        "allowed_claims": [],
+        "claims_requiring_evidence": [
+          "Review formula and ingredient-declaration consistency before publishing ingredient, allergen, safety, or efficacy wording; the CFT includes a 2026-03-19 update note and artwork lists Linalyl Acetate.",
+          "Do not use efficacy, anti-aging, safety, or regulatory claims without separately reviewed supporting evidence."
+        ],
+        "certificates": [],
+        "source_files": []
+      }
+    },
+    {
+      "resource_id": "product-2026003-bbfcwp19",
+      "source": "CFT_FACIAL CLEANSING WIPES_YBFCWP19, BBFCWP19.xlsx (Non Makeup CFT Form, rows 5-40); PI-RBZ2026003-WP19.xls (PROFORMA INVOICE, rows 12-13); label/artwork files in the 2026003 source folder. Transcribed for draft testing; verify against originals before review and publication.",
+      "market": "US",
+      "product_scope": "BBFCWP19",
+      "content": {
+        "name": "2PK 50CT FACIAL CLEANSING WIPES",
+        "sku": "BBFCWP19",
+        "specifications": {
+          "product_name": "FACIAL CLEANSING WIPES",
+          "brand": "Body Prescriptions",
+          "color_formula": "R2T RETINOL",
+          "wipe_dimensions": "18 x 20 cm",
+          "substrate": "50 GSM, 30% viscose, embossed",
+          "product_nature": "LEAVE ON (as listed in CFT)",
+          "stated_shelf_life": "24 months; 6 months after opening (as listed in CFT; verify during review)",
+          "style_number": "BBFCWP19"
+        },
+        "materials": [
+          "Nonwoven wipe substrate: 50 GSM, 30% viscose, embossed (as stated in PI)"
+        ],
+        "package_info": {
+          "configuration": "2 packs per sale unit",
+          "wipes_per_pack": 50,
+          "packs_per_sale_unit": 2,
+          "inner_pack": "2 packs per inner bag (as stated in PI)",
+          "units_per_master_carton": 12
+        },
+        "allowed_claims": [],
+        "claims_requiring_evidence": [
+          "Review formula and ingredient-declaration consistency before publishing ingredient, allergen, safety, or efficacy wording; the CFT includes a 2026-03-19 update note and artwork lists Linalyl Acetate.",
+          "Do not use efficacy, anti-aging, safety, or regulatory claims without separately reviewed supporting evidence."
+        ],
+        "certificates": [],
+        "source_files": []
+      }
+    }
+  ]
+}
